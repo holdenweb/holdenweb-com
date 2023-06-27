@@ -1,0 +1,7 @@
+pdfrw==0.4
+flask==2.2.3
+flask-wtf==1.1.1
+qrcode==7.4.2
+reportlab==3.6.12
+markdown
+python-markdown-math==0.8
