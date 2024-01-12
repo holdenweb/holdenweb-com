@@ -42,9 +42,10 @@ logger = getLogger(__name__)
 
 
 @app.route("/page/<name>")
-def parent_page(name):
+def markdown_page(name):
     md = markdown.Markdown(extensions=['mdx_math'])
-    with open(os.path.join(appfile_dir, "md-pages", f"{name}.md")) as f:
+    file_path = os.path.join(appfile_dir, "md-pages", f"{name}.md")
+    with open(file_path) as f:
         html = md.convert(f.read())
         return render_template('markdown.html', content=html)
 
