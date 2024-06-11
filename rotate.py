@@ -25,3 +25,4 @@ def make_booklet(in_doc, out_doc):
 
 if __name__ == '__main__':
     make_booklet(sys.argv[1], open("test.pdf", 'wb'))
+
