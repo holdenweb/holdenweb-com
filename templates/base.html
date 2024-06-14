@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link href="/static/css/styles.css" rel="stylesheet" type="text/css" />
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
@@ -19,18 +20,18 @@
         <div class="col-md-10">
           <div class="row justify-content-md-center" id="header-row">
             <div class="col-md-3" >
-            <img src="/static/images/logo.png" height="125px">
+            <img src="/static/images/logo.png" height="75px">
             </div>
             <div id="title-header" class="col-md-9">
               <h1 style="vertical-align: middle">Work in Progress</h1>
             </div>
           </div>
-          <div class="row justify-content-md-center">
+          <div class="row justify-content-md-center ruler">
             {% with messages = get_flashed_messages() %}
               {% if messages %}
                 <ul class="flashes">
                 {% for message in messages %}
-                  <li>{{ message }}</li>
+                  <li>{{ message|safe }}</li>
                 {% endfor %}
                 </ul>
               {% endif %}
