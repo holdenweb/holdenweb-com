@@ -30,7 +30,7 @@ env = Environment(
 logger = getLogger(__name__)
 
 
-@app.route("/page/<name>")
+@app.route("/note/<name>")
 def markdown_page(name):
     md = markdown.Markdown(extensions=['mdx_math'])
     file_path = os.path.join(appfile_dir, "md-pages", f"{name}.md")
@@ -51,16 +51,7 @@ def home_page():
     with open(os.path.join(appfile_dir, "index.html")) as f:
         return f.read()
 
-@app.route("/test")
-def test_page():
-    "Serve test page, if it exists.Z"
-    try:
-        with open(os.path.join(appfile_dir, "test.html")) as f:
-            return f.read()
-    except OSError as e:
-        abort(404)
-
-@app.route("/notes/<name>")
+@app.route("/pages/<name>")
 def page_from_html(name):
     "Serve an HTML page selected by name."
     with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
