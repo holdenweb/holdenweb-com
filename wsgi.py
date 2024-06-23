@@ -32,7 +32,7 @@ logger = getLogger(__name__)
 
 @app.route("/note/<name>")
 def markdown_page(name):
-    md = markdown.Markdown(extensions=['mdx_math'])
+    md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
     file_path = os.path.join(appfile_dir, "md-pages", f"{name}.md")
     try:
         with open(file_path) as f:
