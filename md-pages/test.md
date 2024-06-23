@@ -22,3 +22,10 @@ $$\begin{align}y &= \frac{R_2+R_v x}{R_1 + R_2 + R_v x}\\y (R_1 + R_2 + R_v x) &
     available just for the
     writing, making it easy
     to share your code.
+
+    :::python
+    @app.route("/pages/<name>")
+    def page_from_html(name):
+        "Serve an HTML page selected by name."
+        with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
+            return render_template("base.html", content=f.read())
