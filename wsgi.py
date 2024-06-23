@@ -12,6 +12,7 @@ from wtforms.validators import DataRequired
 from zipfile import ZipFile
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
+from version import __version__
 
 
 class QRcode_Form(FlaskForm):
@@ -43,7 +44,7 @@ def markdown_page(name):
 
 @app.route("/config")
 def get_version():
-    return open(os.path.join(appfile_dir, "version.txt")).read()
+    return __version__
 
 @app.route("/")
 def home_page():
