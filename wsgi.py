@@ -14,7 +14,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
 from version import __version__
 
-
 class QRcode_Form(FlaskForm):
     qrcode_text = StringField('qrcode_text')
     submit = SubmitField('Get QR Code')
@@ -42,9 +41,13 @@ def markdown_page(name):
     except OSError as e:
         abort(404)
 
+
 @app.route("/config")
 def get_version():
-    return __version__
+    return {
+        "server_version": __version__
+    }
+
 
 @app.route("/")
 def home_page():
@@ -52,11 +55,16 @@ def home_page():
     with open(os.path.join(appfile_dir, "index.html")) as f:
         return f.read()
 
+
 @app.route("/pages/<name>")
 def page_from_html(name):
     "Serve an HTML page selected by name."
-    with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
-        return render_template("base.html", content=f.read())
+    try:
+        with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
+            return render_template("base.html", content=f.read())
+    except OSError as e:
+        flash(f"No page called {name!r}")
+        abort(404)
 
 @app.route("/qrcode", methods=['GET', 'POST'])
 def get_or_post_qrcode():
