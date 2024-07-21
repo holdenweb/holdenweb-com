@@ -6,3 +6,4 @@ qrcode
 reportlab
 markdown
 python-markdown-math
+python-dotenv
