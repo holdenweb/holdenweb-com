@@ -19,8 +19,9 @@
             <div class="tagline">What you'll need to know tomorrow</div>
             <nav class="pagenav">
                 <ul class="inline_list">
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/blog/">Blog</a></li>
+		{% for section in sections %}
+                    <li><a href="{{ section.path }}">{{ section.label }}</a></li>
+		{% endfor %}
                 </ul>
             </nav>
         </header>

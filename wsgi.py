@@ -1,8 +1,11 @@
 import os
 import io
+import itertools
+import time
 import qrcode
+from dataclasses import dataclass
 from io import BytesIO
-from logging import getLogger
+from logging import getLogger, basicConfig, DEBUG
 from flask import (Blueprint, Flask, Response, render_template, flash,
                    send_file, redirect, request, url_for, abort)
 from flask_wtf import FlaskForm
@@ -13,21 +16,55 @@ from zipfile import ZipFile
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
 from version import __version__
+import dotenv
 
-class QRcode_Form(FlaskForm):
-    qrcode_text = StringField('qrcode_text')
-    submit = SubmitField('Get QR Code')
+import wingdbstub
 
 
 appfile_dir = os.path.dirname(__file__)
 app = Flask(__name__)
 
+@dataclass
+class Section:
+    label: str
+    path: str
+
+SECTIONS = [
+    Section("Home", "/"),
+    Section("Python", "/python"),
+    Section("Blog", "/blog")
+]
 
 env = Environment(
     loader=FileSystemLoader('%s/templates/' % appfile_dir),
     autoescape=select_autoescape(['html', 'xml'])
 )
+
 logger = getLogger(__name__)
+basicConfig(
+    level=DEBUG,
+    format='%(filename)s: %(levelname)s: %(funcName)s:%(lineno)d:%(message)s'
+)
+
+request_count = itertools.count()
+
+#@app.before_request
+#def request_start():
+    #request.start_time = time.time()
+    #request.id = next(request_count)
+    #logger.debug(f"Request {request.id}h: {request.url}")
+
+
+#@app.after_request
+#def request_end(resp):
+    #logger.debug(f"Request {request.id} ended, duration {time.time() - request.start_time:5.2f}")
+    #return resp
+
+
+
+class QRcode_Form(FlaskForm):
+    qrcode_text = StringField('qrcode_text')
+    submit = SubmitField('Get QR Code')
 
 
 @app.route("/note/<name>")
@@ -51,9 +88,8 @@ def get_version():
 
 @app.route("/")
 def home_page():
-    "Serve static home page from index.html."
-    with open(os.path.join(appfile_dir, "index.html")) as f:
-        return f.read()
+    "Serve home page from index.html."
+    return render_template("index.html", sections=SECTIONS)
 
 
 @app.route("/pages/<name>")
@@ -65,6 +101,13 @@ def page_from_html(name):
     except OSError as e:
         flash(f"No page called {name!r}")
         abort(404)
+
+@app.route("/parts/<number>")
+def parts_demo(number):
+    if number != "demo":
+        flash("Sorry, we only do demos!")
+        abort(404)
+    return page_from_html("parts_demo")
 
 @app.route("/qrcode", methods=['GET', 'POST'])
 def get_or_post_qrcode():
