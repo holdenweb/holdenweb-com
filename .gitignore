@@ -128,3 +128,12 @@ dmypy.json
 
 # Mac OS crud
 .DS_Store
+
+# qs-specific files
+kill
+port_no
+start
+stop
+uwsgi.ini
+version.txt
+version.py
