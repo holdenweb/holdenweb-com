@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "huqs"
+version = "0.9.0"
+description = "The holdenweb.com publishable site"
+authors = ["Steve Holden <steve@holdenweb.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10 || ^3.11 || ^3.12"
+pdfrw = ">=0.4"
+werkzeug = ">=2.3.8"
+flask = ">=2.3.3"
+flask-wtf = ">=1.2.1"
+qrcode = ">=7.4.2"
+reportlab = ">=3.6.12"
+markdown = ">=3.5.2"
+python-markdown-math = ">=0.8"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
