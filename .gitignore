@@ -137,3 +137,4 @@ stop
 uwsgi.ini
 version.txt
 version.py
+release-*.tgz
