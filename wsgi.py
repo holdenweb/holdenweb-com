@@ -13,13 +13,9 @@ from pdf import pdf_blueprint
 from wtforms import FileField, SubmitField, StringField
 from wtforms.validators import DataRequired
 from zipfile import ZipFile
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
 from version import __version__
 import dotenv
-
-import wingdbstub
-
 
 appfile_dir = os.path.dirname(__file__)
 app = Flask(__name__)
@@ -34,11 +30,6 @@ SECTIONS = [
     Section("Python", "/python"),
     Section("Blog", "/blog")
 ]
-
-env = Environment(
-    loader=FileSystemLoader('%s/templates/' % appfile_dir),
-    autoescape=select_autoescape(['html', 'xml'])
-)
 
 logger = getLogger(__name__)
 basicConfig(

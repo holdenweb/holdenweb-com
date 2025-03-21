@@ -17,11 +17,11 @@ rotation, we have
 
 $$\begin{align}y &= \frac{R_2+R_v x}{R_1 + R_2 + R_v x}\\y (R_1 + R_2 + R_v x) &= (R_2 + R_v x)\\y R_1 + y R_2 + y R_v x &= R_2 + R_v x\\y R_v x - R_v x &= R_2  - yR_2 - yR_1\\(y-1)R_v x &= R_2  - y (R_2 - R_1)\\x &= \frac {R_2  - y (R_2 - R_1)}{(y - 1)R_v}\end{align}$$
 
-    and, of course
-    there are code blocks
-    available just for the
-    writing, making it easy
-    to share your code.
+and, of course
+there are code blocks
+available just for the
+writing, making it easy
+to share your code.
 
     :::python
     @app.route("/pages/<name>")
