@@ -1,3 +1,5 @@
+# The USA is in Big Trouble
+
 ### 21 Mar, 2025 Via Joe Daiker, on a platform I no longer mention.
 
 President George W. Bush's chief speechwriter, Michael Gerson, has a message for people who are excusing President Trump's racism:

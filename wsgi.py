@@ -1,21 +1,23 @@
 import os
 import io
 import itertools
-import time
 import qrcode
+import random
+import re
 from dataclasses import dataclass
-from io import BytesIO
 from logging import getLogger, basicConfig, DEBUG
-from flask import (Blueprint, Flask, Response, render_template, flash,
-                   send_file, redirect, request, url_for, abort)
-from flask_wtf import FlaskForm
+from flask import (
+    Flask,
+    Response,
+    render_template,
+    flash,
+    request,
+    abort,
+)
+from forms import QRcode_Form
 from pdf import pdf_blueprint
-from wtforms import FileField, SubmitField, StringField
-from wtforms.validators import DataRequired
-from zipfile import ZipFile
 import markdown
 from version import __version__
-import dotenv
 
 appfile_dir = os.path.dirname(__file__)
 app = Flask(__name__)
@@ -34,40 +36,36 @@ SECTIONS = [
 logger = getLogger(__name__)
 basicConfig(
     level=DEBUG,
-    format='%(filename)s: %(levelname)s: %(funcName)s:%(lineno)d:%(message)s'
+    format='%(filename)s: %(levelname)s:\n    {%(funcName)s: %(lineno)d: %(message)s}',
 )
 
 request_count = itertools.count()
-
-#@app.before_request
-#def request_start():
-    #request.start_time = time.time()
-    #request.id = next(request_count)
-    #logger.debug(f"Request {request.id}h: {request.url}")
-
-
-#@app.after_request
-#def request_end(resp):
-    #logger.debug(f"Request {request.id} ended, duration {time.time() - request.start_time:5.2f}")
-    #return resp
-
-
-
-class QRcode_Form(FlaskForm):
-    qrcode_text = StringField('qrcode_text')
-    submit = SubmitField('Get QR Code')
-
 
 @app.route("/note/<name>")
 def markdown_page(name):
     md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
     file_path = os.path.join(appfile_dir, "md-pages", f"{name}.md")
+    title = None
     try:
         with open(file_path) as f:
-            html = md.convert(f.read())
-            return render_template('markdown.html', content=html)
-    except OSError as e:
+            title_line = f.readline()
+            # Check whether the first line is a title
+            match = re.match(r'^(#+)\s+(.+)', title_line)
+            if match:
+                title = match.group(2)
+                content = f.read()
+            else:
+                title = "Just another holdenweb note"
+                content = title_line + f.read()
+            html = md.convert(content)
+            return render_template(
+                'markdown.html',
+                content=html,
+                title=title
+            )
+    except OSError:
         abort(404)
+
 
 
 @app.route("/config")
@@ -89,9 +87,18 @@ def page_from_html(name):
     try:
         with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
             return render_template("base.html", content=f.read())
-    except OSError as e:
-        flash(f"No page called {name!r}")
+    except OSError:
+        flash(f"Cannot find page {name!r}")
         abort(404)
+
+TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
+
+@app.route('/python-by-the-sea/')
+def serve_random_template():
+    # Randomly select one of the templates
+    selected_file = f"{appfile_dir}/static/pbs/landing/{random.choice(TEMPLATES)}"
+    with open(selected_file) as f:
+        return f.read()
 
 @app.route("/parts/<number>")
 def parts_demo(number):

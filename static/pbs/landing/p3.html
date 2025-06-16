@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python by the Sea - Inaugural Unconference</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') bottom center/cover no-repeat;
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            z-index: 2;
+            position: relative;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .python-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .date-location {
+            font-size: 1.25rem;
+            margin-bottom: 3rem;
+            padding: 1rem 2rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            display: inline-block;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(238, 90, 36, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(238, 90, 36, 0.4);
+        }
+
+        .features {
+            padding: 6rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 4rem;
+            color: #2c3e50;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .highlight h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .highlight p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.9;
+        }
+
+        .limited-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 1rem 0;
+            animation: blink 2s infinite;
+        }
+
+        .venue {
+            padding: 6rem 2rem;
+            background: white;
+        }
+
+        .venue h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            color: #2c3e50;
+        }
+
+        .venue-info {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .founder-credit {
+            background: #34495e;
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .founder-credit h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .founder-credit p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .final-cta {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            text-align: center;
+        }
+
+        .final-cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .final-cta .cta-button {
+            background: white;
+            color: #ee5a24;
+            font-size: 1.3rem;
+            padding: 1.2rem 3rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero .subtitle { font-size: 1.2rem; }
+            .features h2 { font-size: 2rem; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="hero-content">
+            <div class="python-logo">🐍</div>
+            <h1>Python by the Sea</h1>
+            <p class="subtitle">The inaugural unconference where Python meets the coast</p>
+            <div class="date-location">
+                📅 September 23-25, 2025<br>
+                📍 De La Warr Pavilion, Bexhill-on-Sea
+            </div>
+            <div class="limited-badge">⚠️ STRICTLY LIMITED PLACES</div>
+            <br><br>
+            <a href="#register" class="cta-button">Secure Your Spot Now</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2>Why Python by the Sea?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🌊</div>
+                    <h3>Seaside Innovation</h3>
+                    <p>Experience Python development in the inspiring coastal setting of Bexhill-on-Sea, where the rhythm of the waves meets the flow of code.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Unconference Format</h3>
+                    <p>Shape the agenda yourself! This participant-driven format ensures every session is relevant, engaging, and driven by the community's interests.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✨</div>
+                    <h3>First of Its Kind</h3>
+                    <p>Be part of something potentially groundbreaking - the very first Python by the Sea unconference. Help us create a new tradition in the Python community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="highlight">
+        <div class="container">
+            <h2>A Novel Python Experience</h2>
+            <p>This isn't just another conference - it's an experiment in community-driven learning and networking. Set against the backdrop of the iconic De La Warr Pavilion, you'll connect with fellow Python enthusiasts in an intimate, collaborative environment where every voice matters.</p>
+            <div class="limited-badge">LIMITED TO ENSURE QUALITY INTERACTIONS</div>
+        </div>
+    </section>
+
+    <section class="venue">
+        <div class="container">
+            <h2>🏛️ The Venue</h2>
+            <div class="venue-info">
+                <p>The De La Warr Pavilion in Bexhill-on-Sea is a modernist masterpiece overlooking the English Channel. This Grade I listed building provides a stunning and inspiring backdrop for our unconference, combining architectural beauty with seaside tranquility.</p>
+                <br>
+                <p>Just 90 minutes from London, Bexhill-on-Sea offers the perfect escape from the city while remaining easily accessible for our Python community.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="founder-credit">
+        <div class="container">
+            <h3>🎖️ Organized by PyCon's Founder</h3>
+            <p>This unconference is being organized by the founder of PyCon, bringing decades of experience in creating meaningful Python community events.</p>
+        </div>
+    </section>
+
+    <section class="final-cta" id="register">
+        <div class="container">
+            <h2>Ready to Make History?</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem;">Join us for the inaugural Python by the Sea unconference. Limited places mean intimate discussions, meaningful connections, and the chance to be part of something special.</p>
+            <a href="https://www.eventbrite.com/e/python-by-the-sea-tickets" class="cta-button" target="_blank" rel="noopener">Get Your Tickets on Eventbrite</a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Python by the Sea. An unconference experiment by the sea.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.8s ease-out forwards';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .venue-info').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
