@@ -36,7 +36,7 @@ SECTIONS = [
 logger = getLogger(__name__)
 basicConfig(
     level=DEBUG,
-    format='%(filename)s: %(levelname)s:\n    {%(funcName)s: %(lineno)d: %(message)s}',
+    format='%(filename)s: %(levelname)s: %(message)s',
 )
 
 request_count = itertools.count()
@@ -93,10 +93,18 @@ def page_from_html(name):
 
 TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
 
-@app.route('/python-by-the-sea/')
-def serve_random_template():
+@app.route('/python-by-the-sea/', defaults={'v': None})
+@app.route('/python-by-the-sea/<v>')
+def serve_random_template(v):
+    if not v:
+        f_name = random.choice(TEMPLATES)
+    else:
+        f_name = f"p{v}.html"
     # Randomly select one of the templates
-    selected_file = f"{appfile_dir}/static/pbs/landing/{random.choice(TEMPLATES)}"
+    selected_file = f"{appfile_dir}/static/pbs/landing/{f_name}"
+    if not os.path.exists(selected_file):
+        print(selected_file, "doesn't exist")
+        abort(404)
     with open(selected_file) as f:
         return f.read()
 
@@ -127,4 +135,4 @@ app.config['SECRET_KEY'] = "lkjahskdflkjad[pouaerpoiuqt"
 application = app.wsgi_app
 
 if __name__ == '__main__':
-    app.run(port=2400)
+    app.run(port=2400, debug=True)
