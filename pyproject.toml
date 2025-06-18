@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "huqs"
-version = "0.9.3"
+version = "0.9.4"
 description = "The holdenweb.com publishable site"
 authors = ["Steve Holden <steve@holdenweb.com>"]
 license = "MIT"
