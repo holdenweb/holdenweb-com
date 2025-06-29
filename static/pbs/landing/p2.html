@@ -18,6 +18,10 @@
             overflow-x: hidden;
         }
 
+        #pbs-logo {
+            height:50px;
+            width: 50px;
+        }
         .hero {
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -296,14 +300,14 @@
 <body>
     <section class="hero">
         <div class="hero-content">
-            <div class="python-logo"><img src="/static/images/pbs-logo.png"/></div>
+            <div class="python-logo"><img src="/static/images/pbs-logo-white.png" id="pbs-logo"/></div>
             <h1>Python by the Sea</h1>
             <p class="subtitle">An unconference for Python enthusiasts</p>
             <div class="date-location">
                 📅 September 23-25, 2025<br>
                 📍 De La Warr Pavilion, Bexhill-on-Sea
             </div>
-            <a href="#" class="cta-button" onclick="alert('Replace this with your Eventbrite link!')">Get Your Tickets</a>
+            <a href="#" class="cta-button" onclick="alert('Eventbrite ticket sales open 4 July')">Get Your Tickets</a>
         </div>
     </section>
 
@@ -369,55 +373,11 @@
         <div class="footer-content">
             <h3>Ready to Join Us?</h3>
             <p>Secure your spot at Python by the Sea. Early bird tickets available now!</p>
-            <a href="#" class="cta-button" onclick="alert('Replace this with your Eventbrite link!')">Book Your Tickets</a>
+            <a href="#" class="cta-button" onclick="alert('Eventbrite ticket sales open 4 July')">Book Your Tickets</a>
             <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">
                 Questions? Email us at info@pythonbythesea.com
             </p>
         </div>
     </footer>
-
-    <script>
-        // Add smooth scrolling for any internal links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-
-        // Add scroll-triggered animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe feature cards for animation
-        document.querySelectorAll('.feature-card').forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(card);
-        });
-
-        // Add floating animation to Python logo
-        const logo = document.querySelector('.python-logo');
-        setInterval(() => {
-            logo.style.transform = 'translateY(-5px)';
-            setTimeout(() => {
-                logo.style.transform = 'translateY(0)';
-            }, 1000);
-        }, 2000);
-    </script>
 </body>
 </html>
