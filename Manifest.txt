@@ -1,0 +1,8 @@
+./uwsgi.ini
+./pyproject.toml
+./README.md
+./.env
+./static/
+./templates/
+./md-pages/
+./html-pages/
