@@ -13,6 +13,7 @@ from flask import (
     flash,
     request,
     abort,
+    redirect,
 )
 from forms import QRcode_Form
 from pdf import pdf_blueprint
@@ -95,18 +96,8 @@ TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
 
 @app.route('/python-by-the-sea/', defaults={'v': None})
 @app.route('/python-by-the-sea/<v>')
-def serve_random_template(v):
-    if not v:
-        f_name = random.choice(TEMPLATES)
-    else:
-        f_name = f"p{v}.html"
-    # Randomly select one of the templates
-    selected_file = f"{appfile_dir}/static/pbs/landing/{f_name}"
-    if not os.path.exists(selected_file):
-        print(selected_file, "doesn't exist")
-        abort(404)
-    with open(selected_file) as f:
-        return f.read()
+def redirect_to_main_site(v):
+    return redirect("https://python-by-the-sea.org", code=301)
 
 @app.route("/parts/<number>")
 def parts_demo(number):
