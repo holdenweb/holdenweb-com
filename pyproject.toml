@@ -1,6 +1,6 @@
 [project]
 name = "wsgi"
-version = "0.9.12"
+version = "0.9.13"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 requires-python = ">=3.10, <4.0"
