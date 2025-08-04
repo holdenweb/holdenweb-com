@@ -134,7 +134,6 @@ kill
 port_no
 start
 stop
-uwsgi.ini
 version.txt
 version.py
 release-*.tgz
