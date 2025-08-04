@@ -1,5 +1,5 @@
 [project]
-name = "qs"
+name = "wsgi"
 version = "0.9.12"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
@@ -18,6 +18,3 @@ text = "MIT"
 
 [project.optional-dependencies]
 dev = []
-
-[tool.hatch.build.targets.wheel]
-packages = [ ".",]
