@@ -324,6 +324,36 @@ wheels = [
 ]
 
 [[package]]
+name = "project"
+version = "0.9.14"
+source = { editable = "." }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-wtf" },
+    { name = "markdown" },
+    { name = "pdfrw" },
+    { name = "python-dotenv" },
+    { name = "python-markdown-math" },
+    { name = "qrcode" },
+    { name = "reportlab" },
+    { name = "werkzeug" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=2.3.3" },
+    { name = "flask-wtf", specifier = ">=1.2.1" },
+    { name = "markdown", specifier = ">=3.5.2" },
+    { name = "pdfrw", specifier = ">=0.4" },
+    { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
+    { name = "python-markdown-math", specifier = ">=0.8" },
+    { name = "qrcode", specifier = ">=7.4.2" },
+    { name = "reportlab", specifier = ">=3.6.12" },
+    { name = "werkzeug", specifier = ">=2.3.8" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "python-dotenv"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -380,36 +410,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/9f/69/83029f1f6300c5fb2
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/24/ab44c871b0f07f491e5d2ad12c9bd7358e527510618cb1b803a88e986db1/werkzeug-3.1.3-py3-none-any.whl", hash = "sha256:54b78bf3716d19a65be4fceccc0d1d7b89e608834989dfae50ea87564639213e", size = 224498, upload-time = "2024-11-08T15:52:16.132Z" },
 ]
-
-[[package]]
-name = "wsgi"
-version = "0.9.13"
-source = { editable = "." }
-dependencies = [
-    { name = "flask" },
-    { name = "flask-wtf" },
-    { name = "markdown" },
-    { name = "pdfrw" },
-    { name = "python-dotenv" },
-    { name = "python-markdown-math" },
-    { name = "qrcode" },
-    { name = "reportlab" },
-    { name = "werkzeug" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=2.3.3" },
-    { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "markdown", specifier = ">=3.5.2" },
-    { name = "pdfrw", specifier = ">=0.4" },
-    { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
-    { name = "python-markdown-math", specifier = ">=0.8" },
-    { name = "qrcode", specifier = ">=7.4.2" },
-    { name = "reportlab", specifier = ">=3.6.12" },
-    { name = "werkzeug", specifier = ">=2.3.8" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "wtforms"
