@@ -213,6 +213,35 @@ wheels = [
 ]
 
 [[package]]
+name = "package"
+version = "0.9.18"
+source = { editable = "." }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-wtf" },
+    { name = "markdown" },
+    { name = "pdfrw" },
+    { name = "python-dotenv" },
+    { name = "python-markdown-math" },
+    { name = "qrcode" },
+    { name = "reportlab" },
+    { name = "werkzeug" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=2.3.3" },
+    { name = "flask-wtf", specifier = ">=1.2.1" },
+    { name = "markdown", specifier = ">=3.5.2" },
+    { name = "pdfrw", specifier = ">=0.4" },
+    { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
+    { name = "python-markdown-math", specifier = ">=0.8" },
+    { name = "qrcode", specifier = ">=7.4.2" },
+    { name = "reportlab", specifier = ">=3.6.12" },
+    { name = "werkzeug", specifier = ">=2.3.8" },
+]
+
+[[package]]
 name = "pdfrw"
 version = "0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -322,44 +351,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cc/2d/e082982aacc927fc2cab48e1e731bdb1643a1406acace8bed0900a61464e/pillow-11.3.0-pp311-pypy311_pp73-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:504b6f59505f08ae014f724b6207ff6222662aab5cc9542577fb084ed0676ac7", size = 5581505, upload-time = "2025-07-01T09:16:25.593Z" },
     { url = "https://files.pythonhosted.org/packages/34/e7/ae39f538fd6844e982063c3a5e4598b8ced43b9633baa3a85ef33af8c05c/pillow-11.3.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:c84d689db21a1c397d001aa08241044aa2069e7587b398c8cc63020390b1c1b8", size = 6984598, upload-time = "2025-07-01T09:16:27.732Z" },
 ]
-
-[[package]]
-name = "project"
-version = "0.9.14"
-source = { editable = "." }
-dependencies = [
-    { name = "flask" },
-    { name = "flask-wtf" },
-    { name = "markdown" },
-    { name = "pdfrw" },
-    { name = "python-dotenv" },
-    { name = "python-markdown-math" },
-    { name = "qrcode" },
-    { name = "reportlab" },
-    { name = "werkzeug" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "project" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=2.3.3" },
-    { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "markdown", specifier = ">=3.5.2" },
-    { name = "pdfrw", specifier = ">=0.4" },
-    { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
-    { name = "python-markdown-math", specifier = ">=0.8" },
-    { name = "qrcode", specifier = ">=7.4.2" },
-    { name = "reportlab", specifier = ">=3.6.12" },
-    { name = "werkzeug", specifier = ">=2.3.8" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "project", editable = "." }]
 
 [[package]]
 name = "python-dotenv"
