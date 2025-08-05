@@ -339,6 +339,11 @@ dependencies = [
     { name = "werkzeug" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "project" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "flask", specifier = ">=2.3.3" },
@@ -352,6 +357,9 @@ requires-dist = [
     { name = "werkzeug", specifier = ">=2.3.8" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "project", editable = "." }]
 
 [[package]]
 name = "python-dotenv"

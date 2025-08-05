@@ -15,13 +15,14 @@ from flask import (
     abort,
     redirect,
 )
-from forms import QRcode_Form
-from pdf import pdf_blueprint
+from .forms import QRcode_Form
+from .pdf import pdf_blueprint
 import markdown
 from version import __version__
 
-appfile_dir = os.path.dirname(__file__)
-app = Flask(__name__)
+appfile_dir = "."
+app = Flask(__name__, static_url_path='/static/', static_folder='static/')
+print(os.path.abspath(app.static_url_path))
 
 @dataclass
 class Section:
@@ -86,10 +87,12 @@ def home_page():
 def page_from_html(name):
     "Serve an HTML page selected by name."
     try:
-        with open(os.path.join(appfile_dir, "html-pages", f"{name}.html")) as f:
+        fpath = os.path.join(appfile_dir, "html-pages", f"{name}.html")
+        flash(f"Looking for {os.path.abspath(fpath)}")
+        with open(fpath) as f:
             return render_template("base.html", content=f.read())
     except OSError:
-        flash(f"Cannot find page {name!r}")
+        flash(f"Cannot find page {name!r} ({fpath})")
         abort(404)
 
 TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
@@ -106,7 +109,7 @@ def parts_demo(number):
         abort(404)
     return page_from_html("parts_demo")
 
-@app.route("/qrcode", methods=['GET', 'POST'])
+@app.route("/qrcode/", methods=['GET', 'POST'])
 def get_or_post_qrcode():
     form = QRcode_Form()
     logger.info("QR code requested")
