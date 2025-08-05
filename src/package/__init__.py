@@ -18,7 +18,7 @@ from flask import (
 from .forms import QRcode_Form
 from .pdf import pdf_blueprint
 import markdown
-from version import __version__
+from .version import __version__
 
 appfile_dir = "."
 app = Flask(__name__, static_url_path='/static/', static_folder='static/')
