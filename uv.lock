@@ -214,7 +214,7 @@ wheels = [
 
 [[package]]
 name = "package"
-version = "0.9.22"
+version = "0.9.23"
 source = { editable = "." }
 dependencies = [
     { name = "flask" },
