@@ -20,10 +20,6 @@ from .pdf import pdf_blueprint
 import markdown
 from .version import __version__
 
-appfile_dir = "."
-app = Flask(__name__, static_url_path='/static/', static_folder='static/')
-print(os.path.abspath(app.static_url_path))
-
 @dataclass
 class Section:
     label: str
@@ -42,6 +38,13 @@ basicConfig(
 )
 
 request_count = itertools.count()
+
+appfile_dir = "."
+app = Flask(__name__, static_url_path='/static/', static_folder='static/')
+
+@app.errorhandler(404)
+def handle_404(e):
+    return render_template("404.html", content=e)
 
 @app.route("/note/<name>")
 def markdown_page(name):
