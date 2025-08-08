@@ -44,7 +44,7 @@ app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 
 @app.errorhandler(404)
 def handle_404(e):
-    return render_template("404.html", content=e)
+    return render_template("404.html", title="Page not found", content=e)
 
 @app.route("/note/<name>")
 def markdown_page(name):
