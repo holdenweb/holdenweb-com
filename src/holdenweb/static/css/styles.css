@@ -4,6 +4,14 @@ body {
   background-color: #f6f6ef
 }
 
+body.home-page-holdenweb {
+  font: 62.5% arial, helvetica, sans-serif;
+}
+
+#header-row {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
 .pageheader {
   font-size: 1.4em;
   background-color: #f6f6ef;
@@ -122,7 +130,7 @@ h3 {
 
 .ruler {
   border: 2px;
-  border-color: blue;
+  border-color: #5475EE;
   min-height: 0px;
   border-style: solid;
   margin: 2px;

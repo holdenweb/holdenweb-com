@@ -91,11 +91,9 @@ def page_from_html(name):
     "Serve an HTML page selected by name."
     try:
         fpath = os.path.join(appfile_dir, "html-pages", f"{name}.html")
-        flash(f"Looking for {os.path.abspath(fpath)}")
         with open(fpath) as f:
             return render_template("base.html", content=f.read())
     except OSError:
-        flash(f"Cannot find page {name!r} ({fpath})")
         abort(404)
 
 TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
