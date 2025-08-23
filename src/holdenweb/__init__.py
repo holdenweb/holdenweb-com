@@ -2,10 +2,9 @@ import os
 import io
 import itertools
 import qrcode
-import random
 import re
+
 from dataclasses import dataclass
-from logging import getLogger, basicConfig, DEBUG
 from flask import (
     Flask,
     Response,
@@ -15,10 +14,17 @@ from flask import (
     abort,
     redirect,
 )
+from importlib.resources import files, as_file
+from logging import getLogger, basicConfig, DEBUG
+
+import markdown
+
+import holdenweb.data
+
 from .forms import QRcode_Form
 from .pdf import pdf_blueprint
-import markdown
 from .version import __version__
+
 
 @dataclass
 class Section:
@@ -37,22 +43,45 @@ basicConfig(
     format='%(filename)s: %(levelname)s: %(message)s',
 )
 
-request_count = itertools.count()
+md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
 
 appfile_dir = "."
 app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 
 @app.errorhandler(404)
 def handle_404(e):
-    return render_template("404.html", title="Page not found", content=e)
+    return render_template("404.html", title="Page not found", content=e), 404
+
+
+@app.route("/config")
+def get_version():
+    return {
+        "server_version": __version__
+    }
+
+
+@app.route("/")
+def home_page():
+    "Serve home page from index.html."
+    return render_template("index.html", sections=SECTIONS)
+
+
+@app.route("/page/<name>")
+def page_from_html(name):
+    "Serve an HTML page selected by name."
+    try:
+        fpath = files(holdenweb.data) / "html-pages" / f"{name}.html"
+        with open(fpath) as f:
+            return render_template("base.html", content=f.read())
+    except OSError:
+        abort(404)
 
 @app.route("/note/<name>")
 def markdown_page(name):
-    md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
-    file_path = os.path.join(appfile_dir, "md-pages", f"{name}.md")
+    fpath = files(holdenweb.data) / "md-pages" / f"{name}.md"
     title = None
     try:
-        with open(file_path) as f:
+        with open(fpath) as f:
             title_line = f.readline()
             # Check whether the first line is a title
             match = re.match(r'^(#+)\s+(.+)', title_line)
@@ -70,33 +99,6 @@ def markdown_page(name):
             )
     except OSError:
         abort(404)
-
-
-
-@app.route("/config")
-def get_version():
-    return {
-        "server_version": __version__
-    }
-
-
-@app.route("/")
-def home_page():
-    "Serve home page from index.html."
-    return render_template("index.html", sections=SECTIONS)
-
-
-@app.route("/pages/<name>")
-def page_from_html(name):
-    "Serve an HTML page selected by name."
-    try:
-        fpath = os.path.join(appfile_dir, "html-pages", f"{name}.html")
-        with open(fpath) as f:
-            return render_template("base.html", content=f.read())
-    except OSError:
-        abort(404)
-
-TEMPLATES = ['p1.html', 'p2.html', 'p3.html', 'p4.html']
 
 @app.route('/python-by-the-sea/', defaults={'v': None})
 @app.route('/python-by-the-sea/<v>')
