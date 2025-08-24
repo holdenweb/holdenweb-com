@@ -5,6 +5,11 @@ import qrcode
 import re
 
 from dataclasses import dataclass
+from importlib.resources import files, as_file
+from logging import getLogger, basicConfig, DEBUG
+
+import markdown
+
 from flask import (
     Flask,
     Response,
@@ -13,14 +18,13 @@ from flask import (
     request,
     abort,
     redirect,
+    url_for,
 )
-from importlib.resources import files, as_file
-from logging import getLogger, basicConfig, DEBUG
-
-import markdown
+from flask_security import Security, SQLAlchemyUserDatastore, auth_required, hash_password
+from flask_security.models import fsqla_v3 as fsqla
+from flask_sqlalchemy import SQLAlchemy
 
 import holdenweb.data
-
 from .forms import QRcode_Form
 from .pdf import pdf_blueprint
 from .version import __version__
@@ -48,15 +52,54 @@ md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
 appfile_dir = "."
 app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
+app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
+app.config["SESSION_COOKIE_SAMESITE"] = "strict"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://hweb_auth_user:auth-pw@localhost/holdenweb.com'
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
+fsqla.FsModels.set_db_info(db)
+
+
+class Role(db.Model, fsqla.FsRoleMixin):
+    pass
+
+class User(db.Model, fsqla.FsUserMixin):
+    pass
+
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
+
+
+def has_no_empty_params(rule):
+    defaults = rule.defaults if rule.defaults is not None else ()
+    arguments = rule.arguments if rule.arguments is not None else ()
+    return len(defaults) >= len(arguments)
+
+def site_map():
+    links = []
+    for rule in app.url_map.iter_rules():
+        # Filter out rules we can't navigate to in a browser
+        # and rules that require parameters
+        if "GET" in rule.methods and has_no_empty_params(rule):
+            url = url_for(rule.endpoint, **(rule.defaults or {}))
+            links.append((url, rule.endpoint))
+    return links
+
 @app.errorhandler(404)
 def handle_404(e):
     return render_template("404.html", title="Page not found", content=e), 404
 
 
 @app.route("/config")
+@auth_required('session')
 def get_version():
     return {
-        "server_version": __version__
+        "server_version": __version__,
+        "site_map": site_map(),
     }
 
 
