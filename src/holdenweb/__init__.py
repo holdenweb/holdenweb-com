@@ -10,6 +10,7 @@ from logging import getLogger, basicConfig, DEBUG
 
 import markdown
 
+from dotenv import load_dotenv
 from flask import (
     Flask,
     Response,
@@ -52,14 +53,16 @@ md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
 appfile_dir = "."
 app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
+load_dotenv()
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
 app.config["SESSION_COOKIE_SAMESITE"] = "strict"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://hweb_auth_user:montezuma!@localhost/holdenweb'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
 fsqla.FsModels.set_db_info(db)
 
