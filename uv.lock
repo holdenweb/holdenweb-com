@@ -211,7 +211,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.3a1"
+version = "1.3a2"
 source = { editable = "." }
 dependencies = [
     { name = "flask" },
