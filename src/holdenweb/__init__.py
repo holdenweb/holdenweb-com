@@ -21,7 +21,9 @@ from flask import (
     redirect,
     url_for,
 )
-from flask_security import Security, SQLAlchemyUserDatastore, auth_required, hash_password
+from flask_mailman import EmailMultiAlternatives, Mail
+from flask_paranoid import Paranoid
+from flask_security import MailUtil, Security, SQLAlchemyUserDatastore, auth_required, hash_password
 from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 
@@ -30,6 +32,7 @@ from .forms import QRcode_Form
 from .pdf import pdf_blueprint
 from .version import __version__
 
+load_dotenv()
 
 @dataclass
 class Section:
@@ -50,11 +53,24 @@ basicConfig(
 
 md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
 
+# The code below should go in a `create-app` function
 appfile_dir = "."
 app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 
-load_dotenv()
+paranoid = Paranoid(app)
+paranoid.redirect_view = '/'
+
+app.config['MAIL_USERNAME'] = 'pbts-admin'
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  #### XXX FFS DO NOT COMMIT - testing only
+app.config['MAIL_SERVER'] = 'smtp.de.opalstack.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'hello@python-by-the-sea.org'
+app.config['MAIL_BACKEND'] = 'locmem'
+
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
+app.config['SECURITY_REGISTERABLE'] = True
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
 app.config["SESSION_COOKIE_SAMESITE"] = "strict"
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
@@ -62,6 +78,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['MAIL_BACKEND'] = 'locmem'
+
+mail = Mail(app)
 
 db = SQLAlchemy(app)
 fsqla.FsModels.set_db_info(db)
