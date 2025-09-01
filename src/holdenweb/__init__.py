@@ -59,6 +59,8 @@ app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 paranoid = Paranoid(app)
 paranoid.redirect_view = '/'
 
+app.config['SERVER_NAME']='localhost'
+
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
 app.config['SECURITY_REGISTERABLE'] = True
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
@@ -69,13 +71,13 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config['MAIL_USERNAME'] = 'pythonbythesea'
+app.config['MAIL_USERNAME'] = 'hello@holdenweb.com'
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'hello@python-by-the-sea.org'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'steve@holdenweb.com'
 app.config['MAIL_BACKEND'] = 'smtp'
 
 mail = Mail(app)
