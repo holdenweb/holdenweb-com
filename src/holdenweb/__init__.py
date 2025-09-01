@@ -1,11 +1,10 @@
 import os
 import io
-import itertools
 import qrcode
 import re
 
 from dataclasses import dataclass
-from importlib.resources import files, as_file
+from importlib.resources import files
 from logging import getLogger, basicConfig, DEBUG
 
 import markdown
@@ -21,9 +20,9 @@ from flask import (
     redirect,
     url_for,
 )
-from flask_mailman import EmailMultiAlternatives, Mail
+from flask_mailman import Mail
 from flask_paranoid import Paranoid
-from flask_security import MailUtil, Security, SQLAlchemyUserDatastore, auth_required, hash_password
+from flask_security import Security, SQLAlchemyUserDatastore, auth_required
 from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 
@@ -60,15 +59,6 @@ app = Flask(__name__, static_url_path='/static/', static_folder='static/')
 paranoid = Paranoid(app)
 paranoid.redirect_view = '/'
 
-app.config['MAIL_USERNAME'] = 'pbts-admin'
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  #### XXX FFS DO NOT COMMIT - testing only
-app.config['MAIL_SERVER'] = 'smtp.de.opalstack.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'hello@python-by-the-sea.org'
-app.config['MAIL_BACKEND'] = 'locmem'
-
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
 app.config['SECURITY_REGISTERABLE'] = True
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
@@ -78,7 +68,15 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config['MAIL_BACKEND'] = 'locmem'
+
+app.config['MAIL_USERNAME'] = 'pythonbythesea'
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'hello@python-by-the-sea.org'
+app.config['MAIL_BACKEND'] = 'smtp'
 
 mail = Mail(app)
 
@@ -108,7 +106,10 @@ def site_map():
         # and rules that require parameters
         if "GET" in rule.methods and has_no_empty_params(rule):
             url = url_for(rule.endpoint, **(rule.defaults or {}))
-            links.append((url, rule.endpoint))
+            links.append({
+                "url": url,
+                "rule": rule.endpoint,
+            })
     return links
 
 @app.errorhandler(404)
@@ -122,6 +123,7 @@ def get_version():
     return {
         "server_version": __version__,
         "site_map": site_map(),
+        "config": {k: str(v) for (k, v) in app.config.items()}
     }
 
 
@@ -167,7 +169,7 @@ def markdown_page(name):
 
 @app.route('/python-by-the-sea/', defaults={'v': None})
 @app.route('/python-by-the-sea/<v>')
-def redirect_to_main_site(v):
+def redirect_to_pbts(v):
     return redirect("https://python-by-the-sea.org", code=301)
 
 @app.route("/parts/<number>")
