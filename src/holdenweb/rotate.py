@@ -12,7 +12,7 @@ from pdfrw.buildxobj import pagexobj
 from pdfrw.toreportlab import makerl
 
 
-def make_booklet(in_doc, out_doc):
+def make_booklet(in_doc: str, out_doc: ):
     pages = PdfReader(in_doc).pages
     canvas = Canvas(out_doc)
     canvas.setPageSize(A4)

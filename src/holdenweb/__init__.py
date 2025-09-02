@@ -70,6 +70,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 
 app.config['MAIL_USERNAME'] = 'hello@holdenweb.com'
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
@@ -136,7 +137,7 @@ def home_page():
 
 
 @app.route("/page/<name>")
-def page_from_html(name):
+def page_from_html(name: str):
     "Serve an HTML page selected by name."
     try:
         fpath = files(holdenweb.data) / "html-pages" / f"{name}.html"
@@ -146,7 +147,7 @@ def page_from_html(name):
         abort(404)
 
 @app.route("/note/<name>")
-def markdown_page(name):
+def markdown_page(name: str):
     fpath = files(holdenweb.data) / "md-pages" / f"{name}.md"
     title = None
     try:
@@ -171,20 +172,19 @@ def markdown_page(name):
 
 @app.route('/python-by-the-sea/', defaults={'v': None})
 @app.route('/python-by-the-sea/<v>')
-def redirect_to_pbts(v):
+def redirect_to_pbts(v: str):
     return redirect("https://python-by-the-sea.org", code=301)
 
 @app.route("/parts/<number>")
-def parts_demo(number):
+def parts_demo(number: str):
     if number != "demo":
-        flash("Sorry, we only do demos!")
+        flash("Sorry, we only do demos at present!")
         abort(404)
     return page_from_html("parts_demo")
 
 @app.route("/qrcode/", methods=['GET', 'POST'])
 def get_or_post_qrcode():
     form = QRcode_Form()
-    logger.info("QR code requested")
     if form.validate_on_submit():
         text = request.form['qrcode_text']
         qr = qrcode.make(text)
@@ -197,7 +197,6 @@ def get_or_post_qrcode():
 
 app.register_blueprint(pdf_blueprint, url_prefix="/pdf/")
 
-app.config['SECRET_KEY'] = "lkjahskdflkjad[pouaerpoiuqt"
 application = app.wsgi_app
 
 if __name__ == '__main__':
