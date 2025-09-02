@@ -26,7 +26,7 @@ from flask_security import Security, SQLAlchemyUserDatastore, auth_required
 from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 
-import holdenweb.data
+import holdenweb
 from .forms import QRcode_Form
 from .pdf import pdf_blueprint
 from .version import __version__
@@ -38,6 +38,7 @@ class Section:
     label: str
     path: str
 
+DATA_PATH = files(holdenweb) / 'data'
 SECTIONS = [
     Section("Home", "/"),
     Section("Python", "/python"),
@@ -139,8 +140,10 @@ def home_page():
 @app.route("/page/<name>")
 def page_from_html(name: str):
     "Serve an HTML page selected by name."
+    fpath = DATA_PATH / "html-pages" / f"{name}.html"
+    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
+        abort(404)
     try:
-        fpath = files(holdenweb.data) / "html-pages" / f"{name}.html"
         with open(fpath) as f:
             return render_template("base.html", content=f.read())
     except OSError:
@@ -148,7 +151,9 @@ def page_from_html(name: str):
 
 @app.route("/note/<name>")
 def markdown_page(name: str):
-    fpath = files(holdenweb.data) / "md-pages" / f"{name}.md"
+    fpath = DATA_PATH / "md-pages" / f"{name}.md"
+    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
+        abort(404)
     title = None
     try:
         with open(fpath) as f:
