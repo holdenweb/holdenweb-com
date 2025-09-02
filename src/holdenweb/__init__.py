@@ -62,23 +62,23 @@ paranoid.redirect_view = '/'
 app.config['SERVER_NAME']='localhost'
 
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SECURITY_REGISTERABLE'] = True
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
 app.config["SESSION_COOKIE_SAMESITE"] = "strict"
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 
-app.config['MAIL_USERNAME'] = 'hello@holdenweb.com'
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+for k in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
+    app.config[k] = 'hello@holdenweb.com'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_DEFAULT_SENDER'] = app.config['SECURITY_EMAIL_SENDER'] = 'steve@holdenweb.com'
 app.config['MAIL_BACKEND'] = 'smtp'
 
 mail = Mail(app)

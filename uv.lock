@@ -343,7 +343,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.3b5"
+version = "1.3b6"
 source = { editable = "." }
 dependencies = [
     { name = "argon2-cffi" },
