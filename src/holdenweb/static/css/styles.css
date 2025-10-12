@@ -12,11 +12,11 @@ body.home-page-holdenweb {
   margin-top: 5px;
   margin-bottom: 5px;
 }
+
 .pageheader {
-  font-size: 1.4em;
   background-color: #f6f6ef;
   padding: 0 2em;
-  height: 10em;
+  height: 13.2em;
   border-bottom: 1px solid #eae7d1
 }
 
@@ -54,7 +54,7 @@ body.home-page-holdenweb {
   color: rgba(0, 0, 0, .1);
   font-family: "Gill Sans", "Gill Sans MT", "Trebuchet MS", sans-serif;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, .1);
-  margin: -6em 0 0 30%;
+  margin: -9em 0 0 30%;
   -moz-transition: all .4s ease-in-out;
   -webkit-transition: all .4s ease-in-out;
 }
@@ -83,11 +83,13 @@ h1, h2, h3, .h1, .h2, .h3, .inline {
 }
 
 h1 {
-  margin: .25em 0 .25em
+  margin: .25em 0 .25em;
+  font-weight: 700;
 }
 
 h2 {
-  margin: .6666em 0 .3333em
+  margin: .6666em 0 .3333em;
+  font-weight: 700;
 }
 
 h3 {
@@ -148,6 +150,9 @@ font-size:110%;
 
 div#title-header {
   vertical-align: middle;
+  & h1 {
+    font-weight: 400;
+  }
 }
 
 ul.inline_list {
@@ -207,8 +212,15 @@ footer .primary nav {
   background-image: -webkit-linear-gradient(bottom, #092794 0%, #5475EE 100%);
   background-image: -ms-linear-gradient(bottom, #092794 0%, #5475EE 100%);
   background-image: -webkit-gradient( linear, left bottom, left top, color-stop(0, #092794), color-stop(1, #5475EE));
+  text-align: right;
+  justify-content: center;
+  font-size: 14px;
+  & a {
+    margin-right: 25px;
+    color: white;
+    font-size: 1em;
+  }
 }
-
 footer p {
   margin: .5em 0
 }
@@ -218,7 +230,8 @@ footer p {
 }
 
 footer h1 {
-  font-size: 1.2em
+  font-size: 1.2em;
+  font-weight: 700;
 }
 
 .email {
@@ -243,4 +256,8 @@ footer h1 {
 
 .hw, .tob {
   margin: 3em 0
+}
+
+.dropdown-menu {
+  background: blue;
 }
