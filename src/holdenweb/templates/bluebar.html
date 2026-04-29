@@ -1,0 +1,17 @@
+<div class="bluebar">
+    {% if current_user.is_anonymous %}
+        <a href="/login">login</a>
+    {% else %}
+        <div class="dropdown">
+            <a class="dropdown-toggle" id="user-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {{ current_user.username or current_user.email }}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="user-dropdown">
+                <a class="dropdown-item" href="#">Profile</a>
+                <a class="dropdown-item" href="#">Settings</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/logout">Sign Out</a>
+            </div>
+        </div>
+    {% endif %}
+</div>

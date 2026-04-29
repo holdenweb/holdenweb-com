@@ -11,13 +11,14 @@ import markdown
 
 from dotenv import load_dotenv
 from flask import (
-    Flask,
-    Response,
-    render_template,
-    flash,
-    request,
     abort,
+    Flask,
+    flash,
+    jsonify,
     redirect,
+    render_template,
+    request,
+    Response,
     url_for,
 )
 from flask_mailman import Mail
@@ -38,7 +39,10 @@ class Section:
     label: str
     path: str
 
+# Locate data directory inside site
 DATA_PATH = files(holdenweb) / 'data'
+
+# Define section URL
 SECTIONS = [
     Section("Home", "/"),
     Section("Python", "/python"),
@@ -67,6 +71,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI"
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SECURITY_REGISTERABLE'] = True
+app.config["SECURITY_RECOVERABLE"] = True
+
 app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
 app.config["SESSION_COOKIE_SAMESITE"] = "strict"
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -75,7 +81,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 for k in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
-    app.config[k] = 'hello@holdenweb.com'
+    app.config[k] = 'steve@holdenweb.com'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
@@ -120,7 +126,16 @@ def site_map():
 def handle_404(e):
     return render_template("404.html", title="Page not found", content=e), 404
 
+################################ View Methods ################################
 
+######## / ########
+@app.route("/")
+def home_page():
+    "Serve home page from index.html."
+    return render_template("index.html", sections=SECTIONS)
+
+
+######## /config ########
 @app.route("/config")
 @auth_required('session')
 def get_version():
@@ -131,24 +146,13 @@ def get_version():
     }
 
 
-@app.route("/")
-def home_page():
-    "Serve home page from index.html."
-    return render_template("index.html", sections=SECTIONS)
+######## /ip ########
+@app.route("/ip", methods=["GET"])
+def get_my_ip():
+    return jsonify({'ip': request.remote_addr}), 200
 
 
-@app.route("/page/<name>")
-def page_from_html(name: str):
-    "Serve an HTML page selected by name."
-    fpath = DATA_PATH / "html-pages" / f"{name}.html"
-    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
-        abort(404)
-    try:
-        with open(fpath) as f:
-            return render_template("base.html", content=f.read())
-    except OSError:
-        abort(404)
-
+######## /note/... [Markdown notes] ########
 @app.route("/note/<name>")
 def markdown_page(name: str):
     fpath = DATA_PATH / "md-pages" / f"{name}.md"
@@ -175,11 +179,22 @@ def markdown_page(name: str):
     except OSError:
         abort(404)
 
-@app.route('/python-by-the-sea/', defaults={'v': None})
-@app.route('/python-by-the-sea/<v>')
-def redirect_to_pbts(v: str):
-    return redirect("https://python-by-the-sea.org", code=301)
 
+######## /page/... [HTML page] ########
+@app.route("/page/<path:name>/")
+def page_from_html(name: str):
+    "Serve an HTML page selected by name."
+    fpath = DATA_PATH / "html-pages" / f"{name}.html"
+    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
+        abort(404)
+    try:
+        with open(fpath) as f:
+            return render_template("base.html", content=f.read())
+    except OSError:
+        abort(404)
+
+
+######## /parts/xxxxxxx ########
 @app.route("/parts/<number>")
 def parts_demo(number: str):
     if number != "demo":
@@ -187,6 +202,15 @@ def parts_demo(number: str):
         abort(404)
     return page_from_html("parts_demo")
 
+
+######## /python-by-the-sea/* ########
+@app.route('/python-by-the-sea/', defaults={'v': None})
+@app.route('/python-by-the-sea/<path:v>')
+def redirect_to_pbts(v: str):
+    return redirect("https://python-by-the-sea.org", code=301)
+
+
+######## /qrcode/ [form processor] ########
 @app.route("/qrcode/", methods=['GET', 'POST'])
 def get_or_post_qrcode():
     form = QRcode_Form()
@@ -200,6 +224,7 @@ def get_or_post_qrcode():
         return response
     return render_template('qrcode_form.html', form=form)
 
+######## /pdf/ [handled by blueprint] ########
 app.register_blueprint(pdf_blueprint, url_prefix="/pdf/")
 
 application = app.wsgi_app

@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.3.0"
+version = "1.4.0rc1"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 requires-python = ">=3.12, <4.0"

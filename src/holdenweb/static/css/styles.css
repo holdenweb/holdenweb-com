@@ -261,3 +261,26 @@ footer h1 {
 .dropdown-menu {
   background: blue;
 }
+
+/* Flask-Security form styling */
+.fs-div label {
+  display: block;
+}
+
+.fs-div input[type="text"],
+.fs-div input[type="email"],
+.fs-div input[type="password"],
+.fs-div select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.fs-div input[type="submit"] {
+  margin-top: 10px;
+}
