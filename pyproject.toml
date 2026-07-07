@@ -21,6 +21,7 @@ dependencies = [
  "argon2-cffi>=25.1.0",
  "flask-mailman>=1.1.1",
  "flask-paranoid>=0.3.0",
+ "alembic>=1.18.5",
 ]
 [[project.authors]]
 name = "Steve Holden"
