@@ -1,2 +1,0 @@
-./md-pages/
-./html-pages/

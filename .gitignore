@@ -11,6 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+releases/
 downloads/
 eggs/
 .eggs/
@@ -125,6 +126,10 @@ dmypy.json
 
 # WingPro project files
 *.wp?
+src/wingdbstub.py
+
+# Claude Code worktrees / local config
+.claude/
 
 # Mac OS crud
 .DS_Store
