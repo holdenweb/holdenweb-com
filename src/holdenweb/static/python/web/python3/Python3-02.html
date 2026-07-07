@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Converting Data into Structured Objects</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Converting Data into Structured Objects</div>
+
+  <p>In the previous courses, we've touched on various methods of structuring
+    data. Iterators such as <b>lists</b> and <b>tuples</b> have their place,
+    as does the <b>dict</b>. The clever usage of these fundamental
+    structural elements in Python is a defining hallmark of a skilled
+    developer.</p>
+
+  <p>Sometimes, though, you need objects that behave in different ways.
+    Assigning one behavior to the data such as '<i>render to CSV</i>' can be
+    easy. But what if you have a dozen behaviors to consider? What if you
+    need to include behaviors such as '<i>print prettily to the screen, sum
+    up the integer values, add an ISBN from the O'Reilly bookstore</i>',
+    and a dozen more operations?</p>
+
+  <p>You could use your <b>list</b>, <b>tuple</b>, or <b>dict</b> structures
+    in combination with a dozen functions to create the functionality you
+    need. However, that isn't very portable, as remembering to import all
+    your functions across multiple modules is error-prone and
+    time-consuming. Really what you are looking for is a way to carry the
+    functions around with the data, making them really easy to apply.</p>
+
+  <p>This means it's time for us to revisit object oriented programming. With
+    a little bit of work, you can apply a sound structure to incoming data.
+    Applying this sound structure to your data can provide a number of
+    positive benefits. Since the data is in a predictable format, you can
+    more easily write code to support the data. The structure can also be
+    assigned behaviors, which can be applied to the data. All the behaviors
+    are defined in a class definition, making them readily available to all
+    instances of the class.</p>
+
+  <p>If you document the expected structure of the data you expect to receive,
+    you are providing an interface for yourself to follow in the future. The
+    wonderful thing is that Python gives you the tools to easily create
+    interfaces that are easy to understand, flexible, and very powerful.</p>
+
+  <p>This lesson includes the following sections:</p>
+
+  <ul>
+    <li><a href="Python3-02.html#constructing_classes">Constructing Classes</a></li>
+    <li><a href="Python3-02.html#application_programming_interface">Application Programming Interface</a></li>
+    <li><a href="Python3-02.html#method_resolution_order">Method Resolution Order</a></li>
+  </ul>
+
+  <!-- CONSTRUCTING CLASSES -->
+  <a href="Python3-02.html" name="constructing_classes"></a>
+  <a name="h_01"></a>
+  <div class="heading">Constructing classes</div>
+  <div class="headingText">
+
+    <p>In previous courses and lessons, we learned how to write classes and create objects. We also learned
+      about the <b>__init__()</b> special constructor method used each time an object is instantiated.
+      Now, we'll learn a few more things about the <b>__init__()</b> method and things you can do to better
+      handle behavior of data.</p>
+
+    <p>You may remember that instances of your classes normally keep their instance attribute values in a
+      dict known as <b>self.__dict__</b>. Remind yourself with a quick interactive interpreter session.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class Meter:</ins>
+...     <ins>def __init__(self, voltage):</ins>
+...         <ins>self.limit = voltage</ins>
+...
+&gt;&gt;&gt; <ins>m1 = Meter(20)</ins>
+&gt;&gt;&gt; <ins>m1.label = "Apartment 2214"</ins>
+&gt;&gt;&gt; <ins>m1.__dict__</ins>
+{'limit': 20, 'label': 'Apartment 2214'}
+</pre></div></div>
+
+    <p>See how <b>self.__dict__</b> implements the instance m1's local namespace? When we bind a value to the name
+      "limit" in the instance's namespace with self.limit = voltage, a new key "limit" appears in the
+      instance's __dict__, associated with the value "20." One of the reasons why namespaces seem so like dicts
+      is that a dict is often used to implement a namespace.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Introducing the Bunch Class</div><div class="subheadingText">
+
+      <p>Through the use of keyword arguments, Python gives us the ability to create a <i>bunch class</i>.
+        A bunch class takes incoming data and saves it as attributes. That sounds more sophisticated than
+        it is, so let's write a bunch class and see what it means. Create <b>bunchclass.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bunchclass.py</div><div class="listing"><pre><ins>"""
+Simple bunch class
+"""
+class Bunch(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+if __name__ == "__main__":
+    b = Bunch(name="Python 3", language="Python 3.0.1")
+    print(b.name)
+    print(b.language)
+    print(b.__dict__)</ins>
+</pre></div></div>
+
+      <p>Save and run it.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: The attribute values and the updated __dict__</div><div class="observe"><pre>
+Python 3
+Python 3.0.1
+{'name': 'Python 3', 'language': 'Python 3.0.1'}
+</pre></div></div>
+
+      <p>You see the two values, "Python 3" and "Python 3.0.1," printed from the "name" and "language" attributes
+        of the "b" object. But the <b>Bunch</b> class lacks those attributes!</p>
+
+      <p>Remember that instances keep their attributes in a dict-like object (named <b>__dict__</b>), and that
+        the code guarded by <b>if __name__ == "__main__":</b> will only be executed if the module is run as
+        a main program, and not when it is imported by some other program. In the latter case, you don't
+        want print statements running in the middle of someone else's program!</p>
+
+      <p>Let's take a closer look:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: bunchclass.py</div><div class="observe"><pre>
+"""
+Simple bunch class
+"""
+class <span class="darkred">Bunch(</span><span class="blue">object</span><span class="darkred">)</span>:
+    def <span class="green">__init__(</span>self, <span class="purple">**</span><span class="orange">kwargs</span><span class="green">)</span>:
+        self.<span class="darkblue">__dict__</span>.<span class="darkgreen">update(</span><span class="orange">kwargs</span><span class="darkgreen">)</span>
+
+if __name__ == "__main__":
+    b = <span class="darkred">Bunch(</span>name="Python 3", language="Python 3.0.1"<span class="darkred">)</span>
+    print(b.name)
+    print(b.language)
+    print(b.__dict__)
+</pre></div></div>
+
+      <p>This <span class="darkred">Bunch</span> class uses the magic <span class="darkblue">__dict__</span> attribute's
+        <span class="darkgreen">update()</span> method to dynamically add attributes to the object based according
+        to the <span class="orange">keyword arguments</span> passed into the class. Note that the
+        <span class="green">__init__()</span> method's second argument is prefixed by "<span class="purple">**</span>", so keyword
+        arguments are collected in a dict named <span class="orange">kwargs</span>. Calling
+        <span class="darkblue">__dict__</span>'s <span class="darkgreen">update()</span> method copies the keys and values
+        from <span class="orange">kwargs</span> to <span class="darkblue">__dict__</span>.</p>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">In Python 3, when we define a class, we don't need to specify that it inherits from <span class="blue">object</span>,
+        but it doesn't hurt to do so. We do it here just to remind you that the <span class="darkred">Bunch</span> class is a
+        child of the built-in <span class="blue">object</span>.</td></tr></table>
+
+      <p>All our code should have tests, even programs as seemingly simple as this. Convert the above
+        program to use the <b>unittest</b> framework.</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bunchclass.py</div><div class="listing"><pre>
+"""
+Simple bunch class
+"""
+<ins>import unittest</ins>
+
+class Bunch(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+<ins>class TestBunch(unittest.TestCase):
+    def test_attributes(self):
+        b = Bunch(name="Python 3", language="Python 3.0.1")
+        self.assertEqual("Python 3", b.name)
+        self.assertEqual("Python 3.0.1", b.language)</ins>
+
+if __name__ == "__main__":
+    <del>b = Bunch(name="Python 3", language="Python 3.0.1")
+    print(b.name)
+    print(b.language)
+    print(b.__dict__)</del>
+    <ins>unittest.main()</ins>
+</pre></div></div>
+
+      <p>Save and run it.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: The test passes when you run the program</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>The tests are small here, so it is OK to add them to the basic module rather than making a separate
+        test module. The current code always imports the <b>unittest</b> module even when it is not going
+        to be used (when the module is imported rather than running as a main program). You can correct
+        this by moving both the import of <b>unittest</b> and the code for the test class itself so that
+        these pieces of code are only executed when required:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bunchclass.py</div><div class="listing"><pre>
+"""
+Simple bunch class
+"""
+<del>import unittest</del>
+class Bunch(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+<del>class TestBunch(unittest.TestCase):
+    def test_attributes(self):
+        b = Bunch(name="Python 3", language="Python 3.0.1")
+        self.assertEqual("Python 3", b.name)
+        self.assertEqual("Python 3.0.1", b.language)</del>
+
+if __name__ == "__main__":
+    <ins>import unittest
+    class TestBunch(unittest.TestCase):
+        def test_attributes(self):
+            b = Bunch(name="Python 3", language="Python 3.0.1")
+            self.assertEqual("Python 3", b.name)
+            self.assertEqual("Python 3.0.1", b.language)</ins>
+
+    unittest.main()
+</pre></div></div>
+
+      <p>While this works, it is really rather simpler to put the testing code into an entirely separate
+        module that does not cause additional work when testing is not required. So we'll undo these
+        modifications in a minute to keep the code in the remaining examples as straightforward as
+        possible.</p>
+
+    </div></div>
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Adding a Behavior to the Bunch Class</div><div class="subheadingText">
+
+      <p>The bunch class is useful in handling incoming data, but what about sending it out? For example,
+        what if we want to print all the data? A first approximation to that task could simply use
+        <b>print(b.__dict__)</b>, but the output is hardly user-friendly. You can easily add a method to
+        the Bunch class.</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bunchclass.py</div><div class="listing"><pre>
+"""
+Simple bunch class<ins> with a pretty printing method</ins>
+"""
+<ins>import unittest</ins>
+
+class Bunch(object):
+    def __init__(self, <ins>*args, </ins>**kwargs):
+        self.__dict__.update(kwargs)
+
+    <ins>def pretty(self):
+        text = ""
+        for key, value in self.__dict__.items():
+            text += "%s: %s\n" % (key, value)
+        return text</ins>
+
+<ins>class TestBunch(unittest.TestCase):
+    def test_attributes(self):
+        b = Bunch(name="Python 3", language="Python 3.0.1")
+        self.assertEqual("Python 3", b.name)
+        self.assertEqual("Python 3.0.1", b.language)
+    def test_pretty(self):
+        b = Bunch(name="Steve Holden", profession="Pythonista")
+        p = b.pretty()
+        self.assertTrue("name: Steve Holden" in p)
+        self.assertTrue("profession: Pythonista" in p)
+        self.assertEqual(len(p.splitlines()), 2, "Too many lines in output")</ins>
+
+if __name__ == "__main__":
+    <del>import unittest;
+    class TestBunch(unittest.TestCase):
+        def test_attributes(self):
+            b = Bunch(name="Python 3", language="Python 3.0.1")
+            self.assertEqual("Python 3", b.name)
+            self.assertEqual("Python 3.0.1", b.language)</del>
+    unittest.main()
+</pre></div></div>
+
+      <p>This version of the bunch class uses a <span class="darkgreen">pretty()</span> method to display the
+        attributes by accessing the object's magic <b>__dict__</b> property. Calling this method renders
+        the attributes of the instance—with each key, value pair printing as <b>key: value</b>. Of
+        course adding a new method means adding tests for it too, so <b>test_pretty()</b> tries to verify
+        that it is creating the expected output.</p>
+
+      <p>Run your tests again to verify that they both succeed:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: the new test should pass first time</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+</pre></div></div>
+
+    </div></div>
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Fixing a Bunch Class Issue</div><div class="subheadingText">
+
+      <p>There is an issue with the updated Bunch class. It hasn't created any problems so far, but some
+        interactive commands will make it clear:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from bunchclass import Bunch</ins>
+&gt;&gt;&gt; <ins>b = Bunch(name="Audrey", job="Software Developer", pretty=True)</ins>
+&gt;&gt;&gt; <ins>b.pretty()</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: 'bool' object is not callable
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>When we tried to call the <span class="darkgreen">b.pretty()</span> method, we got a <span class="red">TypeError</span>
+        exception. This is because the argument <b>pretty=True</b> just overrode the
+        <span class="darkgreen">pretty()</span> method (remember: the interpreter looks for attributes in the
+        instance's __dict__ before it looks in the class's __dict__), so the instance's <b>pretty</b>
+        attribute is <i>masking</i> the class's <span class="darkgreen">pretty()</span> method—the
+        interpreter never gets around to looking in the class because it finds what it is looking for in
+        the instance.</p>
+
+      <p>One solution is to use the built-in <span class="darkgreen">hasattr()</span> and
+        <span class="darkgreen">setattr()</span> functions. Modify <b>bunchclass.py</b> to disallow masking of
+        class attributes:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bunchclass.py</div><div class="listing"><pre>
+"""
+Simple bunch class with a pretty printing method <ins>that protects its API.</ins>
+"""
+
+import unittest
+
+class Bunch(object):
+    def __init__(self, *args, **kwargs):
+        <del>self.__dict__.update(kwargs)</del>
+        <ins>for key, value in kwargs.items():
+            if hasattr(self, key):
+                raise AttributeError("API conflict: '%s' is part of the '%s' API" % (key, self.__class__.__name__))
+            else:
+                setattr(self, key, value)</ins>
+    def pretty(self):
+        text = ""
+        for key, value in self.__dict__.items():
+            text += "%s: %s\n" % (key, value)
+        return text
+
+class TestBunch(unittest.TestCase):
+    <del>def test_attributes(self):
+        b = Bunch(name="Python 3", language="Python 3.0.1")
+        self.assertEqual("Python 3", b.name)
+        self.assertEqual("Python 3.0.1", b.language)</del>
+    def test_pretty(self):
+        <ins>self.assertRaises(AttributeError, Bunch, name="Audrey", job="Software Developer", pretty=True)
+        b = Bunch(name="Audrey", job="Software Developer")
+        p = b.pretty()
+        self.assertTrue("Audrey" in p)
+        self.assertFalse("pretty: True" in p)</ins>
+        <del>b = Bunch(name="Steve Holden", profession="Pythonista")
+        p = b.pretty()
+        self.assertTrue("name: Steve Holden" in p)
+        self.assertTrue("profession: Pythonista" in p)
+        self.assertEqual(len(p.splitlines()), 2, "Too many lines in output")</del>
+
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Run this program and see how the tests pass. Now, let's take a closer look at some of the code
+        to understand what's going on.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: The Bunch class</div><div class="observe"><pre>
+class Bunch(object):
+    def <span class="darkgreen">__init__(</span><span class="blue">self</span>, *args, **kwargs<span class="darkgreen">)</span>:
+        for key, value in kwargs.items():
+            if <span class="darkblue">hasattr(</span><span class="blue">self</span>, key<span class="darkblue">)</span>:
+                raise <span class="red">AttributeError(</span>"API conflict: '%s' is part of the '%s' API" % (key, self.__class__.__name__)<span class="red">)</span>
+            else:
+                <span class="darkred">setattr(</span><span class="blue">self</span>, key, value<span class="darkred">)</span>
+    def pretty(<span class="blue">self</span>):
+        text = ""
+        for key, value in <span class="blue">self</span>.__dict__.items():
+            text += "%s: %s\n" % (key, value)
+        return text
+</pre></div></div>
+
+      <p>The <span class="darkgreen">__init__</span> method uses the kwargs
+        <span class="purple">items()</span> method which it gets for being of type <b>dict</b>
+        to pass an iterable of
+        keys and values that are tested for
+        presence in the <span class="blue">self</span> object via the <span class="darkblue">hasattr</span> built-in. If the
+        attribute doesn't exist yet, the <span class="darkred">setattr</span> built-in is used to add the attribute.
+        If the attribute does exist, we raise an <span class="red">AttributeError</span>, which is used to identify
+        when attribute assignment or references fail.</p>
+
+      <p>Python gives you the power to change the attributes of class objects almost at will. This is
+        because Python makes the assumption that you are a "consenting adult" and understand the
+        ramifications of what you do. This may sound a bit intimidating but this sort of confidence in the
+        people who want to use Python is a hallmark of the language and the community that surrounds the
+        language.</p>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">Certain applications—such as the control of nuclear reactors, flight control systems,
+        and the like—require the ability to reason about program structures as a part of integrity
+        verification. Dynamic languages like Python would require analysis that is too complex to be
+        practical at today's state of the art.</td></tr></table>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The <code>Bunch</code> pattern is a useful exercise, but Python now ships with
+          lighter-weight alternatives for making named-field record types. <code>collections.namedtuple</code>
+          creates an immutable tuple subclass with named fields:
+          <pre>from collections import namedtuple
+Point = namedtuple('Point', ['x', 'y'])
+p = Point(1, 2)
+print(p.x, p.y)</pre>
+          <code>typing.NamedTuple</code> (Python 3.6+) adds type annotations and supports defaults:
+          <pre>from typing import NamedTuple
+class Point(NamedTuple):
+    x: float
+    y: float = 0.0</pre>
+          <code>dataclasses.dataclass</code> (Python 3.7+) gives you a mutable class with auto-generated
+          <code>__init__</code>, <code>__repr__</code>, and optional <code>__eq__</code>:
+          <pre>from dataclasses import dataclass
+@dataclass
+class Point:
+    x: float
+    y: float = 0.0</pre>
+          For a Bunch-style "accept any keyword args" bag, a dataclass with <code>**kwargs</code> is
+          overkill; a plain namespace works well: <code>from types import SimpleNamespace</code> and then
+          <code>SimpleNamespace(name="Python 3", language="Python 3.0.1")</code>.</td>
+      </tr></table>
+
+    </div></div>
+  </div>
+
+  <!-- APPLICATION PROGRAMMING INTERFACE -->
+  <a href="Python3-02.html" name="application_programming_interface"></a>
+  <a name="h_02"></a>
+  <div class="heading">Application Programming Interfaces</div>
+  <div class="headingText">
+
+    <p>Suppose you wrote some software that lets you calculate something important, such as the speed of
+      small birds tasked with carrying objects in a basket. This program would let an individual add and
+      remove objects for the bird to carry, and when unladen it would simply go faster. You want to share
+      this software with others, and to encourage its use, you want to make it easy for them to use.</p>
+
+    <p>The way this is done is through an Application Programming Interface, or <b>API</b>. An API refers to
+      a specified interface between components, and allows us to build applications that use already
+      existing software (and sometimes hardware). Sophisticated APIs drive our modern world and make it
+      possible to send/receive email or text messages, take O'Reilly Software Courses, use on-line mapping
+      tools, and a million other tasks. As a <i>designer</i>, your desire is to hide the complexity you
+      have programmed into the classes from your users, who simply call API functions (and classes).</p>
+
+    <p>You will use what you learned in creating Bunch classes to build a simple API.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Designing an API</div><div class="subheadingText">
+
+      <p>The first step in designing an API is to figure out what data it should handle and what behaviors
+        it should have. Our API should have the following capabilities:</p>
+
+      <ul>
+        <li><b>initialize:</b> Gives the user the ability to create a Bird object carrying any number of
+          small objects in its basket.</li>
+        <li><b>add:</b> Add another object for the Bird to carry in its basket.</li>
+        <li><b>remove:</b> Remove an object from the Bird's basket</li>
+        <li><b>calculate:</b> Calculate the bird's current speed.</li>
+        <li><b>basket:</b> Return an attractive string that lists the materials in the basket.</li>
+      </ul>
+
+      <p>Does this look very similar to how you have designed Python classes in the past? It should, because
+        the preferred method in API design is to follow an object-oriented approach. This lets people find
+        data represented by an object and then call behaviors and methods to act upon that data. Importing the
+        class and creating instances automatically gives other programmers access to the API you have
+        designed.</p>
+
+    </div></div>
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Building the API</div><div class="subheadingText">
+
+      <p>We've got enough information to lay out the skeleton code for our API. Since the Bunch class
+        already embodies a lot of the functionality we need, we'll subclass the Bunch class, allowing us
+        to build on existing code. The bird API specification (which is what the following code essentially
+        comprises) goes in a new file, <b>bird_api.py</b>:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bird_api.py</div><div class="listing"><pre><ins>"""
+API for software birds carrying objects.
+"""
+from bunchclass import Bunch
+
+class Bird(Bunch):
+
+    def add(self, name, value):
+        """
+        Add an object for the Bird to carry in its basket.
+            Name is a string naming the object
+            Value is the actual object being placed in the basket.
+        """
+
+    def remove(self, name):
+        """
+        Remove an object from the basket
+            name is the string of the object to be removed
+        """
+
+    def calculate(self):
+        """
+        Calculate the speed of the bird.
+            algorithm: 100 - (5*number of objects in the basket)
+            result cannot be less than zero.
+        """
+
+    def basket(self):
+        """
+        Print in an attractive format the list of objects in the basket.
+        """
+
+if __name__ == "__main__":
+    swallow = Bird(fruit=("coconut", "orange"), drink="apple juice")
+    swallow.add("cars", 3)
+    print(swallow.basket())
+    print(swallow.calculate())
+    swallow.remove("drink")
+    print(swallow.basket())
+    print(swallow.calculate())
+    help(swallow)</ins>
+</pre></div></div>
+
+      <p>Save and run it. You'll get nothing as a result except
+        a bunch of <b>None</b>s and the output from the <b>help()</b>. The help output is really critical
+        because it allows you to view your software through the eyes of another programmer. This other guy
+        or girl doesn't know any of the great stuff about your software that you do, so they will likely
+        read the help to find out how to use your software—and whether they might want to. APIs
+        without quality documentation are functionally impossible to use. Also, writing the documentation
+        in an API you are providing can help you clean up the design.</p>
+
+      <p>If you have defined a module correctly, everything important in it should be documented. You should
+        be able to verify this from the console window after running bird_api. Alternatively you can
+        access the help from an interactive console session.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import bird_api</ins>
+&gt;&gt;&gt; <ins>help(bird_api.Bird)</ins>
+Help on class Bird in module bird_api:
+
+class Bird(bunchclass.Bunch)
+ |  Method resolution order:
+ |      Bird
+ |      bunchclass.Bunch
+ |      builtins.object
+ |
+ |  Methods defined here:
+ |
+ |  add(self, name, value)
+ |      Add an object for the Bird to carry in its basket.
+ |          Name is what you call the object
+ |      Value is the actual object being placed in the basket.
+ |
+ |  basket(self)
+ |      Print in an attractive format the list of objects in the basket.
+ |
+ |  calculate(self)
+ |      Calculate the speed of the bird.
+ |          algorithm: 100 - (number of objects in the basket * 10) minimum of 0
+ |          result cannot be less than zero.
+ |
+ |  remove(self, name)
+ |      Remove an object from the basket
+ |          Name is the string of the object to be removed
+ |
+ |  ----------------------------------------------------------------------
+ |  Methods inherited from bunchclass.Bunch:
+ |
+ |  __init__(self, *args, **kwargs)
+ |
+ |  pretty(self)
+ |
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from bunchclass.Bunch:
+ |
+ |  __dict__
+ |      dictionary for instance variables (if defined)
+ |
+ |  __weakref__
+ |      list of weak references to the object (if defined)
+</pre></div></div>
+
+      <p>Note that there is no need for individual method descriptions anywhere except in the docstring for
+        that method. The help system collects all that information together for the user in one convenient
+        place.</p>
+
+      <p>Now that our API is documented, let's add the behavior code in each method:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bird_api.py</div><div class="listing"><pre>
+"""
+API for software birds carrying objects.
+"""
+from bunchclass import Bunch
+
+class Bird(Bunch):
+
+    def add(self, name, value):
+        """
+        Add an object for the Bird to carry in its basket.
+            <ins>Name is what you call the object</ins>
+        Value is the actual object being placed in the basket.
+        """
+        <ins>if hasattr(self, name):
+            raise KeyError("'%s' object cannot be placed in basket")
+        else:
+            setattr(self, name, value)</ins>
+
+    def remove(self, name):
+        """
+        Remove an object from the basket
+            Name is the string of the object to be removed
+        """
+        <ins>if name in self.__dict__:
+            delattr(self, name)
+        else:
+            raise KeyError("'%s' object not found in basket")</ins>
+
+    def calculate(self):
+        """
+        Calculate the speed of the bird.
+            algorithm: 100 - <ins>(number of objects in the basket * 10) minimum of 0</ins>
+            result cannot be less than zero.
+        """
+        <ins>return max(100 - len(self.__dict__) * 10, 0)</ins>
+
+
+    def basket(self):
+        """
+        Print in an attractive format the list of objects in the basket.
+        """
+        <ins>return "Basket Objects\n" + self.pretty()</ins>
+
+
+if __name__ == "__main__":
+    swallow = Bird(fruit=("coconut", "orange"), drink="apple juice")
+    swallow.add("cars", 3)
+    print(swallow.basket())
+    print(swallow.calculate())
+    swallow.remove("drink")
+    print(swallow.basket())
+    print(swallow.calculate())
+    help(swallow)
+</pre></div></div>
+
+      <p>Save and run it. We now have a working class that stores data in
+        a structured format and has assigned behaviors to it. The documentation is such that you can easily figure
+        out what is going on, making it possible to call it from other programs for a variety of uses. Suppose
+        someone needed to model a flock of birds carrying objects from one location to another (perhaps they plan
+        to start a courier service based on bird power).</p>
+
+    </div></div>
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Sharing APIs</div><div class="subheadingText">
+
+      <p>A good aphorism for API work is "A good API is simply code, and code that is documented to the
+        best of your ability." No one is going to want to use your API if all you do is provide a list of
+        methods that <i>you</i> think is intuitive. Accurate and complete documentation is a hallmark of
+        successful API design. Python's docstrings are a great tool for sharing your code.</p>
+
+      <p>There are a number of common ways to share an API. While outside the scope of this class, one of the
+        more accessible methods is via the Internet. A very current example is the ability of social
+        networking sites to provide cross-site login controls via an API called OpenID
+        (<a href="http://en.wikipedia.org/wiki/OpenID" target="_blank">http://en.wikipedia.org/wiki/OpenID</a>). These more sophisticated APIs require
+        the use of various modules taken from the Python standard library such as <b>urllib</b>,
+        <b>ftplib</b>, <b>smtplib</b>, and more.</p>
+
+      <p>However, an API can also be called via simple object instantiation inside of code. In fact, this is
+        the first method of testing done against an API during design. The Unit Tests with which you are
+        familiar are commonly used in testing API designs and code.</p>
+
+    </div></div>
+    <a name="s_04"></a><div id="s_04"><div class="subheading">Calling the API</div><div class="subheadingText">
+
+      <p>In this section, we'll just call the API by importing the <span class="blue">Bird</span> class into a new
+        program and using it. This is the most common way of using an API, and builds on what you already
+        know. Create a new program named <b>flock.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: flock.py</div><div class="listing"><pre><ins>from bird_api import Bird
+
+class Flock(object):
+
+    birds = []
+
+    def add_bird(self, bird):
+        """
+        Add a bird object to the flock
+        """
+        self.birds.append(bird)
+
+    def race(self):
+        """
+        Show how far the birds of the flock can go in one hour carrying their respective loads.
+        """
+        print("Distance flown in one hour by the flock")
+        for bird in self.birds:
+            distance = "-" * (bird.calculate() // 10)
+            notice = "%s: %s carrying %s items" % (distance, bird.name, len(bird.__dict__))
+            print(notice)
+
+if __name__ == "__main__":
+    swallow = Bird(coconut=1, name="Swallow")
+    african = Bird(coconut=1, piece="of string", visited=False, name="African Swallow")
+    european = Bird(coconut=1, lottery_numbers=(23, 12, 34), piece="of string", visited=True, name="European Swallow")
+    european.add("cereal_boxes", 5)
+    european.add("Norway", True)
+    european.add("England", True)
+
+    flock = Flock()
+    flock.add_bird(swallow)
+    flock.add_bird(african)
+    flock.add_bird(european)
+    flock.race()</ins>
+</pre></div></div>
+
+      <p>In this API example, we import the <span class="darkred">Bird</span> class from the
+        <span class="darkblue">bird_api</span> module and call it to create a number of birds
+        (<span class="darkred">Bird</span> instances). We add the birds to our flock object and race them against
+        each other. When you run the program the output clearly shows that the least-heavily laden swallow
+        travels farthest.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: The output from running flock.py as a main program</div><div class="observe"><pre>
+Distance flown in one hour by the flock
+--------: Swallow carrying 2 items
+------: African Swallow carrying 4 items
+--: European Swallow carrying 8 items
+</pre></div></div>
+
+      <p>We use the API objects without modification, and only add attributes via the specified methods of
+        the API. This is really important because Python is a very dynamic language that allows you many
+        freedoms. You can break the API by replacing critical methods "from outside," as we found earlier
+        in the case of the simple Bunch class.</p>
+
+      <p>There, the code triggered a <span class="red">TypeError</span> exception because the <span class="darkred">Bunch</span>
+        class's <span class="darkgreen">pretty()</span> method was <i>masked</i> by a data attribute on the
+        instance, which we then attempted to call. While the Bunch class now protects this from happening
+        during object instantiation, there is nothing to prevent you from masking the
+        <span class="darkgreen">pretty()</span> method simply by setting <b>bunch.pretty = True</b> after
+        creating an instance.</p>
+
+      <p>Therefore, when using an object or value returned by an API, it is a good practice to use only the
+        object's methods to modify its data (unless the documentation specifically gives you leave to
+        change attribute values). To add further data, incorporate the objects into some other structure
+        containing the associated information, as in the modification to <b>flock.py</b> shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: flock.py</div><div class="listing"><pre>
+from bird_api import Bird
+
+class Flock(object):
+
+    birds = []
+
+    def add_bird(self, bird):
+        """
+        Add a bird object to the flock
+        """
+        self.birds.append(bird)
+
+    def race(self):
+        """
+        Show how far the birds of the flock can go in one hour carrying their respective loads.
+        """
+        print("Distance flown in one hour by the flock")
+        for bird in self.birds:
+            distance = "-" * (bird.calculate() // 10)
+            notice = "%s: %s carrying %s items" % (distance, bird.name, len(bird.__dict__))
+            print(notice)
+if __name__ == "__main__":
+    swallow = Bird(coconut=1, name="Swallow")
+    african = Bird(coconut=1, piece="of string", visited=False, name="African Swallow")
+    european = Bird(coconut=1, lottery_numbers=(23, 12, 34), piece="of string", visited=True, name="European Swallow")
+    <del>european.add("cereal_boxes", 5)
+    european.add("Norway", True)
+    european.add("England", True)</del>
+
+    <ins>birds = (
+        ("Swallows are a group of birds in the family Hirundinidae.", swallow),
+        ("African swallows are said to be able to carry coconuts.", african),
+        ("European swallows are said to have trouble carrying coconuts.", european),
+    )</ins>
+
+    flock = Flock()
+    <del>flock.add_bird(swallow)
+    flock.add_bird(african)
+    flock.add_bird(european)</del>
+    <ins>for stmt, bird in birds:
+        print(stmt)
+        flock.add_bird(bird)
+    print("*"*40)</ins>
+    flock.race()
+</pre></div></div>
+
+      <p>Save and run it. You should see something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Output from the modified flock.py</div><div class="observe"><pre>
+Swallows are a group of birds in the family Hirundinidae.
+African swallows are said to be able to carry coconuts.
+European swallows are said to have trouble carrying coconuts.
+****************************************
+Distance flown in one hour by the flock
+--------: Swallow carrying 2 items
+------: African Swallow carrying 4 items
+-----: European Swallow carrying 5 items
+</pre></div></div>
+
+      <p>In this example, you used <i>tuples</i> to store some extra information along with the new bird
+        objects. You didn't modify the existing API objects and so could be secure that the results would
+        not throw an exception. Tuples are a valuable way to save associated data, since you know that
+        no other portion of the code can modify the tuple because of its immutable nature.</p>
+
+    </div></div>
+  </div>
+
+  <!-- METHOD RESOLUTION ORDER -->
+  <a href="Python3-02.html" name="method_resolution_order"></a>
+  <a name="h_03"></a>
+  <div class="heading">Method Resolution Order</div>
+  <div class="headingText">
+
+    <p>Let's think about a small family. For the sake of brevity we'll use "parent" instead of "mother" or
+      "father," and "child" instead of "son" or "daughter." What we have then is a family consisting of a
+      parent and child. The parent has certain features such as hair color and voice. The child when
+      grown will have similar features to those of its parent. However, children generally have more than
+      one parent, and their parents have parents, and so on. Determining the features the child inherits
+      becomes complicated very rapidly—more so as you add in the unpredictability of genetics. Also,
+      the child can modify their appearance and voice. Maybe they dye their hair or scream too much at
+      concerts and their voice is altered. Now they have some features different from any of their
+      ancestors.</p>
+
+    <p>In programming, names of familial relationships are used to describe similar relationships among
+      object classes. Inheritance, parent, and child are frequently used to describe the elements of object
+      inheritance. One noticeable difference in terminology is that instead of "features," object
+      inheritance tracks the behaviors we call methods.</p>
+
+    <p>Another important difference is that programmatic inheritance does not have any genetic variety,
+      instead being fixed and static. Programmers tend to prefer this: while life may lack interest
+      without the rich profusion of genetic mutation, it does have a certain predictability which is
+      welcome when thinking about what is actually happening in a program.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Basic Method Resolution Order</div><div class="subheadingText">
+
+      <p>If you explore some of the previous code in this lesson, you can see the inheritance relationship
+        between the Bunch and Bird classes:</p>
+
+      <p><div class="c"><img src="images/lessonImages/simple_inheritance.png" alt="Diagram showing Bunch as parent and Bird as child class"></div></p>
+
+      <p>Bunch is the parent of Bird, and Bird is the child of Bunch. Bird has all the methods of Bunch. We
+        call the Bunch <span class="darkgreen">__init__()</span> method when we instantiate a Bird object and the
+        <span class="darkgreen">pretty()</span> methods when we test the results of the Bird class.</p>
+
+      <p>Let's change the Bird's <span class="darkgreen">pretty()</span> method. Bird is vain so instead of
+        displaying its attributes we'll have the <span class="darkgreen">pretty()</span> method return
+        "<span class="purple">pretty bird</span>". In order to do this, all we need to do is add a new
+        <span class="darkgreen">pretty()</span> method to the Bird class to override what it inherited from the
+        Bunch class:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: bird_api.py</div><div class="listing"><pre>
+"""
+API for software birds carrying objects.
+"""
+from bunchclass import Bunch
+
+class Bird(Bunch):
+
+    <ins>def pretty(self):
+        """
+        Replacement pretty() method
+        """
+        return "pretty bird!"</ins>
+
+    def add(self, name, value):
+        """
+        Add an object for the Bird to carry in its basket.
+            Name is what you call the object
+        Value is the actual object being placed in the basket.
+        """
+        if hasattr(self, name):
+            raise KeyError("'%s' object cannot be placed in basket")
+        else:
+            setattr(self, name, value)
+
+    def remove(self, name):
+        """
+        Remove an object from the basket
+            Name is the string of the object to be removed
+        """
+        if name in self.__dict__:
+            delattr(self, name)
+        else:
+            raise KeyError("'%s' object not found in basket")
+
+    def calculate(self):
+        """
+        Calculate the speed of the bird.
+            algorithm: 100 - (number of objects in the basket * 10) minimum of 0
+            result cannot be less than zero.
+        """
+        return max(100 - len(self.__dict__) * 10, 0)
+
+
+    def basket(self):
+        """
+        Print in an attractive format the list of objects in the basket.
+        """
+        return "Basket Objects\n" + self.pretty()
+
+
+if __name__ == "__main__":
+    swallow = Bird(fruit=("coconut", "orange"), drink="apple juice")
+    swallow.add("cars", 3)
+    print(swallow.basket())
+    print(swallow.calculate())
+    swallow.remove("drink")
+    print(swallow.basket())
+    print(swallow.calculate())
+    <del>help(swallow)</del>
+</pre></div></div>
+
+      <p>Save and run it. Instead of "fruit: ('coconut', 'orange')" you'll get "pretty bird!".</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Output from modified bird_api tests</div><div class="observe"><pre>
+Basket Objects
+pretty bird!
+70
+Basket Objects
+pretty bird!
+80
+</pre></div></div>
+
+      <p>To summarize, if a child class inherited a method from its parent class, you can override that
+        inherited method by adding a method of the same name to the child class.</p>
+
+    </div></div>
+    <a name="s_02"></a><div id="s_02"><div class="subheading">More Complicated Method Resolution Order</div><div class="subheadingText">
+
+      <p>Let's continue with the family analogy. Regardless of the marital status, the child has two
+        immediate genetic donors known by the common vernacular as "mother" and "father," or collectively
+        as "parents." Those parents have parents of their own. Python lets you model this sort of genetic
+        structure (and many others). With that in mind, let's model the hair color of the following
+        inheritance structure:</p>
+
+      <p><div class="c"><img src="images/lessonImages/complex_inheritance.png" alt="Diagram showing a complex multiple-inheritance hierarchy"></div></p>
+
+      <p>Let's assume that we all have four different grandparents with four different hair
+        colors—except Grandpa Isadore, who went bald early. Python gives precedence to the leftmost
+        inherited object; to see what the child ends up with, create <b>inhairitance.py</b> and
+        <b>test_inhairitance.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: inhairitance.py</div><div class="listing"><pre><ins>"""
+Complex inheritance program
+"""
+
+import unittest
+
+class Maurice(object):
+    def hair(self):
+        return "red"
+
+class Vivian(object):
+    def hair(self):
+        return "brown"
+
+class Isadore(object):
+    def hair(self):
+        return "bald"
+
+class Tracy(object):
+    def hair(self):
+        return "gray"
+
+class Mother(Maurice, Vivian):
+    pass
+
+class Father(Isadore, Tracy):
+    pass
+
+class Child(Father, Mother):
+    pass
+
+if __name__ == "__main__":
+    child = Child()
+    print(child.hair())</ins>
+</pre></div></div>
+
+<div class="listingBox"><div class="listingTitle">Code: test_inhairitance.py</div><div class="listing"><pre><ins>"""
+Inheritance test program
+"""
+
+import unittest
+from inhairitance import Child
+
+class TestHair(unittest.TestCase):
+
+    def test_hair(self):
+        child = Child()
+        hair = child.hair()
+        self.assertNotEqual(hair, "red")
+        self.assertNotEqual(hair, "brown")
+        self.assertNotEqual(hair, "gray")
+        self.assertEqual(hair, "bald")
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Save and run it. We can deduce by the fact that the
+        tests succeed that the child's hair is "bald." This is because the method resolution order tries
+        the "base classes" in its search for a method from left to right (in the order they are given in
+        the class statement). Thus a method for child will be sought first in Father, then in Mother.
+        Father, of course, has no <b>hair()</b> method, and so <i>its</i> base classes are searched, again
+        in left-right order. This is known as a <i>left-first depth-first search</i>.</p>
+
+      <p>If you switch the order of inheritance, say, Mother with Father, the child will have red hair.
+        Indeed, if genetics were as straightforward as programming in Python, a lot more people would be
+        happy with their hair—except maybe Grandpa Isadore.</p>
+
+      <p>In any case, most of the time when you program, all you need is single inheritance and method
+        resolution order in Python is pretty straightforward. Inheritance is a powerful tool but it can get
+        complicated rather quickly. It is a good practice to keep inheritance as simple as possible with
+        clearly named classes. If things get too complicated for simple inheritance, there are other tools
+        you can wield from the programming armory to solve those problems.</p>
+
+    </div></div>
+
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Introspecting Inheritance Relationships</div><div class="subheadingText">
+
+      <p>Python has two built-in functions that can help you in determining whether your code
+        has been provided with values of a particular type. Note that this should not be a
+        frequent requirement of your code, but it is sometimes justifiable usage.</p>
+
+      <p><b>issubclass(cls, classinfo)</b> returns True if the object passed as <b>cls</b> is
+        a direct or indirect subclass of one of the classes specified by <b>classinfo</b>.
+        This second argument can either be a single class or a tuple of classes. In the
+        latter case the result is True if <b>cls</b> is a subclass of any of the classes
+        in the tuple. An indirect subclass of a class is a subclass of the class
+        or one if its subclasses. For the purposes of <b>issubclass()</b> all classes are
+        regarded as subclasses of themselves.</p>
+
+      <p><b>isinstance(obj, classinfo)</b> returns True if the <b>obj</b> argument is an
+        instance of some class that is a subclass of one of the classes specified by the
+        <b>classinfo</b> argument. Again this argument may be either a single class or a
+        tuple of classes.</p>
+
+    </div></div>
+    <a name="s_04"></a><div id="s_04"><div class="subheading">Laying the Foundation</div><div class="subheadingText">
+
+      <p>In this lesson, you've learned about some basic practices of structuring data in Python. We'll use
+        these practices in further lessons; they are commonly used in real-world applications. Good data
+        structuring takes practice and there are different standards on how to do it. The best methods
+        result in code that is clear to read and easy to extend. The poor methods make code hard to
+        interpret and "fragile"—the code often breaks without much warning. If you lay out a
+        structure and it becomes hard for you to follow, often that means you need to stop and refactor
+        your code. Fortunately, you wrote unit tests, right? If so, you can be reasonably confident that
+        your refactoring has not caused any new defects.</p>
+
+    </div></div>
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-01.html">Making Sense of User Inputs</a>
+    <a class="next" href="Python3-03.html">Iteration in Python</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

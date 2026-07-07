@@ -5,13 +5,14 @@ import re
 
 from dataclasses import dataclass
 from importlib.resources import files
-from logging import getLogger, basicConfig, DEBUG
+from logging import getLogger, basicConfig
 
 import markdown
 
 from dotenv import load_dotenv
 from flask import (
     abort,
+    Blueprint,
     Flask,
     flash,
     jsonify,
@@ -20,6 +21,7 @@ from flask import (
     request,
     Response,
     url_for,
+    send_from_directory,
 )
 from flask_mailman import Mail
 from flask_paranoid import Paranoid
@@ -33,6 +35,10 @@ from .pdf import pdf_blueprint
 from .version import __version__
 
 load_dotenv()
+
+basicConfig(format='%(filename)s: %(levelname)s: %(message)s')
+logger = getLogger(__name__)
+
 
 @dataclass
 class Section:
@@ -49,59 +55,29 @@ SECTIONS = [
     Section("Blog", "/blog")
 ]
 
-logger = getLogger(__name__)
-basicConfig(
-    level=DEBUG,
-    format='%(filename)s: %(levelname)s: %(message)s',
-)
-
 md = markdown.Markdown(extensions=['mdx_math', 'codehilite'])
 
-# The code below should go in a `create-app` function
-appfile_dir = "."
-app = Flask(__name__, static_url_path='/static/', static_folder='static/')
+# Extensions are created unbound and attached to an app in create_app(),
+# so multiple app instances (e.g. one per test) can coexist safely.
+mail = Mail()
+paranoid = Paranoid()
+db = SQLAlchemy()
+security = Security()
 
-paranoid = Paranoid(app)
-paranoid.redirect_view = '/'
-
-app.config['SERVER_NAME']='localhost'
-
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['SECURITY_REGISTERABLE'] = True
-app.config["SECURITY_RECOVERABLE"] = True
-
-app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
-app.config["SESSION_COOKIE_SAMESITE"] = "strict"
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_pre_ping": True,
-}
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-for k in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
-    app.config[k] = 'steve@holdenweb.com'
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_BACKEND'] = 'smtp'
-
-mail = Mail(app)
-
-db = SQLAlchemy(app)
 fsqla.FsModels.set_db_info(db)
 
 
 class Role(db.Model, fsqla.FsRoleMixin):
     pass
 
+
 class User(db.Model, fsqla.FsUserMixin):
     pass
 
+
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore)
+
+main_bp = Blueprint("main", __name__)
 
 
 def has_no_empty_params(rule):
@@ -109,7 +85,8 @@ def has_no_empty_params(rule):
     arguments = rule.arguments if rule.arguments is not None else ()
     return len(defaults) >= len(arguments)
 
-def site_map():
+
+def site_map(app):
     links = []
     for rule in app.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser
@@ -122,38 +99,36 @@ def site_map():
             })
     return links
 
-@app.errorhandler(404)
-def handle_404(e):
-    return render_template("404.html", title="Page not found", content=e), 404
 
 ################################ View Methods ################################
 
 ######## / ########
-@app.route("/")
+@main_bp.route("/")
 def home_page():
     "Serve home page from index.html."
     return render_template("index.html", sections=SECTIONS)
 
 
 ######## /config ########
-@app.route("/config")
+@main_bp.route("/config")
 @auth_required('session')
 def get_version():
+    from flask import current_app
     return {
         "server_version": __version__,
-        "site_map": site_map(),
-        "config": {k: str(v) for (k, v) in app.config.items()}
+        "site_map": site_map(current_app),
+        "config": {k: str(v) for (k, v) in current_app.config.items()}
     }
 
 
 ######## /ip ########
-@app.route("/ip", methods=["GET"])
+@main_bp.route("/ip", methods=["GET"])
 def get_my_ip():
     return jsonify({'ip': request.remote_addr}), 200
 
 
 ######## /note/... [Markdown notes] ########
-@app.route("/note/<name>")
+@main_bp.route("/note/<name>")
 def markdown_page(name: str):
     fpath = DATA_PATH / "md-pages" / f"{name}.md"
     if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
@@ -181,7 +156,7 @@ def markdown_page(name: str):
 
 
 ######## /page/... [HTML page] ########
-@app.route("/page/<path:name>/")
+@main_bp.route("/page/<path:name>/")
 def page_from_html(name: str):
     "Serve an HTML page selected by name."
     fpath = DATA_PATH / "html-pages" / f"{name}.html"
@@ -195,7 +170,7 @@ def page_from_html(name: str):
 
 
 ######## /parts/xxxxxxx ########
-@app.route("/parts/<number>")
+@main_bp.route("/parts/<number>")
 def parts_demo(number: str):
     if number != "demo":
         flash("Sorry, we only do demos at present!")
@@ -203,15 +178,14 @@ def parts_demo(number: str):
     return page_from_html("parts_demo")
 
 
-######## /python-by-the-sea/* ########
-@app.route('/python-by-the-sea/', defaults={'v': None})
-@app.route('/python-by-the-sea/<path:v>')
-def redirect_to_pbts(v: str):
-    return redirect("https://python-by-the-sea.org", code=301)
+######## /python ########
+@main_bp.route("/python/<path:path>")
+def redirect_to_pbts(path: str):
+    return send_from_directory("static/python/web", path)
 
 
 ######## /qrcode/ [form processor] ########
-@app.route("/qrcode/", methods=['GET', 'POST'])
+@main_bp.route("/qrcode/", methods=['GET', 'POST'])
 def get_or_post_qrcode():
     form = QRcode_Form()
     if form.validate_on_submit():
@@ -224,9 +198,68 @@ def get_or_post_qrcode():
         return response
     return render_template('qrcode_form.html', form=form)
 
-######## /pdf/ [handled by blueprint] ########
-app.register_blueprint(pdf_blueprint, url_prefix="/pdf/")
 
+def handle_404(e):
+    return render_template("404.html", title="Page not found", content=e), 404
+
+
+def create_app(config_overrides=None):
+    """Application factory.
+
+    `config_overrides` lets callers (tests, alternate entry points) replace
+    config values -- e.g. an in-memory database and disabled mail sending --
+    without touching the environment.
+    """
+    app = Flask(__name__, static_url_path='/static/', static_folder='static/')
+
+    # SERVER_NAME enforces strict host matching when set, so only set it if
+    # an environment explicitly requests it (e.g. for local dev).
+    server_name = os.environ.get("SERVER_NAME")
+    if server_name:
+        app.config['SERVER_NAME'] = server_name
+
+    app.logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
+
+    app.config['SECURITY_PASSWORD_SALT'] = os.environ.get("SECURITY_PASSWORD_SALT")
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+    app.config['SECURITY_REGISTERABLE'] = True
+    app.config["SECURITY_RECOVERABLE"] = True
+
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
+    app.config["SESSION_COOKIE_SAMESITE"] = "strict"
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    for k in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
+        app.config[k] = 'steve@holdenweb.com'
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 465
+    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_USE_SSL'] = True
+    app.config['MAIL_BACKEND'] = 'smtp'
+
+    if config_overrides:
+        app.config.update(config_overrides)
+
+    paranoid.init_app(app)
+    paranoid.redirect_view = '/'
+
+    mail.init_app(app)
+    db.init_app(app)
+    security.init_app(app, user_datastore)
+
+    app.register_error_handler(404, handle_404)
+    app.register_blueprint(main_bp)
+    app.register_blueprint(pdf_blueprint, url_prefix="/pdf/")
+
+    return app
+
+
+app = create_app()
 application = app.wsgi_app
 
 if __name__ == '__main__':

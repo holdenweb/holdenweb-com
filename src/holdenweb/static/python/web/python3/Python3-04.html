@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Basic Regular Expressions</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Basic Regular Expressions</div>
+
+  <p>Suppose you've been given a big block of text and told you need to pull all of the US-style phone
+    numbers from it. Writing a program like that requires breaking up all the words via the String
+    <span class="darkgreen">split()</span> method, then writing code to make sure that the numbers and dashes are
+    all in the right places. We are talking about at least a dozen lines of code, and that doesn't even
+    begin to account for special cases, like when the area code is in parentheses.</p>
+
+  <p>What if there was a special syntax so that you could find those numbers with a single line of code?
+    Something like <b>xxx-xxx-xxxx or (xxx) xxx-xxxx</b> that you could apply to the text? The "x" would
+    mean "any number," and the pattern would be applied and would return a list.</p>
+
+  <p>Fortunately, there is: Python lets you use <i>regular expressions</i>, which do that and much more
+    besides! They aren't the answer to every string-related problem, but regular expressions are an
+    important part of any developer's toolkit. This lesson will go over the basics of what you can do
+    with regular expressions and will be followed by a more complete exposition of the capabilities of
+    the <b>re</b> module.</p>
+
+  <p>In the 1950s, mathematician Stephen Cole Kleene described automata theory and formal language theory
+    in a set of models using a notation called <i>regular sets</i> as a method to do pattern matching.
+    Active usage of this system, called Regular Expressions, started in the 1960s and continued under
+    such pioneers as David J. Farber, Ralph E. Griswold, Ivan P. Polonsky, Ken Thompson, and Henry
+    Spencer.</p>
+
+  <p>Regular expressions, also called <i>re</i>s or <i>regex</i>es, provide a concise and flexible means
+    for matching strings of text. They are a common programming tool used not just in Python but many
+    languages in common use today.</p>
+
+  <p>This lesson includes these sections:</p>
+  <ul>
+    <li><a href="#matching_and_searching">Matching and Searching</a></li>
+    <li><a href="#trying_out_patterns">Trying Out Patterns</a></li>
+  </ul>
+
+  <!-- MATCHING AND SEARCHING -->
+  <a name="matching_and_searching"></a>
+  <a name="h_01"></a>
+  <div class="heading">Matching and Searching</div>
+  <div class="headingText">
+
+    <p>The <span class="darkred">re</span> module provides features to enable pattern matching in Python. The basic
+      mode of operation is to call either the <span class="darkgreen">match()</span> or
+      <span class="darkgreen">search()</span> function from that module with a regex as the first argument, and a
+      string to match against as the second argument. If the regex matches the string, the module returns
+      a match object, and analysis of the match object can give you information about (for example) the
+      exact strings matched by various portions of the pattern.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>import re</ins>
+&gt;&gt;&gt; <ins>m = re.match(r"(\w+) (\w+)", "Isaac Newton, physicist")</ins>
+&gt;&gt;&gt; <ins>m</ins>
+&lt;re.Match object; span=(0, 12), match='Isaac Newton'&gt;
+&gt;&gt;&gt; <ins>m.groups()</ins>
+('Isaac', 'Newton')
+&gt;&gt;&gt; <ins>m.group(0)</ins>
+'Isaac Newton'
+&gt;&gt;&gt; <ins>m = re.match(r"(?P&lt;first_name&gt;\w+) (?P&lt;last_name&gt;\w+)", "Malcolm Reynolds")</ins>
+&gt;&gt;&gt; <ins>m.group('first_name')</ins>
+'Malcolm'
+&gt;&gt;&gt; <ins>m.group('last_name')</ins>
+'Reynolds'
+&gt;&gt;&gt; <ins>m.groupdict()</ins>
+{'first_name': 'Malcolm', 'last_name': 'Reynolds'}
+&gt;&gt;&gt; <ins>m = re.match(r"(..)+", "a1b2c3")  # Matches 3 times.</ins>
+&gt;&gt;&gt; <ins>m.group(1)                        # Returns only the last match.</ins>
+'c3'
+&gt;&gt;&gt; <ins>m = re.search("\\d+", "hello123extra")</ins>
+&gt;&gt;&gt; <ins>m.start()</ins>
+5
+&gt;&gt;&gt; <ins>m.end()</ins>
+8
+&gt;&gt;&gt; <ins>m.span()</ins>
+(5, 8)
+&gt;&gt;&gt; <ins>m.group(0)</ins>
+'123'
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Match objects now display as
+        <code>&lt;re.Match object; span=(0, 12), match='Isaac Newton'&gt;</code>.
+        The original lesson showed the older
+        <code>&lt;_sre.SRE_Match object at 0x...&gt;</code> form; the output above has
+        been regenerated on Python&nbsp;3.14.</td>
+    </tr></table>
+
+    <p>In the interactive session above, we used the <span class="darkred">re</span> module's
+      <span class="darkgreen">match()</span> and <span class="darkgreen">search()</span> functions to determine whether
+      strings conformed to a specific pattern (provided as the first argument to the function call).
+      <span class="darkgreen">match()</span> requires the pattern to occur at the start of the target string,
+      while <span class="darkgreen">search()</span> will move through the target string looking for it. If the
+      pattern is not present in the string, the function call returns None. Otherwise it returns a
+      <i>match object</i> ("m," above) that can be queried for specific aspects of the matched string by
+      calling its various methods.</p>
+
+  </div>
+
+  <!-- FINDING CHARACTERS: REGULAR EXPRESSION PATTERNS -->
+  <a name="h_02"></a>
+  <div class="heading">Finding Characters: Regular Expression Patterns</div>
+  <div class="headingText">
+
+    <p>A regular expression pattern is a way of describing a set of character strings. These descriptions
+      can be relatively concise: the pattern "x" matches precisely one character, the lowercase letter
+      "x." Some characters have special meanings, so the pattern "x+" matches any string of one or more
+      lower case "x"s—the plus sign generates a more complex pattern from the pattern it follows.</p>
+
+    <p>Most characters can be used in patterns like the lower case "x" to "stand for themselves," so for
+      example if you wanted to match the literal string "thing" you would do so with a pattern that reads
+      "thing"—the "t" in the pattern matches a "t" in the string, and so on. But there are quite a
+      few abbreviations: for example, '\d' matches any decimal digit (making it equivalent to the pattern
+      "[0123456789]," as we will learn shortly). Here are some of the more common abbreviations.</p>
+
+    <table class="tbl">
+      <tr><th>Pattern String</th><th>Description</th></tr>
+      <tr><td><b>.</b></td><td>Matches any character except a newline in the target string.</td></tr>
+      <tr><td><b>^</b></td><td>Matches the start of the target string, or the start of a line within the target string.</td></tr>
+      <tr><td><b>$</b></td><td>Matches the end of the string, or just before the end of a line within the string. <b>foo</b>
+        matches both "foo" and "foobar," while the regular expression <b>foo$</b> matches only
+        "foo."</td></tr>
+      <tr><td><b>*</b></td><td>Matches the regex it follows, zero or more times, so <b>ab*</b> will match "a," "ab," or "a"
+        followed by any number of "b"s.</td></tr>
+      <tr><td><b>+</b></td><td>Matches the regex it follows, one or more times, so <b>ab+</b> will match "a" followed by
+        any number of "b"s, but will not match "a" alone.</td></tr>
+      <tr><td><b>?</b></td><td>Optionally matches an occurrence of the regex that precedes it. <b>ab?</b> matches either
+        of "a" or "ab."</td></tr>
+      <tr><td><b>\</b></td><td>Matches special characters literally, allowing you to match plus signs, asterisks and other
+        characters having special significance in regexes. Also introduces a special sequence such
+        as '\d' to match any digit.</td></tr>
+      <tr><td><b>{m}</b> (where m is an integer)</td><td>Matches exactly <i>m</i> occurrences of the regex it follows.</td></tr>
+      <tr><td><b>{m,n}</b> (where m and n are integers)</td><td>Matches between <i>m</i> and <i>n</i> occurrences of the regex it follows.</td></tr>
+      <tr><td><b>[...]</b></td><td>Matches any one of the set of characters appearing between the brackets. Special characters
+        do not have their usual significance inside brackets, so <b>[abc$]</b> matches any of "a,"
+        "b," "c" or "$." A dash (-) between two characters specifies a range, so <b>[a-z]</b>
+        matches any lower-case character.</td></tr>
+      <tr><td><b>[^...]</b></td><td>Matches any character <i>except</i> one of the set appearing after the caret between the
+        brackets. Note that the caret only has this special meaning when it <i>immediately</i>
+        follows the opening left bracket.</td></tr>
+      <tr><td><b>|</b></td><td>Alternation. <b>A|B</b>, where A and B are any regexes, first tries to match A and, if
+        that fails, tries to match B. Any number of regexes can be used as alternates in this way,
+        not just two.</td></tr>
+      <tr><td><b>(...)</b></td><td>Groups a number of regexes together, usually for the purpose of treating them as a single
+        element (for example, to use as an alternate with |). When a match object is created, the
+        string matched by the parenthesized group is available using methods of the match object.</td></tr>
+    </table>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Tip</td>
+      <td class="note">There are many regex references available on the Internet; you might want to find and bookmark one or two of them!</td>
+    </tr></table>
+
+  </div>
+
+  <!-- GROUPING IN PATTERNS -->
+  <a name="h_03"></a>
+  <div class="heading">Grouping in Patterns</div>
+  <div class="headingText">
+
+    <p>As the last line above indicates, patterns can contain <i>groups</i>, indicated by parentheses. The
+      strings matched by the groups are, under certain circumstances, available—again, by calling
+      the match object's methods. The groups can be numbered (according to their relative positions in
+      the pattern, and starting at one rather than Python's usual zero—group 0 refers to the match
+      as a whole) and they can also be named if the group's opening parenthesis in the pattern is
+      followed by a question mark, an upper case "P" and a name in angle brackets, as we saw with
+      "(?P&lt;first_name&gt;\w+)" in the earlier interactive session.</p>
+
+    <p>Groupings in the pattern are the principal way of extracting required information from the match
+      object. Strings matched by non-grouping portions of the pattern cannot be individually identified
+      in the match object. When you are testing a new regular expression, it is often useful to
+      interactively inspect the result of calling the match objects' <span class="darkgreen">groups()</span> and
+      <span class="darkgreen">groupdict()</span> methods to verify that your pattern is matching as you expect.</p>
+
+    <p>When testing patterns, you can test for equality with those objects; but you should also remember to
+      test that unacceptable strings are <i>not</i>, in fact, matched. This will usually involve the use
+      of your test case's <span class="darkgreen">assertNone()</span> method on the match result.</p>
+
+  </div>
+
+  <!-- SUBSTITUTION FOR PATTERNS -->
+  <a name="h_04"></a>
+  <div class="heading">Substitution for Patterns</div>
+  <div class="headingText">
+
+    <p>Besides the <span class="darkgreen">match()</span> and <span class="darkgreen">search()</span> functions, the
+      <span class="darkred">re</span> module provides functions that allow you to make replacements of patterns in
+      the target string (these functions return new strings, of course, because strings are immutable in
+      Python). The <span class="darkgreen">re.sub()</span> function takes not only a pattern and a target string
+      but also a replacement string, as shown below.</p>
+
+<div class="observeBox"><div class="observeTitle">re.sub() Syntax</div><div class="observe"><pre>
+re.sub(<span class="darkred">pat</span>, <span class="darkgreen">replacement, <span class="darkblue">target</span>[, <span class="orange">count</span>, <span class="purple">flags</span>]</span>)
+</pre></div></div>
+
+    <p>This replaces each non-overlapping occurrence of the given <span class="darkred">pattern</span> in the
+      <span class="darkblue">target</span> string with the <span class="darkgreen">replacement</span> element given as the
+      third argument. If <span class="darkgreen">replacement</span> is a string, any backslash escapes in it
+      are processed down to individual characters (so, for example, "\n" is replaced by a newline
+      character). Escapes of the form \<i>n</i> (where <i>n</i> is a decimal digit) allow replacement by
+      one of the matched groups from the pattern. The <span class="darkgreen">replacement</span> argument can also be a
+      function, in which case it is called for each replacement with a single argument, which is the match object
+      corresponding to the currently matched string that is to be replaced.</p>
+
+    <p>The optional argument <span class="orange">count</span> is the maximum number of pattern occurrences to be
+      replaced; <span class="orange">count</span> must be a non-negative integer. If omitted or zero, all
+      occurrences will be replaced. Empty matches for the pattern are replaced only when not adjacent to
+      a previous match, so sub('x*', '-', 'abc') returns '-a-b-c-'. The <span class="purple">flags</span>, if
+      present, are the usual regular expression matching flags, which we'll discuss a little later.
+      Let's get an idea of what you can do with the replacement facilities.</p>
+
+    <p>This example simply shows straight pattern replacement: both calls to re.sub() replace all occurrences of the string "1"
+      with a newline character. When the pattern contains characters like newline (normally represented by escape sequences), or
+      special patterns (which also require backslashes), r(aw) strings can make patterns more readable and easier to type. The
+      more complex the patterns become, the truer this is.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import re</ins>
+&gt;&gt;&gt; <ins>re.sub("1", "\\n", "123123123123") # replace digit one with newline</ins>
+'\n23\n23\n23\n23'
+&gt;&gt;&gt; <ins>re.sub("1", r"\n", "123123123123") # replace digit one with newline</ins>
+'\n23\n23\n23\n23'
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Prefer raw strings (<code>r"..."</code>) for all regex patterns.
+        Plain string patterns that rely on unrecognised backslash sequences (such as
+        <code>"\d"</code> or <code>"\+"</code>) now raise a <code>SyntaxWarning</code>
+        in Python&nbsp;3.12+ and will become errors in a future release. The session above
+        deliberately contrasts <code>"\\n"</code> and <code>r"\n"</code>; in practice,
+        reach for raw strings throughout.</td>
+    </tr></table>
+
+    <p>The next call to <b>re.sub()</b> uses a function to supply the replacement string: if the function
+      is replacing a single minus sign it returns a space, but two minus signs are translated into a plus
+      sign.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def dashrepl(matchobj):</ins>
+...     <ins>if matchobj.group(0) == "-": return " "</ins>
+...     <ins>else: return "+"</ins>
+...
+&gt;&gt;&gt; <ins>re.sub('-{1,2}', dashrepl, 'pro----gram-files')</ins>
+'pro++gram files'
+</pre></div></div>
+
+    <p>The next example finds the "#" marker and removes it and everything after it, then removes everything
+      but the digits from the remaining string.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>s = "(123) 456-7890 # Commented phone number"</ins>
+&gt;&gt;&gt; <ins>nocomment = re.sub("#.*$", "", s)</ins>
+&gt;&gt;&gt; <ins>nocomment</ins>
+'(123) 456-7890 '
+&gt;&gt;&gt; <ins>re.sub(r"\D", "", nocomment)</ins>
+'1234567890'
+</pre></div></div>
+
+    <p>These examples attempt to match any string beginning and ending in an at sign ("@") with zero or more sequences of "=+=" in
+      the middle (the "+" must be escaped to make the matching code treat it as an ordinary character).</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>re.sub("@(=\+=)*@", "xxx", "@@")</ins>
+'xxx'
+&gt;&gt;&gt; <ins>re.sub("@(=\+=)*@", "xxx", "@=+=@")</ins>
+'xxx'
+&gt;&gt;&gt; <ins>re.sub("@(=\+=)*@", "xxx", "@=+==+=@")</ins>
+'xxx'
+&gt;&gt;&gt; <ins>re.sub("@(=\+=)*@", "xxx", "@=+=+=@")</ins>
+'@=+=+=@'
+</pre></div></div>
+
+    <p>The last example shows a pattern (a single vowel) being used to make many replacements—all vowels in the target
+      string are replaced with a dash.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>re.sub("[aeiouAEIOU]", "-", "The Quick Brown Fox Jumps Over the Lazy Dog")</ins>
+'Th- Q--ck Br-wn F-x J-mps -v-r th- L-zy D-g'
+&gt;&gt;&gt;
+</pre></div></div>
+
+  </div>
+
+  <!-- TRYING OUT PATTERNS -->
+  <a name="trying_out_patterns"></a>
+  <a name="h_05"></a>
+  <div class="heading">Trying Out Patterns</div>
+  <div class="headingText">
+
+    <p>It's useful to be able to try out lots of patterns as you are learning how they are made up. See if
+      you can understand the following patterns by trying them against various strings. To help you do
+      that, we'll write a little program that allows you to see the results of searching and matching for
+      a specific pattern against a number of strings. The program reads a pattern, and if it's the empty
+      string, terminates. Otherwise, it reads target strings and applies matches and searches on the
+      strings that are subsequently input until the user enters an empty string, in which case it goes
+      back to requesting a new pattern. Create <b>pattest.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: pattest.py</div><div class="listing"><pre><ins>"""
+pattest.py: Allows the checking of various patterns and target strings
+"""
+import re
+while True:
+    pat = input("Pattern: ")
+    if not pat:
+        break
+    while True:
+        s = input("Target : ")
+        if not s:
+            break
+        mm = re.match(pat, s)
+        if mm:
+            print("Match : matched {0!r}".format(s[mm.start():mm.end()]))
+            print("Match : groups:", mm.groups())
+            print("Match : gdict :", mm.groupdict())
+        else:
+            print("Match : no match")
+        ms = re.search(pat, s)
+        if ms:
+            print("Search: matched {0!r}".format(s[ms.start():ms.end()]))
+            print("Search: groups:", ms.groups())
+            print("Search: gdict :", ms.groupdict())
+        else:
+            print("Search: no match")</ins>
+</pre></div></div>
+
+    <p>This lets you test many strings against the same pattern quite quickly. Run it and ensure that you
+      can think of strings that both match and don't match the patterns given below.</p>
+
+    <table class="tbl">
+      <tr><th>Pattern</th><th>Description</th></tr>
+      <tr><td>[0123456789]+</td><td>Matches one or more decimal digits.</td></tr>
+      <tr><td>[\d]+</td><td>Same as above. Remember to verify that some strings don't match the pattern -</td></tr>
+      <tr><td>[\w]+ +[\w]+</td><td>Matches two words separated by any number of spaces.</td></tr>
+      <tr><td>\(\d\d\d\) \d\d\d-\d\d\d\d</td><td>Matches a US telephone number with parentheses around the area code and a dash between the
+        exchange and the number.</td></tr>
+      <tr><td>home-?brew</td><td>There should be exactly two strings that match this pattern.</td></tr>
+      <tr><td>\$\d+(.\d{2})?</td><td>An amount of money (in dollars) with optional cents.</td></tr>
+    </table>
+
+  </div>
+
+  <p>We've made a start on the use of regular expressions. While they aren't the answer to every problem,
+    they can help to solve tricky text recognition problems. Just don't treat them as the first weapon
+    in your arsenal—the string methods were provided for a reason! In the next lesson, we'll
+    expand our knowledge of regular expressions further.</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-03.html">Iteration in Python</a>
+    <a class="next" href="Python3-05.html">More On Regular Expressions</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

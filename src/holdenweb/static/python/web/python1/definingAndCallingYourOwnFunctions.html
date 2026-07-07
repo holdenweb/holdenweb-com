@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Defining and Calling Your Own Functions</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Defining and Calling Your Own Functions</div>
+
+  <!-- EXPLORING FUNCTIONS -->
+  <a name="h_01"></a>
+  <div class="heading">Exploring Functions</div>
+  <div class="headingText">
+
+    <p>Hi and welcome to a new lesson! We're moving right along, huh? Let's keep it going. While working through examples so far in this
+      course, you typed similar pieces of code over and over again. Take a look at this snippet of code from our earlier
+      <i>complex file handling</i> example:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>open_tasks = open('open_tasks.txt','r').readlines()
+if open_tasks:
+    print('-' * 10)
+    print('Open Tasks')
+    print('-' * 10)
+    for i, task in enumerate(open_tasks):
+        print(i, task.strip())
+done_tasks = open('done_tasks.txt','r').readlines()
+print('-' * 10)
+print('Done Tasks')
+print('-' * 10)
+for i, task in enumerate(done_tasks):
+    print(i, task.strip())
+</pre></div></div>
+
+    <p>You typed in almost exactly the same code twice. Wouldn't it be nice if you could just write it once and then call it whenever you
+      needed it, like you've done with Python's various built-in functions? Fortunately, you can! Look at the same code, this time
+      rewritten using a function:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>def <span class="darkgreen">task_report(<span class="purple">task_file</span>)</span>:
+    tasks = open(<span class="purple">task_file</span>,'r').readlines()
+    if tasks:
+        print('-' * 10)
+        print(task_file.<span class="orange">replace('_',' ')</span>.<span class="orange">replace('.txt','')</span>.<span class="darkred">title()</span>)
+        print('-' * 10)
+        for i, task in enumerate(tasks):
+            print(i, task.strip())
+<span class="darkgreen">task_report(<span class="purple">'open_tasks.txt'</span>)
+task_report(<span class="purple">'done_tasks.txt'</span>)</span>
+</pre></div></div>
+
+    <p>The second example defines a function <span class="darkgreen">task_report</span>. It executes the same task as the first example, but
+      operates by calling the function twice. The differences between the two examples are in the file name and the heading that was
+      printed out. The file name is a <i>formal parameter</i> (<span class="purple">task_file</span>) of the function, and the heading is created by using
+      <span class="orange">replace()</span> to change the underscore (<span class="orange">'_'</span>) to a space (<span class="orange">' '</span>) and the extension
+      (<span class="orange">'.txt'</span>) to nothing <span class="orange">('')</span> in the file name, and then applying title case to the remainder with
+      <span class="darkred">title()</span>. (The net result? 'open_tasks.txt' becomes 'Open Tasks' and 'done_tasks.txt' becomes 'Done Tasks.')</p>
+
+    <p>By defining and using this function, we saved three whole lines of code. Impressed? No?! You should be. But wait, there's more!</p>
+
+    <p>Now, suppose you need to add three more types of task state to your code: "not yet confirmed," "in testing," and "under review."
+      Without our task_report function, we would have had to add 18 lines of code to accomplish this task! But using the function, we
+      can process each file with a single line, and get the job done with just three lines of code! Take a look at the example:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Sample function code</div><div class="observe"><pre>
+def task_report(task_file):
+    tasks = open(task_file,'r').readlines()
+    if tasks:
+        print('-' * 10)
+        print(task_file.replace('_',' ').replace('.txt','').title())
+        print('-' * 10)
+        for i, task in enumerate(tasks):
+            print(i, task.strip())
+task_report('open_tasks.txt')
+task_report('done_tasks.txt')
+<ins>task_report('not_yet_confirmed.txt')
+task_report('in_testing.txt')
+task_report('under_review.txt')</ins>
+</pre></div></div>
+
+    <p>Good Python developers never repeat a stanza of code twice. Instead, we put it into a function, and call that function as often as
+      we need it. If you see lots of repetitive code, it generates that yucky <i>code smell</i> I mentioned earlier. The code might work,
+      but changing it, maintaining it, and using it in other places will be harder than it needs to be and the code will be more prone to
+      errors.</p>
+
+  </div>
+
+  <!-- WRITE YOUR FIRST FUNCTION -->
+  <a name="h_02"></a>
+  <div class="heading">Write Your First Function</div>
+  <div class="headingText">
+
+    <p>Let's take a shot at writing a function. We'll write some code that averages a list of values. In the editor window, type the
+      code as shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def average(lst):
+    """ Averages a list, tuple, or set of numeric values"""
+    return sum(lst) / len(lst)
+
+tst_lst = [1, 2, 3, 4]
+print('Average this list: {0}'.format(tst_lst))
+print(average(tst_lst))
+t = (243, 132, 987, 342, 13)
+print('Average this tuple: ',t)
+print(average(t))
+s = {1, 2, 3, 4, 25}
+print('Average this set: {0}'.format(s))
+print(average(s))
+</pre></div></div>
+
+    <p>Save it as <b>average.py</b> and run it:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>Average this list: [1, 2, 3, 4]
+2.5
+Average this tuple:  (243, 132, 987, 342, 13)
+343.4
+Average this set: {1, 2, 3, 4, 25}
+7.0
+</pre></div></div>
+
+    <p>How does it work?</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre><span class="darkred">def</span> <span class="darkgreen">average(<span class="purple">lst</span>)</span>:
+    <span class="darkblue">""" Averages a list, tuple, or set of numeric values"""</span>
+    <span class="orange">return</span> <span class="green">sum(lst)</span> / <span class="blue">len(lst)</span>
+
+tst_lst = [1, 2, 3, 4]
+print('Average this list: {0}'.format(tst_lst))
+print(<span class="darkgreen">average(<span class="purple">tst_lst</span>)</span>)
+t = (243, 132, 987, 342, 13)
+print('Average this tuple: ',t)
+print(<span class="darkgreen">average(<span class="purple">t</span>)</span>)
+s = {1, 2, 3, 4, 25}
+print('Average this set: {0}'.format(s))
+print(<span class="darkgreen">average(<span class="purple">s</span>)</span>)
+</pre></div></div>
+
+    <p>The function occupies only the first three lines of code in this example. The Python keyword <span class="darkred">def</span> introduces a
+      function definition. It must be followed by the <span class="darkgreen">function name</span> and the <span class="purple">list of formal
+        parameters</span> in parentheses. The code that makes up the function is called the <i>function body</i>. The function body
+      must be indented. The string <span class="darkblue">""" Averages a list, tuple, or set of numeric values"""</span> is the function's
+      documentation string, often abbreviated as <i>docstring</i>. The interpreter uses docstrings to give programmers information about
+      how the function works and how it should be called. Finally, the last line tells the function to <span class="orange">return</span> the
+      <span class="green">sum()</span> of the values entered, divided by the number of values as determined by the <span class="blue">len()</span> function. This
+      returned value becomes the value of the function call during evaluation of expressions.</p>
+
+    <p>Our function is followed by test code that lets us verify that the function works correctly. Each time the
+      <span class="darkgreen">average()</span> function is written with a list of numbers in it, such as
+      <span class="darkgreen">average(<span class="purple">tst_lst</span>)</span> or even
+      <span class="darkgreen">average(<span class="purple">[10,20,30,40,50]</span>)</span>, our function code is run with those numbers as formal
+      parameters.</p>
+
+    <p>In the average.py example, we used the name <span class="purple">lst</span> for our parameter. It could have any name, but for the sake of
+      clarity, use a name that makes the purpose of the variable clear. Also, be careful not to use names of existing Python functions
+      or other objects. You don't want to use <b>list</b> or <b>tuple</b> as variable or parameter names, for example, because they are
+      the names of Python built-in functions. If you do, your program may behave in completely incomprehensible ways.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The set <code>{1, 2, 3, 4, 25}</code> now prints in that order on current Python. The original 3.1 output
+        showed <code>{25, 2, 3, 4, 1}</code> because sets are unordered and iteration order was different. The average is the same
+        either way; only the display order changed.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- PARAMETERS AND ARGUMENTS -->
+  <a name="h_03"></a>
+  <div class="heading">Parameters and Arguments</div>
+  <div class="headingText">
+
+    <p><i>Parameters</i> are the names you give to the inputs to the function when the function is defined. <i>Arguments</i> are the
+      values you provide when you call the function. Inside the function body, your code can access the arguments using the names of the
+      parameters.</p>
+
+    <p>Suppose you want to write a function that prints out the elements in a list, and you want to provide an option to have the function
+      print the list in reverse order. To do this, you'll use <i>positional</i> and <i>keyword</i> parameters. Type the code as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def print_list(lst, rev=False):
+    """ prints the contents of a list. """
+    if rev:
+        lst = reversed(lst)
+    for i in lst:
+        print(i)
+
+print_list(['Printing', 'a', 'list'])
+print()
+print_list(['Printing', 'a', 'reversed', 'list'], True)
+print()
+print_list(lst=['A', 'list', 'with', 'specified', 'arguments'],rev=False)
+</pre></div></div>
+
+    <p>Save it as <b>print_list.py</b> and run it. This function
+      takes two parameters. You're familiar with the first parameter, <span class="purple">lst</span>; the second parameter,
+      <span class="purple">rev=False</span>, introduces a new feature—a keyword parameter, which has a default value (the value following the
+      equals sign, which in this case is <b>False</b>). If you call the function without passing an argument corresponding to the
+      <span class="purple">rev</span> parameter, it uses that default value.</p>
+
+    <p>The function's code looks at the value of <span class="purple">rev</span>, and if it is true, it re-binds the parameter to a reversed copy of
+      the list. It does this rather than reversing the list in place, because such a reversal would affect code outside of the
+      function (though there's nothing illegal about changing a mutable object inside of a function, you want to make sure that the
+      users of the function know they should expect such changes. We'll go over parameters and arguments in greater detail in future
+      lessons).</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The mention of mutable objects and unexpected changes applies especially to mutable default arguments. If
+        you write <code>def f(lst=[]):</code>, the <em>same</em> list object is reused across every call that omits the argument—a
+        classic source of subtle bugs. The safe idiom is <code>def f(lst=None): lst = [] if lst is None else lst</code>.
+        Here <code>rev=False</code> is a boolean (immutable), so there is no issue.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- RETURNING VALUES -->
+  <a name="h_04"></a>
+  <div class="heading">Returning Values</div>
+  <div class="headingText">
+
+    <p>The first function you wrote in this lesson, <span class="darkgreen">average()</span>, returned a value that your code then displayed via
+      the built-in <b>print()</b> function. When a function call is written in an expression (for example, in
+      <b>print(average(tst_lst))</b>), the value of the function call in that expression is actually the value that the function
+      returned in its <b>return</b> statement (2.5). But the second function you created, <span class="darkgreen">print_list()</span>, did not
+      include a <b>return</b> statement. This is equivalent to the function ending with <b>return None</b>. So all functions will return
+      some value, but by convention, functions that don't need to return anything can implicitly return <b>None</b>. If the function
+      isn't intended to return a value, it's confusing to add an explicit <b>return</b> statement.</p>
+
+    <p>You can either use the function calls in control flow code (that is, code that controls the order in which tasks are executed,
+      such as <b>if</b> or <b>while</b> statements) or save the values returned by functions, binding them to a variable in an
+      assignment statement and using that value again and again without needing to rerun the function. To see these principles in
+      action, create a new file as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def structure_list(text):
+    """Returns a list of punctuation in a text"""
+    punctuation_marks = "!?.,:;"
+    punctuation = []
+    for mark in punctuation_marks:
+        if mark in text:
+            punctuation.append(mark)
+    return punctuation
+
+text_block = """\
+Python is used everywhere nowadays.
+Major users include Google, Yahoo!, CERN and NASA (a team of 40 scientists and engineers
+is using Python to test the systems supporting the Mars Space Lander project).
+ITA, the company that produces the route search engine used by Orbitz, CheapTickets,
+travel agents and many international and national airlines, uses Python extensively.
+The YouTube video presentation system uses Python almost exclusively, despite their
+application requiring high network bandwidth and responsiveness.
+This snippet of text taken from chapter 1"""
+
+for line in text_block.splitlines():
+    print(line)
+    p = structure_list(line)
+    if p:
+        print("Contains:", p)
+    else:
+        print("No punctuation in this line of text")
+    if ',' in p:
+        print("This line contains a comma")
+    print('-'*80)
+</pre></div></div>
+
+    <p>Save it as <b>return_value.py</b> and run it. The
+      <span class="darkgreen">structure_list()</span> function accepts a single parameter called <i>text</i>. This value is checked to find
+      common punctuation marks. These results are placed into a list and that list is returned.</p>
+
+    <p>The tricky part is the loop itself and what it does with the returned value of <span class="darkgreen">structure_list()</span>. Instead of
+      immediately printing the value, we save it to the variable <span class="darkred">p</span>. This variable is subsequently used in two
+      different <b>if</b> statements. The first checks to see if the list <span class="darkred">p</span> is empty, then prints an appropriate
+      result. Then the variable is used again to determine whether or not a comma is present.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>Python is used everywhere nowadays.
+Contains: ['.']
+--------------------------------------------------------------------------------
+Major users include Google, Yahoo!, CERN and NASA (a team of 40 scientists and engineers
+Contains: ['!', ',']
+This line contains a comma
+--------------------------------------------------------------------------------
+is using Python to test the systems supporting the Mars Space Lander project).
+Contains: ['.']
+--------------------------------------------------------------------------------
+ITA, the company that produces the route search engine used by Orbitz, CheapTickets,
+Contains: [',']
+This line contains a comma
+--------------------------------------------------------------------------------
+travel agents and many international and national airlines, uses Python extensively.
+Contains: ['.', ',']
+This line contains a comma
+--------------------------------------------------------------------------------
+The YouTube video presentation system uses Python almost exclusively, despite their
+Contains: [',']
+This line contains a comma
+--------------------------------------------------------------------------------
+application requiring high network bandwidth and responsiveness.
+Contains: ['.']
+--------------------------------------------------------------------------------
+This snippet of text taken from chapter 1
+No punctuation in this line of text
+--------------------------------------------------------------------------------
+</pre></div></div>
+
+  </div>
+
+  <!-- MULTIPLE RETURN VALUES -->
+  <a name="h_05"></a>
+  <div class="heading">Multiple Return Values</div>
+  <div class="headingText">
+
+    <p>So, what if you need to return two values? Suppose that, in addition to the punctuation in our last example, you also want to
+      return the location of the word "Python." You could write a second function, but it's often more efficient when the two results
+      require related logic in order to have your function return another value. Try out the example below and get a better look at this
+      concept:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def structure_list(text):
+    """Returns a list of punctuation<ins> and the location of the word 'Python'</ins> in a text"""
+    punctuation_marks = "!?.,:;"
+    punctuation = []
+    for mark in punctuation_marks:
+        if mark in text:
+            punctuation.append(mark)
+    return punctuation<ins>, text.find('Python')</ins>
+
+text_block = """\
+Python is used everywhere nowadays.
+Major users include Google, Yahoo!, CERN and NASA (a team of 40 scientists and engineers
+is using Python to test the systems supporting the Mars Space Lander project).
+ITA, the company that produces the route search engine used by Orbitz, CheapTickets,
+travel agents and many international and national airlines, uses Python extensively.
+The YouTube video presentation system uses Python almost exclusively, despite their
+application requiring high network bandwidth and responsiveness.
+This snippet of text taken from chapter 1"""
+
+for line in text_block.splitlines():
+    print(line)
+    p<ins>, l</ins> = structure_list(line)
+    if p:
+        print("Contains:", p)
+    else:
+        print("No punctuation in this line of text")
+    if ',' in p:
+        print("This line contains a comma")
+    <ins>if l &gt;= 0:
+        print("Python is first used at {0}".format(l))</ins>
+    print('-'*80)
+</pre></div></div>
+
+    <p>Save and run it. We modified the function to return a two-element tuple. The first element is
+      the punctuation as computed in the previous version. The second element is the location of the word "Python." If the word doesn't
+      exist in the text, -1 is returned, as determined by the <span class="darkgreen">find()</span> method's specification.</p>
+
+    <p>The function result is assigned to two separate variables using an unpacking assignment, and an additional test is made on the
+      returned index value to determine whether to report the presence of the word "Python."</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>Python is used everywhere nowadays.
+Contains: ['.']
+Python is first used at 0
+--------------------------------------------------------------------------------
+Major users include Google, Yahoo!, CERN and NASA (a team of 40 scientists and engineers
+Contains: ['!', ',']
+This line contains a comma
+--------------------------------------------------------------------------------
+is using Python to test the systems supporting the Mars Space Lander project).
+Contains: ['.']
+Python is first used at 9
+--------------------------------------------------------------------------------
+ITA, the company that produces the route search engine used by Orbitz, CheapTickets,
+Contains: [',']
+This line contains a comma
+--------------------------------------------------------------------------------
+travel agents and many international and national airlines, uses Python extensively.
+Contains: ['.', ',']
+This line contains a comma
+Python is first used at 65
+--------------------------------------------------------------------------------
+The YouTube video presentation system uses Python almost exclusively, despite their
+Contains: [',']
+This line contains a comma
+Python is first used at 43
+--------------------------------------------------------------------------------
+application requiring high network bandwidth and responsiveness.
+Contains: ['.']
+--------------------------------------------------------------------------------
+This snippet of text taken from chapter 1
+No punctuation in this line of text
+--------------------------------------------------------------------------------
+</pre></div></div>
+
+  </div>
+
+  <!-- FUNCTIONS AND NAMESPACES -->
+  <a name="h_06"></a>
+  <div class="heading">Functions and Namespaces</div>
+  <div class="headingText">
+
+    <p>Using functions in Python has the added benefit of helping us begin to understand namespaces.</p>
+
+    <p>When you call a function, Python dynamically creates a new namespace and binds the argument values to the appropriate parameter
+      names. Assignments made during execution of the function call result in bindings in the function call namespace. When the
+      function returns, the namespace is automatically destroyed, and any bindings inside the namespace are lost.</p>
+
+    <p>You can sum up how functions handle namespaces in Python by understanding these two rules:</p>
+
+    <ol>
+      <li>Variables bound within a Python function body only exist in namespaces created by calls of that function.</li>
+      <li>Variables bound in the global namespace can be accessed by functions, but may not be bound unless specifically declared to be
+        global.</li>
+    </ol>
+
+    <p>Let's test out the first rule. As you will see, the variable <span class="darkred">c</span> defined below is assigned inside of the
+      <span class="darkgreen">test()</span> function. Start an interactive session and enter the commands shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; def test(a, b):
+...     c = a + b
+...     return c
+...
+&gt;&gt;&gt; test(1, 2)
+3
+&gt;&gt;&gt; c
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+NameError: name 'c' is not defined
+</pre></div></div>
+
+    <p>And now let's test the second rule. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; def test_a():
+...     print(a)
+...
+&gt;&gt;&gt; test_a()
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+  File "&lt;stdin&gt;", line 2, in test_a
+NameError: name 'a' is not defined
+&gt;&gt;&gt; a = "Python"
+&gt;&gt;&gt; test_a()
+Python
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The original output showed <code>NameError: global name 'a' is not defined</code>. Current Python drops
+        the word "global" and reports <code>NameError: name 'a' is not defined</code> in both cases. The behaviour is
+        identical; only the wording changed.</td>
+    </tr></table>
+
+    <p>You can see that when the function attempts to access a global variable <span class="darkred">a</span>, the function fails in its first call,
+      because <span class="darkred">a</span> has not yet been created in the global environment. The interpreter knows that <span class="darkred">a</span>
+      is not local to the function because the function body contains no assignment to it. Once the variable is created by an assignment
+      in the module namespace, a call to the function succeeds without raising an exception.</p>
+
+    <p>So, if any assignment is made to a variable inside a function body, the variable is local to the function. Changing a global
+      variable inside a function body isn't a best practice, but sometimes it's a necessary evil. To achieve that end, you use a
+      <b>global</b> statement to declare that the variable, although assigned inside of the function body, is in the module (global)
+      scope. To demonstrate this, type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; def test_a():
+...     global a
+...     a = "XML"
+...     print(a)
+...
+&gt;&gt;&gt; a = "Python"
+&gt;&gt;&gt; test_a()
+XML
+&gt;&gt;&gt; print(a)
+XML
+</pre></div></div>
+
+    <p>Here the value <b>"Python"</b> is bound to <span class="darkred"><b>a</b></span> in module scope. After the function is called, you can see
+      that <span class="darkred"><b>a</b></span> has been re-bound by the assignment inside of the function.</p>
+
+  </div>
+
+  <!-- PARAMETERS THAT RECEIVE MULTIPLE ARGUMENTS -->
+  <a name="h_07"></a>
+  <div class="heading">Parameters That Receive Multiple Arguments</div>
+  <div class="headingText">
+
+    <p>Sometimes when you create a Python function, you don't know how many arguments you are going to get and you want the caller to be
+      able to provide any number of arguments. For example, you may want to create a function that takes all the numbers given as
+      parameters and multiply them together. To do this, we use a special parameter specification, <b>*name</b>. There can be only one
+      such parameter, and it <i>must</i> follow any standard positional and/or keyword parameters.</p>
+
+    <p>When you prefix the parameter with the asterisk (*) character in the function definition, this tells the interpreter to collect
+      any unmatched positional arguments into a tuple and then bind the tuple to the name following the asterisk in the called
+      function's namespace. Inside of your function, this tuple can be used like any other Python iterable. Let's check it out. Create a
+      new file in the editor window as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def multiplier(*args):
+    """ Multiply the arguments together and return the result.
+        Return 0 if nothing is provided.
+    """
+    if not args:
+        return 0
+    product = args[0]
+    for a in args[1:]:
+        product *= a
+    return product
+
+print(multiplier())
+print(multiplier(1,2,3,4))
+print(multiplier(6,7,8,9,10,11,12,13))
+print(multiplier(10,20,100))
+</pre></div></div>
+
+    <p>Save it as <b>argument_list.py</b> and run it. The
+      <span class="darkgreen">multiplier()</span> function, our single parameter <b>args</b> (which you can think of as the "sequence
+      parameter") is prefixed with *, so all positional arguments to a call will appear inside of this tuple. The rest of the function
+      is made up of familiar code (if anything is unfamiliar, ask your instructor for a little help). We can call the function with any
+      number of arguments.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>0
+24
+51891840
+20000
+</pre></div></div>
+
+    <p>The * sequence parameter must follow any standard positional or keyword parameters. This can be useful when regular arguments are
+      also required. For instance, you may want to provide an optional amount to be added to the product. You'd accomplish that by using
+      a keyword argument with a default value of zero. Let's see how this is done. Modify the program as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>def multiplier(<ins>total=0.0, </ins>*args):
+    """ Multiply the arguments together<ins>, add a prior total,</ins> and return the result.
+        Return 0 if nothing is provided.
+    """
+    if not args:
+        return <ins>total</ins>
+    product = args[0]
+    for a in args[1:]:
+        product *= a
+    <ins>print("product:", product)</ins>
+    return product<ins> + total</ins>
+
+print(multiplier())
+print(multiplier(1,2,3,4))
+print(multiplier(6,7,8,9,10,11,12,13))
+print(multiplier(10,20,100))
+</pre></div></div>
+
+    <p>Save and run it. The first parameter of each set is now passed as the <b>total</b>, and the
+      rest as <b>args</b>.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>0.0
+product: 24
+25
+product: 8648640
+8648646
+product: 2000
+2010
+</pre></div></div>
+
+  </div>
+
+  <!-- PUTTING IT ALL TOGETHER -->
+  <a name="h_08"></a>
+  <div class="heading">Putting It All Together</div>
+  <div class="headingText">
+
+    <p>When you were in grade school, you learned that six times seven (6 x 7) was equivalent to adding six to itself seven times
+      (6 + 6 + 6 + 6 + 6 + 6 + 6). Calculating this the long way took time, so you memorized the end result. If you learned your "times
+      tables" at school, you can probably still respond immediately, even now, when asked "what is six times seven?" Storing something
+      in memory to save the trouble of working it out each time you need the answer is called <i>caching</i>.</p>
+
+    <p>Caching is taking calculated values from arguments and storing them so that you can return the values if asked to compute a result
+      from the same arguments again later. This way, instead of calculating the same thing a hundred times, you save each calculation
+      the first time you make it, and recall it when needed. When applied to a function, this caching technique is often referred to as
+      <i>memoization</i>.</p>
+
+    <p>To illustrate, we will use the built-in <span class="darkgreen">input()</span> method to prompt for two numeric values. The code does
+      multiplication the old way (6 + 6 + 6 + 6 + 6 + 6 + 6). Finally, we'll use the ability of functions to use the global namespace to
+      <i>cache</i> the results, so when you try it with big numbers (10 million * 10 million), you don't need to repeat lengthy
+      calculations.</p>
+
+    <p>In the code example below, we create a <span class="darkgreen">kid()</span> function to do the math. Rather than introduce some
+      horrendously complicated function that would be difficult to understand, we'll use a more manageable function.
+      <span class="darkgreen">kid()</span> does multiplication the hard way! Create a new file in the editor window and type the code shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>""" Demonstrates the need for caching """
+
+def kid(a, b):
+    """ Multiplication the hard way """
+    c = 0
+    for i in range(b):
+        c += a
+    return c
+
+while True:
+    a = input('enter a number: ')
+    b = input('enter another number: ')
+    a = int(a)
+    b = int(b)
+    print(kid(a,b))
+</pre></div></div>
+
+    <p>Save it as <b>caching.py</b> and run it. Try it with small numbers
+      first, perhaps 4 and 5. Then try something large like 5 and 10000000 (one and seven zeros). You'll have to wait awhile as the computer adds 5 ten
+      million times. That crazy kid takes forever to do basic math!</p>
+
+    <p>Now, modify your <span class="darkgreen">kid()</span> function so that it maintains a record of the arguments it has been called with, and
+      saves previously-computed results in a global dict so that before it even starts to perform a calculation, it can provide a
+      previously-computed result, thereby saving time. Edit the code below as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>""" Demonstrates <del>the need for </del>caching """
+
+<ins>global_cache = {}</ins>
+
+def kid(a, b):
+    """ Multiplication the hard way """
+    <ins>if (a, b) in global_cache:
+        return global_cache[(a, b)]</ins>
+
+    c = 0
+    for i in range(b):
+        c += a
+    <ins>global_cache[(a, b)] = c</ins>
+    return c
+
+while True:
+    a = input('enter a number: ')
+    b = input('enter another number: ')
+    a = int(a)
+    b = int(b)
+    print(kid(a,b))
+    <ins>print(global_cache)
+    print('-'*40)</ins>
+</pre></div></div>
+
+    <p>Now try the program again. Enter 5 * 10000000. Wait a few seconds for the response and try it again. You'll notice the second time
+      it returns almost instantly.</p>
+
+    <p>Here, when the function is called, it immediately checks the global <span class="purple">global_cache</span> dict to see whether this
+      particular set of arguments has been used before. If it has, the <i>cached</i> result is immediately returned, bypassing the
+      lengthy computation. If the argument set isn't found in <span class="purple">global_cache</span>, then it is computed in the usual way, but
+      before the result is returned, it is added to the <span class="purple">global_cache</span> so this new result can be produced immediately if
+      we ever need it again.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Python 3.2 added <code>functools.lru_cache</code> (and, since 3.9,
+        <code>functools.cache</code>) as a ready-made decorator for exactly this pattern. Applying
+        <code>@functools.cache</code> to a function gives you automatic memoization with no
+        hand-written cache dict required.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- A SOLID FOUNDATION -->
+  <a name="h_09"></a>
+  <div class="heading">A Solid Foundation</div>
+  <div class="headingText">
+
+    <p>In this lesson, you started to learn how to write functions, understand the difference between parameters and arguments, how return
+      values work, and a little more about namespaces. I'm really impressed with your progress so far! Now that you have a pretty good
+      grip on Python basics, let's move on and learn about modules and imports, and even more about namespacing.</p>
+
+    <p>See you in the next lesson!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="pythonsBuiltInFunctions.html">Python's Built-In Functions</a>
+    <a class="next" href="pythonStandardLibrary.html">The Python Standard Library</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

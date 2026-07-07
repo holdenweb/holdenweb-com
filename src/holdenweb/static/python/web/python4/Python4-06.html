@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Using Exceptions Wisely</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Using Exceptions Wisely</div>
+
+  <p>This lesson includes the following topics:</p>
+  <ul>
+    <li><a href="#exceptions_are_not_necessarily_errors">Exceptions Are Not (Necessarily) Errors</a></li>
+    <li><a href="#creating_exceptions_and_raising_instances">Creating Exceptions and Raising Instances</a></li>
+    <li><a href="#using_exceptions_wisely">Using Exceptions Wisely</a></li>
+  </ul>
+
+  <!-- EXCEPTIONS ARE NOT NECESSARILY ERRORS -->
+  <a name="exceptions_are_not_necessarily_errors"></a>
+  <a name="h_01"></a>
+  <div class="heading">Exceptions Are Not (Necessarily) Errors</div>
+  <div class="headingText">
+
+    <p>Raising an exception alters the flow of control in a program. The interpreter normally executes statements one after the
+      other (with looping to provide repetition, and conditionals to allow decisions to be taken). When an exception is raised,
+      however, an entirely different mechanism takes over. Precisely because it <i>is</i> exceptional, we tend to be less
+      familiar with it, but knowing how exceptions are raised and handled can help you to program to focus on the main task, in
+      confidence that when exceptional conditions do occur they will be handled appropriately. Knowing how, and when, to use
+      exceptions, is a part of your development as a Python programmer.</p>
+
+    <p>Exceptions offer such programming convenience that we would likely be quite happy to pay a modest penalty in performance.
+      The happy fact is, though, that when used judiciously exceptions can actually enhance your programs' performance as well
+      as making them easier to read.</p>
+
+    <!-- SPECIFYING EXCEPTIONS -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Specifying Exceptions</div>
+    <div class="subheadingText">
+
+      <p>Python's built-in exceptions are all available (in the built-in namespace, naturally) without any import. There is an
+        inheritance hierarchy among them. From the Python 3.1 documentation:</p>
+
+<div class="observeBox"><div class="observeTitle">Python's Built-In Exception Hierarchy</div><div class="observe"><pre>
+BaseException
+ +-- SystemExit
+ +-- KeyboardInterrupt
+ +-- GeneratorExit
+ +-- Exception
+      +-- StopIteration
+      +-- ArithmeticError
+      |    +-- FloatingPointError
+      |    +-- OverflowError
+      |    +-- ZeroDivisionError
+      +-- AssertionError
+      +-- AttributeError
+      +-- BufferError
+      +-- EnvironmentError
+      |    +-- IOError
+      |    +-- OSError
+      |         +-- WindowsError (Windows)
+      |         +-- VMSError (VMS)
+      +-- EOFError
+      +-- ImportError
+      +-- LookupError
+      |    +-- IndexError
+      |    +-- KeyError
+      +-- MemoryError
+      +-- NameError
+      |    +-- UnboundLocalError
+      +-- ReferenceError
+      +-- RuntimeError
+      |    +-- NotImplementedError
+      +-- SyntaxError
+      |    +-- IndentationError
+      |         +-- TabError
+      +-- SystemError
+      +-- TypeError
+      +-- ValueError
+      |    +-- UnicodeError
+      |         +-- UnicodeDecodeError
+      |         +-- UnicodeEncodeError
+      |         +-- UnicodeTranslateError
+      +-- Warning
+           +-- DeprecationWarning
+           +-- PendingDeprecationWarning
+           +-- RuntimeWarning
+           +-- SyntaxWarning
+           +-- UserWarning
+           +-- FutureWarning
+           +-- ImportWarning
+           +-- UnicodeWarning
+           +-- BytesWarning
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The hierarchy above reflects Python 3.1. Current Python 3 has additional exception
+          types: <code>BlockingIOError</code>, <code>ChildProcessError</code>, <code>ConnectionError</code>
+          (and its subclasses), <code>FileExistsError</code>, <code>FileNotFoundError</code>,
+          <code>InterruptedError</code>, <code>IsADirectoryError</code>, <code>NotADirectoryError</code>,
+          <code>PermissionError</code>, <code>ProcessLookupError</code>, and <code>TimeoutError</code> under
+          <code>OSError</code>; <code>RecursionError</code> under <code>RuntimeError</code>;
+          <code>StopAsyncIteration</code> and <code>ExceptionGroup</code> at the top level; and others.
+          The overall structure and the advice below remain valid.</td>
+      </tr></table>
+
+      <p>Although everything inherits from the <b>BaseException</b> class, its first three subclasses (<b>SystemExit</b>,
+        <b>KeyboardInterrupt</b> and <b>GeneratorExit</b>) should not be caught and handled by regular programs under normal
+        circumstances. About the most general specification to catch would normally be <b>except Exception</b>, and that would be
+        reserved for programs such as long-running network servers or equipment control and monitoring applications.</p>
+
+      <p>The full syntax of the <b>except</b> clause allows you to specify not just a single exception but a whole class or set of
+        them, all to be handled in the same way by the same except clause. When you specify an exception class then, any of
+        its subclasses will also be caught (unless, that is, the subclass is in an earlier except clause for the same
+        try and therefore caught already). In other words, if your program catches <b>ArithmeticError</b>, it also
+        catches <b>FloatingPointError</b>, <b>OverflowError</b> and <b>ZeroDivisionError</b>. As the next interactive session
+        should make plain, under some circumstances the ordering of the except clauses will make a difference in which
+        handler handles the exception.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Where subclasses are concerned, except clause ordering is significant</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>try:</ins>
+...     <ins>raise ZeroDivisionError</ins>
+... <ins>except ArithmeticError:</ins>
+...     <ins>print("ArithmeticError")</ins>
+... <ins>except ZeroDivisionError:</ins>
+...     <ins>print("ZeroDivisionError")</ins>
+...
+ArithmeticError
+&gt;&gt;&gt; <ins>try:</ins>
+...     <ins>raise ZeroDivisionError</ins>
+... <ins>except ZeroDivisionError:</ins>
+...     <ins>print("ZeroDivisionError")</ins>
+... <ins>except ArithmeticError:</ins>
+...     <ins>print("ArithmeticError")</ins>
+...
+ZeroDivisionError
+&gt;&gt;&gt;
+</pre></div></div>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+try:
+    raise ZeroDivisionError
+<span class="darkred">except</span> <span class="darkblue">ArithmeticError</span>:
+    print("ArithmeticError")
+<span class="red">except</span> <span class="blue">ZeroDivisionError</span>:
+    print("ZeroDivisionError")
+
+ArithmeticError
+try:
+    raise ZeroDivisionError
+<span class="red">except</span> <span class="blue">ZeroDivisionError</span>:
+    print("ZeroDivisionError")
+<span class="darkred">except</span> <span class="darkblue">ArithmeticError</span>:
+    print("ArithmeticError")
+
+ZeroDivisionError
+</pre></div></div>
+
+      <p>In the first example, since ZeroDivisionError is a subclass of ArithmeticError, the first <span class="darkred">except</span> clause
+        is triggered, and the <span class="blue">ZeroDivisionError</span> is never tested for (since the second <span class="red">except</span> clause was
+        never evaluated). In the second example, the <span class="blue">ZeroDivisionError</span> is specifically recognized because it is
+        tested for before the <span class="darkblue">ArithmeticError</span>.</p>
+
+    </div></div>
+
+  </div>
+
+  <!-- CREATING EXCEPTIONS AND RAISING INSTANCES -->
+  <a name="creating_exceptions_and_raising_instances"></a>
+  <a name="h_02"></a>
+  <div class="heading">Creating Exceptions and Raising Instances</div>
+  <div class="headingText">
+
+    <p>If you want to create your own exceptions, simply subclass the built-in Exception class or one of its already existing
+      subclasses. Then create instances as required to raise exceptions. You may want to include an __init__() method on your
+      subclass. The standard Exception.__init__() saves the tuple of positional arguments to the args attribute, so you can either
+      do the same yourself or call Exception.__init__() to do it on your behalf. Your exceptions may at some stage be passed to a
+      piece of code that expects to find an args instance variable.</p>
+
+    <p>Here's an example of a user-defined exception.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">How to Define an Exception [keep this session open and re-use it]</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class LocalError(Exception):</ins>
+...     <ins>def __init__(self, msg):</ins>
+...         <ins>self.args = (msg, )</ins>
+...         <ins>self.msg = msg</ins>
+...     <ins>def __str__(self):</ins>
+...         <ins>return self.msg</ins>
+...
+&gt;&gt;&gt; <ins>try:</ins>
+...     <ins>raise LocalError("Appropriate message")</ins>
+... <ins>except LocalError as e:</ins>
+...     <ins>print("Trapped", e)</ins>
+...
+Trapped Appropriate message
+&gt;&gt;&gt; <ins>raise LocalError</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+    raise LocalError
+TypeError: LocalError.__init__() missing 1 required positional argument: 'msg'
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The original traceback read <code>TypeError: __init__() takes exactly 2 positional
+        arguments (1 given)</code>. Current Python gives the more informative
+        <code>TypeError: LocalError.__init__() missing 1 required positional argument: 'msg'</code>,
+        naming both the method and the missing parameter. The behaviour is identical.</td>
+    </tr></table>
+
+    <p>This exception class requires an argument when an instantiation call is made to create a new instance—without one,
+      the __init__() method does not receive enough arguments. You can see this happening when the <b>raise LocalError</b>
+      statement is executed at the end of the session: when you use a class to raise an exception, the interpreter attempts to
+      create an instance of that exception by calling the class with no arguments. So the message you see has nothing to do with
+      the exception you have tried to raise; it's reporting the interpreter's inability to create an exception instance because
+      of an argument mismatch in the __init__() method.</p>
+
+    <p>Exception objects are generally simple—the most they normally do is establish attribute values that can be used by the
+      handler to extract information about the exception. Since they are classes, it is possible to add complex logic in multiple
+      methods, but this is normally not done. As usual in Python, simplicity is the order of the day.</p>
+
+    <p>Understanding the straightforward flow of control when an exception is raised in the try suite is relatively easy. It is
+      less easy to appreciate what happens when exceptions occur in the except or finally suites. To look at that, define a
+      function that raises exceptions in one of those three places, then see what it does under those circumstances.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>
+class LocalError(Exception):
+    def __init__(self, msg):
+        self.args = (msg, )
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
+def fxfin(where):
+    "Demonstrate exceptions in various places."
+    try:
+        if where == "try":
+            raise LocalError("LocalError in try")
+        raise ValueError("ValueError in try")
+    except (ValueError, LocalError) as e:
+        print("Caught", e)
+        if where == "except":
+            raise LocalError("LocalError in except")
+        print("Exception not raised in except")
+    finally:
+        print("Running finalization")
+        if where == "finally":
+            raise LocalError("LocalError in finally")
+        print("Exception not raised in finally")
+
+for where in "try", "except", "finally":
+    print("---- Exception in %s ----" % where)
+    try:
+        fxfin(where)
+    except Exception as e:
+        print("!!!", e, "raised")
+    else:
+        print("+++ No exception raised +++")
+</ins></pre></div></div>
+
+    <p>When you run the program you should see the following output:</p>
+
+<div class="observeBox"><div class="observeTitle">Results of running fxfin.py</div><div class="observe"><pre>
+---- Exception in try ----
+Caught LocalError in try
+Exception not raised in except
+Running finalization
+Exception not raised in finally
++++ No exception raised +++
+---- Exception in except ----
+Caught ValueError in try
+Running finalization
+Exception not raised in finally
+!!! LocalError in except raised
+---- Exception in finally ----
+Caught ValueError in try
+Exception not raised in except
+Running finalization
+!!! LocalError in finally raised
+</pre></div></div>
+
+    <p>When the exception is raised in the try suite, everything is perfectly normal and comprehensible, and both the except and
+      finally handlers run without interruption. By the time the finally suite runs the exception has already been fully handled.
+      The except suite is always activated, but it can be so either by virtue of the parameter value or because
+      of the final explicit exception. This means the except clause is more readable. With the "except" argument the
+      handler raises a second exception. This
+      terminates the except handler, but the finally handler still runs; once it is complete, the second exception is
+      still raised from the function.
+      When the exception is raised in the finally suite, the finally handler does not run to completion, and the exception is
+      passed up to the surrounding code (so the traceback is produced because of an uncaught
+      exception).</p>
+
+    <p>Note that when you see a traceback for the case where an exception is raised during the handling of an exception
+      that a second exception occurred during the processing of the first. This information may be confusing to end users, but
+      can be invaluable to a programmer.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Python 3.3 formalised implicit exception chaining: when a new exception is raised inside
+        an <code>except</code> block, the original exception is automatically attached as
+        <code>__context__</code> on the new one, and Python prints "During handling of the above exception,
+        another exception occurred:" between the two tracebacks. You can also chain explicitly with
+        <code>raise NewError("...") from original_err</code>, which sets <code>__cause__</code> and
+        prints "The above exception was the direct cause of the following exception:". To suppress the
+        chaining display entirely, use <code>raise NewError("...") from None</code>.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- USING EXCEPTIONS WISELY -->
+  <a name="using_exceptions_wisely"></a>
+  <a name="h_03"></a>
+  <div class="heading">Using Exceptions Wisely</div>
+  <div class="headingText">
+
+    <p>Let's take a look at the bytecodes that the CPython 3.1 interpreter produces for a simple function with exception handling.</p>
+
+    <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> Different Python interpreters may use entirely different techniques to handle exceptions, but the effect should always
+      be the same as in these descriptions. </td></tr></table>
+
+<div class="interactiveBox"><div class="interactiveTitle">Examine the CPython byte code for try/except</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import dis</ins>
+&gt;&gt;&gt; <ins>def fex1():</ins>
+...     <ins>try:</ins>
+...         <ins>a = 1</ins>
+...     <ins>except KeyError:</ins>
+...         <ins>b = 2</ins>
+...
+&gt;&gt;&gt; <ins>dis.dis(fex1)</ins>
+  2           0 SETUP_EXCEPT            10 (to 13)
+
+  3           3 LOAD_CONST               1 (1)
+              6 STORE_FAST               0 (a)
+              9 POP_BLOCK
+             10 JUMP_FORWARD            24 (to 37)
+
+  4     &gt;&gt;   13 DUP_TOP
+             14 LOAD_GLOBAL              0 (KeyError)
+             17 COMPARE_OP              10 (exception match)
+             20 POP_JUMP_IF_FALSE       36
+             23 POP_TOP
+             24 POP_TOP
+             25 POP_TOP
+
+  5          26 LOAD_CONST               2 (2)
+             29 STORE_FAST               1 (b)
+             32 POP_EXCEPT
+             33 JUMP_FORWARD             1 (to 37)
+        &gt;&gt;   36 END_FINALLY
+        &gt;&gt;   37 LOAD_CONST               0 (None)
+             40 RETURN_VALUE
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The bytecode listing above is from CPython 3.1. The CPython compiler has been heavily
+        revised since then: Python 3.11 introduced specialised "adaptive" opcodes; Python 3.12 and later
+        reorganised the exception-handling machinery further, replacing <code>SETUP_EXCEPT</code> with an
+        exception table consulted at runtime rather than an inline block setup instruction. Running
+        <code>dis.dis(fex1)</code> on a current interpreter will show entirely different opcode names and
+        structure. The high-level description in the paragraphs below still accurately characterises what
+        the generated code <em>does</em>, even though the implementation details have changed.</td>
+    </tr></table>
+
+    <p>The interpreter establishes an exception-handling context by pointing at location 13 as the place to go if an exception
+      occurs (this is what the SETUP EXCEPT op code does). This is followed by the body of the try clause. If the try clause
+      reaches the end, the POP_BLOCK opcode throws away the exception-handling context and the JUMP_FORWARD sends the interpreter
+      off to perform the implicit <b>return None</b> that terminates every function.</p>
+
+    <p>If an exception is raised, however, control is transferred to location 13, where the interpreter attempts to match the
+      exception to the except specifications. If a match is found (and after various housekeeping operations we will ignore),
+      line 26 is where the except suite is performed, after which another JUMP_FORWARD again selects the implicit
+      <b>return None</b>. If no match is found for the exception, the END_FINALLY ensures that the exception is re-raised to
+      activate any surrounding exception-handling contexts.</p>
+
+    <p>The try/except blocks in your program can be nested <i>lexically</i> (that is, a try/except can be a part of the try suite
+      of another try suite) or <i>dynamically</i> (that is, a try suite can call a function that activates one or more
+      try/excepts). When a try block is nested dynamically, it will be deactivated by termination of the function
+      <i>even if the return statement is in the try suite or an except suite</i>. The finally suite is <i>always</i>
+      executed, even when the
+      function returns from an unexpected place. An explicit return in the finally suite does not allow that suite to run to
+      completion—instead the return is executed (overriding any return
+      value that might have triggered the execution of the finally clause).</p>
+
+    <!-- EXCEPTION TIMINGS -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Exception Timings</div>
+    <div class="subheadingText">
+
+      <p>Sometimes in optimization, it's useful to be able to know how "expensive" it is in time to handle an exception. With
+        judicious coding, you can actually save time using exceptions, but you (as always) need to think about what you are doing
+        rather than just applying rules blindly. The next interactive session shows that it can be good or bad to rely on
+        exceptions, depending on the surrounding circumstances.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Exception timings depend on how frequently the exception is raised</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def fdct1():</ins>
+...     <ins>wdict = {}</ins>
+...     <ins>for word in words:</ins>
+...         <ins>if word not in wdict:</ins>
+...             <ins>wdict[word] = 0</ins>
+...         <ins>wdict[word] += 1</ins>
+...
+&gt;&gt;&gt; <ins>def fdct2():</ins>
+...     <ins>wdict = {}</ins>
+...     <ins>for word in words:</ins>
+...         <ins>try:</ins>
+...             <ins>wdict[word] += 1</ins>
+...         <ins>except KeyError:</ins>
+...             <ins>wdict[word] = 1</ins>
+...
+&gt;&gt;&gt; <ins>from timeit import timeit</ins>
+&gt;&gt;&gt; <ins>words = "the quick brown fox jumps over the lazy dog".split()</ins>
+&gt;&gt;&gt; <ins>timeit("fdct1()", "from __main__ import fdct1, words")</ins>
+0.8012009589583613
+&gt;&gt;&gt; <ins>timeit("fdct2()", "from __main__ import fdct2, words")</ins>
+1.33151116699446
+&gt;&gt;&gt; <ins>words = ["same"] * 9</ins>
+&gt;&gt;&gt; <ins>timeit("fdct1()", "from __main__ import fdct1, words")</ins>
+0.5743699169834144
+&gt;&gt;&gt; <ins>timeit("fdct2()", "from __main__ import fdct2, words")</ins>
+0.587544666021131
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">These timings were measured on Python 3.14, which is considerably faster than
+          Python 3.1. The original figures were roughly 4.0 s / 6.7 s (many-unique-words) and
+          2.7 s / 2.9 s (all-same). The relative relationships remain: the explicit membership test wins
+          when the KeyError fires on most iterations; the exception-based version draws level only when
+          the exception is rarely raised. Note also that the <code>timeit</code> setup string now includes
+          <code>words</code> as a global; without it, Python 3 would not find the name inside
+          <code>fdct1()</code> and <code>fdct2()</code>.</td>
+      </tr></table>
+
+      <p>Here you did two sets of timings, the first with a word list in which there was only one duplicate, the second with one
+        where every word was the same. Under the former conditions the specific test for <b>word not in wdict</b> won out against
+        raising an exception. In the second case, however, when the exception was rarely raised, the exception-based solution was
+        at least competitive although still not actually faster. Thus, the optimal code can depend to some extent on the data. If
+        you have advance information about the make-up of your data, that's all very well, but if not, it would be more difficult
+        to try and choose between approaches.</p>
+
+      <p>The important thing is not to run away with the idea that exceptions are somehow intended to be used in exceptional
+        circumstances. If your logic is easier to express with exceptions, use them. If for some reason your program, once
+        working, does not work fast enough, you can refactor it (making sure you do not break any tests) for better
+        performance.</p>
+
+    </div></div>
+
+  </div>
+
+  <p>Confidence in using exceptions to flag abnormal processing conditions is important to keep your logic simple. Without
+    exceptions, you have to have functions return sentinel values to indicate that problems occurred during processing. With
+    them, you can just write the logic of the main task "in a straight line" inside a try clause, and use except to catch
+    exceptions that indicate special processing is required.</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-05.html">Optimizing Your Code</a>
+    <a class="next" href="Python4-07.html">Advanced Uses of Decorators</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

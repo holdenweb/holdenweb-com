@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Going Further with Functions</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Going Further with Functions</div>
+
+  <div class="outcomesTitle">Course Objectives</div>
+  <div class="outcomes">
+    <p>Welcome to the O'Reilly School of Technology (OST) <b>Advanced Python</b> course! We're happy you've chosen to learn Python
+        programming with us. By the time you finish the course, you will have expanded your knowledge of Python and applied it to
+        some really interesting technologies.</p>
+
+    <p>This class builds on your existing Python knowledge, incorporating further object oriented design principles and
+    techniques with the intention of rounding out your skill set. Techniques like recursion, composition and delegation are
+    explained and put into practice through the ever-present test-driven practical work.</p>
+
+    <p>Upon completion of this course, you will be able to:</p>
+
+    <ul>
+      <li>Extend Python code functionality through inheritance, complex delegation, and recursive composition</li>
+      <li>Publish, subscribe, and optimize your code</li>
+      <li>Create advanced class decorators and generators in Python</li>
+      <li>Demonstrate knowledge of Python introspection</li>
+      <li>Apply multi-threading and mult-processing to Python development</li>
+      <li>Manage arithmetic contexts and memory mapping</li>
+      <li>Demonstrate understanding of the Python community, conferences, and job market</li>
+      <li>Develop a multi-processing solution to a significant data processing problem</li>
+    </ul>
+  </div>
+
+  <a name="h_01"></a>
+  <div class="heading">Learning with O'Reilly School of Technology Courses</div>
+  <div class="headingText">
+
+    <p>As with every O'Reilly School of Technology course, we'll take the <i>useractive</i>
+      approach to learning. This means that you (the user) will be active! You'll learn by doing,
+      building live programs, testing them and experimenting with them—hands-on!</p>
+
+    <p>To learn a new skill or technology, you have to experiment. The more you experiment, the more
+      you learn. Our system is designed to maximize experimentation and help you <i>learn to
+        learn</i> a new skill.</p>
+
+    <p>We'll program as much as possible to be sure that the principles sink in and stay with you.</p>
+
+    <p>Each time we discuss a new concept, you'll put it into code and see what YOU can do with it.
+      On occasion we'll even give you code that doesn't work, so you can see common mistakes and how
+      to recover from them. Making mistakes is actually another good way to learn.</p>
+
+    <p>Here are some tips for using O'Reilly School or Technology courses effectively:</p>
+
+    <ul>
+      <li><b>Type the code.</b> Resist the temptation to cut and paste the example code we give you.
+        Typing the code
+        actually gives you a feel for the programming task. Then play around with the examples to find out what
+        else you can make them do, and to check your understanding. It's highly
+        unlikely you'll break anything by experimentation. If you <i>do</i> break something, that's an indication to us that
+        we need to improve our system!</li>
+      <li><b>Take your time.</b> Learning takes time. Rushing can have negative effects on your
+        progress. Slow down and let your brain absorb the new information thoroughly.
+        Taking your time helps to maintain a relaxed, positive approach. It also gives you the
+        chance to try new things and learn more than you otherwise would if you blew
+        through all of the coursework too quickly.</li>
+      <li><b>Experiment.</b> Wander from the path often and explore the possibilities. We can't
+        anticipate all of your questions and ideas, so it's up to you to experiment and create on
+        your own. Your instructor will help if you go completely off the rails.</li>
+      <li><b>Accept guidance, but don't depend on it.</b> Try to solve problems on your own. Going
+        from misunderstanding to understanding is the best way to acquire a new skill. Part of what
+        you're learning is problem solving. Of course, you can always contact your instructor
+        for hints when you need them.</li>
+      <li><b>Use all available resources!</b> In real-life problem-solving, you aren't bound by false
+        limitations; in OST courses, you are free to use any resources at your disposal to solve
+        problems you encounter: the Internet, reference books, and online help are all fair game.</li>
+      <li><b>Have fun!</b> Relax, keep practicing, and don't be afraid to make mistakes!
+        Your instructor will keep you at it until you've
+        mastered the skill. We want you to get that satisfied, "I'm so cool! I did it!"
+        feeling. And you'll have some projects to show off when you're done.</li>
+    </ul>
+
+  </div>
+
+  <a name="h_01"></a>
+  <div class="heading">Lesson Format</div>
+  <div class="headingText">
+
+    <p>We'll try out lots of examples in each lesson. We'll have you write code,
+    look at code, and edit existing code. The code will be presented in boxes that will
+    indicate what needs to be done to the code inside.</p>
+
+    <p>Whenever you see white boxes like the one below, you'll <i>type</i> the contents into the editor window to try the example yourself.
+      The CODE TO TYPE bar on top of the white box contains directions for you to follow:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>White boxes like this contain code for you to try out (type into a file to run).
+
+If you have already written some of the code, new code for you to add <ins>looks like this</ins>.
+
+If we want you to remove existing code, the code to remove <del>will look like this</del>.
+</pre></div></div>
+
+    <p>We may run programs and do some other activities in a terminal session in the operating system or other command-line environment. These will be shown
+      like this:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+The plain black text that we present in these INTERACTIVE boxes is
+provided by the system (not for you to type). The commands we want you to type <ins>look like this</ins>.
+</pre></div></div>
+
+    <p>Code and information presented in a gray OBSERVE box is for you to <i>inspect</i> and <i>absorb</i>.
+    This information is often color-coded, and followed by text explaining the code in detail:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+Gray "Observe" boxes like this contain <span class="darkred">information</span> (usually code specifics) for you to <i>observe</i>.
+</pre></div></div>
+
+    <p>The paragraph(s) that follow may provide addition details on <span class="darkred">information</span> that was
+      highlighted in the Observe box.</p>
+
+    <p>We'll also set especially pertinent information apart in "Note" boxes:</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">Notes provide information that is useful, but not absolutely necessary for performing the tasks at hand.</td>
+    </tr></table>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Tip</td>
+      <td class="note">Tips provide information that might help make the tools easier for you to use, such as shortcut keys.</td>
+    </tr></table>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">WARNING</td>
+      <td class="note">Warnings provide information that can help prevent program crashes and data loss.</td>
+    </tr></table>
+
+  </div>
+
+  <p>Before you start programming in Python, let's review a couple of the tools you'll be using. If you've already taken the
+      OST course on <b>Introduction to Python</b>, <b>Getting More Out of Python</b> and/or
+      <b>The Python Environment</b>, you can skip to the <a href="#functions_are_objects">next section</a> if you like, or you might want
+      to go through this section to refresh your memory.</p>
+
+  <a name="functions_are_objects"></a>
+  <a name="h_02"></a>
+  <div class="heading">Functions Are Objects</div>
+  <div class="headingText">
+
+    <p>Everything in Python is an object, but unlike most objects in Python, function objects are not created by calling a
+        class. Instead you use the <b>def</b> statement, which causes the interpreter to compile the
+        indented suite that comprises the function body and bind the compiled code object to the function's name in the current
+        local namespace.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Function Attributes</div>
+    <div class="subheadingText">
+
+      <p>Like any object in Python, functions have a particular type; and like with any object in Python, you can examine a
+          function's namespace with the <b>dir()</b> function. Type the commands shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def g(x):</ins>
+...     <ins>return x*x</ins>
+...
+&gt;&gt;&gt; <ins>g</ins>
+&lt;function g at 0x100572490&gt;
+&gt;&gt;&gt; <ins>type(g)</ins>
+&lt;class 'function'&gt;
+&gt;&gt;&gt; <ins>dir(g)</ins>
+['__annotations__', '__call__', '__class__', '__closure__', '__code__',
+'__defaults__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__',
+'__ge__', '__get__', '__getattribute__', '__globals__', '__gt__', '__hash__',
+'__init__', '__kwdefaults__', '__le__', '__lt__', '__module__', '__name__',
+'__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__',
+'__sizeof__', '__str__', '__subclasshook__']
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In Python 3.14, the output of <code>dir(g)</code> includes additional attributes such as
+          <code>__annotate__</code>, <code>__builtins__</code>, <code>__qualname__</code>, and
+          <code>__type_params__</code> that were not present in the course's original version of Python 3.
+          The exact list varies by Python release; the principle is the same.</td>
+      </tr></table>
+
+      <p>While this tells you what attributes function objects possess, it does not make it very clear which of them are unique to
+          functions. A good Python programmer like you needs to be able to think of a way to discover the attributes of
+          function that aren't also attributes of the base object, <b>object</b>.</p>
+
+      <p>Think about it for a minute. Here's a hint: think about sets.</p>
+
+      <p>You may remember that the set() function produces a set when applied to any iterable (which includes lists: the dir()
+          function returns a list). You may also remember that sets implement a subtraction operation: if
+          <i>a</i> and <i>b</i> are sets, then <i>a-b</i> is the set of items in <i>a</i> that are not also in <i>b</i>. Go ahead and add the
+      code in <ins>blue</ins> as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def f(x):</ins>
+...     <ins>return x</ins>
+...
+&gt;&gt;&gt; <ins>function_attrs = set(dir(f))</ins>
+&gt;&gt;&gt; <ins>object_attrs = set(dir(object))</ins>
+&gt;&gt;&gt; <ins>function_attrs -= object_attrs</ins>
+&gt;&gt;&gt; <ins>from pprint import pprint</ins>
+&gt;&gt;&gt; <ins>pprint(sorted(function_attrs))</ins>
+['__annotate__',
+ '__annotations__',
+ '__builtins__',
+ '__call__',
+ '__closure__',
+ '__code__',
+ '__defaults__',
+ '__dict__',
+ '__get__',
+ '__globals__',
+ '__kwdefaults__',
+ '__module__',
+ '__name__',
+ '__qualname__',
+ '__type_params__']
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The output above is from Python 3.14. The original course showed a shorter list
+          (<code>__annotations__</code>, <code>__call__</code>, <code>__closure__</code>,
+          <code>__code__</code>, <code>__defaults__</code>, <code>__dict__</code>, <code>__get__</code>,
+          <code>__globals__</code>, <code>__kwdefaults__</code>, <code>__module__</code>,
+          <code>__name__</code>). Python 3 has grown several new function attributes since then; the
+          technique of using set subtraction to find them remains just as useful.</td>
+      </tr></table>
+
+      <p>At this stage in your Python programming career, you don't need to worry about most of these, but there's certainly no harm
+          in learning what they do. Some of the features they offer are very advanced. You can read more about them in the official
+          Python documentation. You can learn a lot
+          by working on an interactive terminal session and by reading the documentation.</p>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Function and Method Calls</div>
+    <div class="subheadingText">
+
+      <p>The __call__() method is interesting—its name implies that it has something to do with function calling, and this is
+          correct. The interpreter calls any callable object by making use of its __call__() method. You can actually call
+          this method directly if you want to; it's exactly the same as calling the function directly.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def f1(x):</ins>
+...    <ins>print("f1({}) called".format(x))</ins>
+...    <ins>return x</ins>
+...
+&gt;&gt;&gt; <ins>f1.__call__(23) # should be equivalent to f1(23)</ins>
+f1(23) called
+23
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>You can define your own classes to include a __call__() method, and if you do, the instances you create from that class
+          will be callable directly, just like functions. This is a fairly general mechanism that illustrates a Python
+          equivalence you haven't observed yet:</p>
+
+      <p><div class="c"><img src="images/lessonImages/CallEquivalence.png" alt="Diagram showing the equivalence between calling a function and calling __call__ on it"></div></p>
+
+      <p>Give it a try. Create a class with instances that are callable. Then verify that you can call the instances:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class Func:</ins>
+...     <ins>def __call__(self, arg):</ins>
+...         <ins>print("%r(%r) called" % (self, arg))</ins>
+...         <ins>return arg</ins>
+...
+&gt;&gt;&gt; <ins>f2 = Func()</ins>
+&gt;&gt;&gt; <ins>f2</ins>
+&lt;__main__.Func object at 0x100569dd0&gt;
+&gt;&gt;&gt; <ins>f2("Danny")</ins>
+&lt;__main__.Func object at 0x100569dd0&gt;('Danny') called
+'Danny'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>As we've seen, when you define a __call__() method on the class, you can call its instances. These calls result in the
+          activation of the __call__() method, with the instance provided (as always on a method call) as the first argument,
+          followed by the positional and keyword arguments that were passed to the instance call. Methods are normally defined on a
+          class. While it is possible to bind callable objects to names in an instance's namespace, the interpreter does <i>not</i>
+          treat it as a true method, and as such, it does not add the instance as a first argument. So, callables in the instance's __dict__
+      are called with only the arguments present on the call line—no instance is implicitly added as a first argument.</p>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">The so-called "magic" methods (those with names that begin and end with a double underscore) are <i>never</i> looked for
+          on the instance—the interpreter goes straight to the classes for these methods. So even when the instance's __dict__
+          contains the key "__call__", it is ignored and the class's __call__() method is activated.</td>
+      </tr></table>
+
+      <p>Let's continue our console session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def userfunc(arg):</ins>
+...     <ins>print("Userfunc called: ", arg)</ins>
+...
+&gt;&gt;&gt; <ins>f2.regular = userfunc</ins>
+&gt;&gt;&gt; <ins>f2.regular("Instance")</ins>
+Userfunc called:  Instance
+&gt;&gt;&gt; <ins>f2.__call__ = userfunc</ins>
+&gt;&gt;&gt; <ins>f2("Hopeful")</ins>
+&lt;__main__.Func object at 0x100569dd0&gt;('Hopeful') called
+'Hopeful'
+</pre></div></div>
+
+      <p>Since all callables have a __call__() method, and the __call__() method is callable, you might wonder whether it too has a
+          __call__() method. The answer is yes, it does (and so does that __call__() method, and so on...):</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>"__call__" in dir(f2.__call__)</ins>
+True
+&gt;&gt;&gt; <ins>f2.__call__("Audrey")</ins>
+Userfunc called:  Audrey
+&gt;&gt;&gt; <ins>f2.__call__.__call__("Audrey")</ins>
+Userfunc called:  Audrey
+&gt;&gt;&gt; <ins>f2.__call__.__call__.__call__("Audrey")</ins>
+Userfunc called:  Audrey
+&gt;&gt;&gt;
+</pre></div></div>
+
+    </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">Function Composition</div>
+    <div class="subheadingText">
+
+      <p>Because functions are first-class objects, they can be passed as arguments to other functions, and such. If <i>f</i> and
+          <i>g</i> are functions, then mathematicians defined the composition <i>f * g</i> of those two functions by saying that
+          <i>(f * g)(x) = f(g(x))</i>. In other words, the composition of two functions is a new function, that behaves the same
+          as applying the first function to the output of the second.</p>
+
+      <p>Suppose you were given two functions; could you construct their composition? Of course you could! For example, you
+          could write a function that takes two functions as arguments, then internally defines a function that calls the first on
+          the result of the second. Then the compose function returns that function. It's actually almost easier to write the
+          function than it is to describe it:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def compose(g, h):</ins>
+...     <ins>def anon(x):</ins>
+...         <ins>return g(h(x))</ins>
+...     <ins>return anon</ins>
+...
+&gt;&gt;&gt; <ins>f3 = compose(f1, f2)</ins>
+&gt;&gt;&gt; <ins>f3("Shillalegh")</ins>
+&lt;__main__.Func object at 0x100569dd0&gt;('Shillalegh') called
+f1('Shillalegh') called
+'Shillalegh'
+</pre></div></div>
+
+      <p>While it's pretty straightforward to compose functions this way, a mathematician would find it much more natural to compose the
+          functions with a multiplication operator (the asterisk*). Unfortunately, an attempt to multiply two functions together is
+          doomed to fail, as Python functions have not been designed to be multiplied. If we could add a __mul__() method to our
+          functions, we might stand a chance, but as we've seen, this is not possible with function instances, and the class of
+          functions is a built-in object written in C: impossible to change and difficult from which to inherit. Even when you do subclass
+          the function type, how would you create instances? The def
+          statement will always create regular functions.</p>
+
+      <p>While you may not be able to subclass the function object, you <i>do</i> know how to create object classes with callable
+          instances. Using this technique, you could create a class with instances that act as proxies for the functions. This class
+          could define a __mul__() method, which would take another similar class as an argument and return the composition of the
+          two proxied functions. This is typical of the way that Python allows you to "hook" into its workings to achieve a result
+          that is simpler to use.</p>
+
+      <p>Create a program called <b>composable.py</b> as shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>
+"""
+composable.py: defines a composable function class.
+"""
+class Composable:
+    def __init__(self, f):
+        "Store reference to proxied function."
+        self.func = f
+    def __call__(self, *args, **kwargs):
+        "Proxy the function, passing all arguments through."
+        return self.func(*args, **kwargs)
+    def __mul__(self, other):
+        "Return the composition of proxied and another function."
+        if type(other) is Composable:
+            def anon(x):
+                return self.func(other.func(x))
+            return Composable(anon)
+        raise TypeError("Illegal operands for multiplication")
+    def __repr__(self):
+        return "&lt;Composable function {0} at 0x{1:X}&gt;".format(
+                            self.func.__name__, id(self))</ins></pre></div></div>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">An alternative implementation of the __mul__() method might have used the statement <b>return self(other(x))</b>. Do
+          you think that this would have been a better implementation? Why or why not?</td>
+      </tr></table>
+
+      <p>You will need tests, of course. So you should also create a program called <b>test_composable.py</b> that
+          reads as follows.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+<ins>"""
+test_composable.py" performs simple tests of composable functions.
+"""
+import unittest
+from composable import Composable
+
+def reverse(s):
+    "Reverses a string using negative-stride sequencing."
+    return s[::-1]
+
+def square(x):
+    "Multiplies a number by itself."
+    return x*x
+
+class ComposableTestCase(unittest.TestCase):
+
+    def test_inverse(self):
+        reverser = Composable(reverse)
+        nulltran = reverser * reverser
+        for s in "", "a", "0123456789", "abcdefghijklmnopqrstuvwxyz":
+            self.assertEquals(nulltran(s), s)
+
+    def test_square(self):
+        squarer = Composable(square)
+        po4 = squarer * squarer
+        for v, r in ((1, 1), (2, 16), (3, 81)):
+            self.assertEqual(po4(v), r)
+
+    def test_exceptions(self):
+        fc = Composable(square)
+        with self.assertRaises(TypeError):
+            fc = fc * 3
+
+if __name__ == "__main__":
+    unittest.main()
+</ins></pre></div></div>
+
+      <table class="noteBox is-warning"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><code>self.assertEquals()</code> (with an <code>s</code>) was a deprecated alias
+          for <code>self.assertEqual()</code>. It was removed in Python 3.12. Running this test as written
+          will raise an <code>AttributeError</code> on the <code>test_inverse</code> method; change
+          <code>assertEquals</code> to <code>assertEqual</code> to fix it.</td>
+      </tr></table>
+
+      <p>The unit tests are relatively straightforward, simply comparing the expected results from known
+          inputs with expected outputs. In older Python releases it could be difficult to find out
+          which iteration of a loop had caused the assertion to fail, but with the improved error
+          messages of newer releases this is much less of a problem: argument values for failing
+          assertions are much better reported than previously.</p>
+
+      <p>The exception is tested by running the TestCase's assertRaises() method with a single
+          argument (specifying the exception(s) that are expected and acceptable. Under these
+          circumstances the method returns what is called a "context manager" that will catch
+          and analyze any exceptions raised from the indented suite. (There is a broader treatment
+          of context managers in a later lesson).
+          When you run the test program you should see three successful tests.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Output from test_composable.py</div><div class="observe"><pre>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK</pre></div></div>
+
+      <p>Once you get the idea of how this works, you'll soon realize that the __mul__() method could be extended to handle a
+          regular function—in other words, as long as the operand to the left of the "*" is a Composable, the operand to the right would
+          be either a Composable or a function. So the method can be extended slightly to make Composables more usable.</p>
+
+      <p>Let's go ahead and edit composable.py to allow composition with 'raw' functions:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+composable.py: defines a composable function class.
+"""<ins>
+import types</ins>
+class Composable:
+    def __init__(self, f):
+        "Store reference to proxied function."
+        self.func = f
+    def __call__(self, *args, **kwargs):
+        "Proxy the function, passing all arguments through."
+        return self.func(*args, **kwargs)
+    def __mul__(self, other):
+        "Return the composition of proxied and another function."
+        if type(other) is Composable:
+            def anon(x):
+                return self.func(other.func(x))
+            return Composable(anon)<ins>
+        elif type(other) is types.FunctionType:
+            def anon(x):
+                return self.func(other(x))
+            return Composable(anon)</ins>
+        raise TypeError("Illegal operands for multiplication")
+    def __repr__(self):
+        return "&lt;Composable function {0} at 0x{1:X}&gt;".format(
+                            self.func.__name__, id(self))
+</pre></div></div>
+
+      <p>Now the updated __mul__() method does one thing if the right operand (other) is a Composable: it defines and returns a
+          function that extracts the functions from both Composables, that is the composition of both of those functions. But if the
+          right-side operator is a function (which you check for by using the types module, designed specifically to allow
+          easy reference to the less usual Python types), then the function passed in as an argument can be used directly
+          rather than having to be extracted from a
+          Composable.</p>
+
+      <p>The tests need to be modified, but not as much as you might think. The simplest change is to have
+          the test_square() method use a function as the right operand of its multiplications. This should
+          not lose any testing capability, since the first two tests were formerly testing essentially
+          the same things. A further exception test is also added to ensure that when the function is the
+          left operand an exception is also raised.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+test_composable.py" performs simple tests of composable functions.
+"""
+import unittest
+from composable import Composable
+
+def reverse(s):
+    "Reverses a string using negative-stride sequencing."
+    return s[::-1]
+
+def square(x):
+    "Multiplies a number by itself."
+    return x*x
+
+class ComposableTestCase(unittest.TestCase):
+
+    def test_inverse(self):
+        reverser = Composable(reverse)
+        nulltran = reverser * reverser
+        for s in "", "a", "0123456789", "abcdefghijklmnopqrstuvwxyz":
+            self.assertEquals(nulltran(s), s)
+
+    def test_square(self):
+        squarer = Composable(square)
+        po4 = squarer * square<del>r</del>
+        for v, r in ((1, 1), (2, 16), (3, 81)):
+            self.assertEqual(po4(v), r)
+
+    def test_exceptions(self):
+        fc = Composable(square)
+        with self.assertRaises(TypeError):
+            fc = fc * 3<ins>
+        with self.assertRaises(TypeError):
+            fc = square * fc</ins>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>A TypeError exception therefore <i>is</i> raised when you attempt to multiply a function by a Composable.
+          The tests as modified should all succeed. If not, then debug your solution until they do, with your
+          mentor's assistance if necessary.</p>
+
+      <p>The extensions you made to the Composable class in the last exercise made it more capable, but the last example shows that
+          there are always wrinkles that you need to take care of to make your code as fully general as it can be. How far to go in
+          adapting to all possible circumstances is a matter of judgment. Having a good set of tests at least ensures that the code
+          is being exercised (it's also a good idea to employ <i>coverage testing</i>, to ensure that your tests don't leave
+          any of the code unexecuted: this is not always as easy as you might think).</p>
+
+    </div>
+    </div>
+
+    <a name="s_04"></a>
+    <div id="s_04">
+    <div class="subheading">Lambdas: Anonymous Functions</div>
+    <div class="subheadingText">
+
+      <p>Python also has a feature that allows you to define simple functions as an expression. The
+          <i>lambda expression</i> is a way of expressing a function without having to use a def statement. Because it's an
+          expression, there are limits to what you can do with a lambda. Some programmers use them frequently, but others prefer
+          to define all of their functions. It's important for you to understand them, because you'll likely
+          encounter them in other people's code.</p>
+
+      <p><div class="c"><img src="images/lessonImages/DefineLambda.png" alt="Diagram showing the equivalence between a lambda expression and a def statement"></div></p>
+
+      <p>While the equivalence above is not exact, it's close enough for all practical purposes. The keyword <b>lambda</b> is
+          followed by the names of any parameters (all parameters to lambdas are positional) in a comma-separated list. A colon
+          separates the parameters from the expression (normally referencing the parameters). The value of the expression will be returned from a
+          call:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>add1 = lambda x: x+1</ins>
+&gt;&gt;&gt; <ins>add1</ins>
+&lt;function &lt;lambda&gt; at 0x100582270&gt;
+&gt;&gt;&gt; <ins>sqr = lambda x: x*x</ins>
+&gt;&gt;&gt; <ins>sqp1 = compose(sqr, add1)</ins>
+&gt;&gt;&gt; <ins>sqp1(5)</ins>
+36
+&gt;&gt;&gt; <ins>type(add1)</ins>
+&lt;class 'function'&gt;
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>It is relatively easy to write a lambda equivalent to the compose()
+          function we created earlier—and it works as it would with any callable. The last result shows you that to the interpreter,
+          lambda expressions are entirely equivalent to functions (lambda expressions and functions have the
+          same type, "&lt;class 'function'&gt;").</p>
+
+      <p>Also, the lambda has no name (or more precisely: all lambdas have the <i>same</i> name). When you define a function
+          with <b>def</b>, the interpreter stores the name from the def statement as its __name__ attribute. All lambdas have the same name, '&lt;lambda&gt;',
+          when they are created. You can change that name by assignment to the attribute, but in general, if you're going to spend more than
+          one line on a lambda, then you might as well just write a named function instead.</p>
+
+      <p>Finally, keep in mind that lambda is deliberately restricted to functions with bodies that comprise a single expression (which
+          is implicitly what the lambda returns when called, with any argument values substituted for the parameters in the
+          expression). Again, rather than writing expressions that continue over several lines, it would be better to write a
+          named function (which, among other things, can be properly documented with docstrings). If you do wish to continue the
+      expression over multiple lines, the best way to do that is to parenthesize the lambda expression. Do you think the parenthesized
+      second version is an improvement? Think about that as you work through this interactive session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>ff = lambda f, g: lambda x: f(g(x))</ins>
+&gt;&gt;&gt; <ins>lam = ff(f1, f2)</ins>
+&gt;&gt;&gt; <ins>lam("Ebenezer")</ins>
+&lt;__main__.Func object at 0x10057a510&gt;('Ebenezer') called
+f1('Ebenezer') called
+'Ebenezer'
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>ff = lambda f, g: (lambda x:</ins>
+...                         <ins>f(g(x)))</ins>
+&gt;&gt;&gt; <ins>lam = ff(f1, f2)</ins>
+&gt;&gt;&gt; <ins>lam("Ebenezer")</ins>
+&lt;__main__.Func object at 0x10057a510&gt;('Ebenezer') called
+f1('Ebenezer') called
+'Ebenezer'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>If you understand that last example, consider yourself a highly competent Python programmer. Well done! These
+          points are subtle, and your understanding of the language is becoming increasingly thorough as you continue here.</p>
+
+    </div>
+    </div>
+
+    <p>The tools from this lesson will allow you to use callables with greater flexibility and to better purpose.
+        You've learned ways to write code that is able to collaborate with the interpreter and will allow you to
+        accomplish many of your desired programming tasks more efficiently. Nice work!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="next" href="Python4-02.html">Data Structures</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

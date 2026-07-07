@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A First Look at Logging</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">A First Look at Logging</div>
+
+  <p>When you want to save data about a program's operation (typically to record the actions of your
+      program, or particular error conditions that have occurred) you have a number of choices.
+      Informal results can be printed to the standard output stream, but the only person who will
+      see this output is the user, and once the window is closed the output is lost (there is also
+      a standard error stream, with the same disadvantages). You could also write information to a
+      file. This can work for a program, but it is difficult to use as part of a module that might
+      be used in many different circumstances: ideally the program will log all output to the same
+      destination, but how can you make an unrelated collection of modules do that?</p>
+
+  <p>Furthermore, it would be nice to be able to store information during debugging, and then be
+      able to suppress the debug output when the program goes into production. Ideally, you'd like
+      to do this without having to edit the code to remove or comment out the debugging output
+      statements, and the debug output would be cleanly separated from the program's normal
+      output. Then the stored output could form a long-term information stream that allows you to
+      examine your program's performance over its entire lifespan. </p>
+
+  <p>Finally and perhaps most importantly, you want to be able to share your code! What if you
+      need to capture the progress and mistakes of others using your work? Yes, you could do this
+      by writing user actions to a file, but then you run into the danger of making your code
+      somewhat confusing—especially if your program relies on file output for real tasks
+      such as saving important files. </p>
+
+  <p>This is where <i>logging</i> comes to the rescue! This is not the process in which certain
+      trees are cut down by a lumberjack, but rather a process whereby data is stored over time in
+      such a way as to be as unobtrusive to the operating software as possible. Due to a certain
+      lack of imagination, however, the programming examples will involve lumberjacks in the best
+      Monty Python tradition.</p>
+
+  <p>Fortunately the standard library contains the solution for all of these issues in the logging
+      module. It is easy to use and flexible in operation. There's a lot to learn!</p>
+
+  <p>This lesson includes the following sections:</p>
+  <ul>
+    <li><a href="#setting_up_a_basic_logger">Setting Up a Basic Logger</a></li>
+    <li><a href="#other_logging_functions">Other Logging Functions</a></li>
+    <li><a href="#other_logging_levels">Other Logging Levels</a></li>
+    <li><a href="#getting_tests_to_use_different_logging_levels">Getting Tests to Use Different Logging Levels</a></li>
+    <li><a href="#log_formatting">Log Formatting</a></li>
+  </ul>
+
+  <!-- SETTING UP A BASIC LOGGER -->
+  <a name="setting_up_a_basic_logger"></a>
+  <a name="h_01"></a>
+  <div class="heading">Setting Up a Basic Logger</div>
+  <div class="headingText">
+
+    <p>To set up a basic logger, you import the <b>logging</b> module, call its
+        <span class="darkgreen">basicConfig()</span> utility function, and then start logging. Type the code shown
+        below.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import logging</ins>
+&gt;&gt;&gt; <ins>logging.basicConfig(filename='output.log', level=logging.DEBUG)</ins>
+&gt;&gt;&gt; <ins>logging.debug('My first log entry!')</ins>
+</pre></div></div>
+
+    <p>This creates a file named <b>output.log</b> in the current directory. Let's
+        take a look at the contents.</p>
+
+<div class="observeBox"><div class="observeTitle">contents of output.log</div><div class="observe"><pre>
+DEBUG:root:My first log entry!
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note"><code>logging.basicConfig()</code> is the quickest way to get logging running: pass
+        <code>filename=</code> to write to a file, or omit it to log to <code>stderr</code>. Set
+        <code>level=logging.DEBUG</code> (or any other level constant) to control which messages are
+        emitted. One important caveat: <code>basicConfig()</code> is a no-op if the root logger already
+        has handlers configured, so call it once, early, before any other logging calls.</td>
+    </tr></table>
+
+    <p>This is pretty handy, but doesn't really showcase how useful logging is. So let's create a
+        slightly more sophisticated example representing lumberjacks cutting down trees. A
+        Lumberjack starts with no tree. After you assign a Tree object to the Lumberjack, he can
+        chop it down, which turns it into a number of boards (determined by the size of the tree),
+        and then you remove the tree from the Lumberjack object. </p>
+
+    <p>The basic API for a Tree is pretty simple. You create it by calling
+        <span class="darkred">Tree(s)</span> where s is a <i>size code</i>—one of "S," "M," "L,"
+        "XL," or "XXL". Instances have a <span class="darkgreen">get_boards()</span> method that you call to
+        learn the number of boards the tree can produce (1 for a size "S" tree, 5 for a size "XXL").
+        Trees represent themselves as "Tree: Size S" or similar. </p>
+
+    <p>The Lumberjack is not that much more complicated in its initial implementation. Created by
+        calling the class <span class="darkred">Lumberjack()</span>, each instance starts out with no tree.
+        Once a tree is assigned it can be cut down and converted into boards by calling the
+        Lumberjack's <span class="darkgreen">cut_down_tree()</span> method. If this method is called when
+        the Lumberjack has no tree, a TypeError exception is raised. </p>
+
+    <p>As usual, we'll start by writing basic tests for the Tree and Lumberjack classes. We test the
+        Trees in a number of ways: for each size of tree, <span class="darkgreen">test_lumber()</span>
+        verifies that the tree size returns the expected number of boards.
+        <span class="darkgreen">test_string()</span> verifies that the Tree objects do represent themselves
+        as required, and <span class="darkgreen">test_code()</span> verifies that an exception is raised
+        when the class is called with an invalid size code. You test the lumberjack by creating a
+        new one for each size of tree, verifying there is initially no tree, assigning a tree,
+        cutting it down and verifying that the Lumberjack no longer has a tree and that the right
+        number of boards were produced. Create <b>test_forestry.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+
+from forestry import Lumberjack, Tree
+
+sizes = (("S", 1), ("M", 2), ("L", 3), ("XL", 4), ("XXL", 5))
+
+class TestTree(unittest.TestCase):
+
+    def test_lumber(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            self.assertEqual(boards, tree.get_boards())
+
+    def test_string(self):
+        tree = Tree("L")
+        self.assertEqual(str(tree), "Tree: Size L")
+
+    def test_exceptions(self):
+        self.assertRaises(ValueError, Tree, "parrot")
+        self.assertRaises(TypeError, Lumberjack().cut_down_tree)
+
+class TestLumberjack(unittest.TestCase):
+
+    def test_lumberjack(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            graham = Lumberjack()
+            self.assertIsNone(graham.tree)
+            graham.tree = tree
+            brds = graham.cut_down_tree()
+            self.assertIsNone(graham.tree)
+            self.assertEqual(boards, brds)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+    <p>If you are getting the hang of test-driven development, you're already thinking about what
+        your Tree and Lumberjack classes need to do to pass these tests, but you should start with
+        the "simplest possible thing that can fail" first and verify that the tests do actually
+        fail or give errors. </p>
+
+    <p>Create <b>forestry.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize."
+        self.size = size
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        pass</ins>
+</pre></div></div>
+
+    <p>When you run the test with this vestigial
+        implementation, you will not surprisingly find that the tests don't all pass (but note that
+        some do, because Tree correctly implements both <span class="darkgreen">get_boards()</span> and
+        <span class="darkgreen">__str__()</span>). </p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Not all tests pass—that's OK!</div><div class="observe"><pre>
+EF..
+======================================================================
+ERROR: test_lumberjack (__main__.TestLumberjack)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_forestry.py", line 28, in test_lumberjack
+    self.assertIsNone(graham.tree)
+AttributeError: 'Lumberjack' object has no attribute 'tree'
+
+======================================================================
+FAIL: test_exceptions (__main__.TestTree)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_forestry.py", line 19, in test_exceptions
+    self.assertRaises(ValueError, Tree, "parrot")
+AssertionError: ValueError not raised by Tree
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+FAILED (failures=1, errors=1)
+</pre></div></div>
+
+    <p>The <span class="darkgreen">test_lumberjack()</span> fails because the test assumes that a newly
+        created Lumberjack object will have a <b>tree</b> attribute with the value <b>None</b>. This
+        is easily arranged in its <span class="darkgreen">__init__()</span> method.
+        <span class="darkgreen">test_exceptions()</span> fails because the <span class="darkgreen">__init__()</span>
+        method is not validating the size argument. This is again fairly easily added. Make the
+        necessary changes and ensure that then all four tests pass. </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize<ins>: insist that size is a valid code</ins>."
+        <ins>if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            raise ValueError(message)</ins>
+        self.size = size
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    <ins>def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None</ins>
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        <del>pass</del>
+        <ins>if not self.tree:
+            raise TypeError("Cannot cut_down_tree(): Lumberjack has no tree!")
+        boards = self.tree.get_boards()
+        self.tree = None
+        return boards</ins>
+
+<ins>if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")</ins>
+</pre></div></div>
+
+    <p>Save it and run the test again. All tests
+        should pass now, and we can add in a simple logger. This just involves adding a few lines
+        at the beginning of the module. </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins># import the logging module
+import logging
+
+# set up the logger
+logging.basicConfig(filename='forestry.log',level=logging.DEBUG)
+
+# log a message
+logging.info('Starting up the forestry program')</ins>
+
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize: insist that size is a valid code."
+        if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            raise ValueError(message)
+        self.size = size
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        boards = self.tree.get_boards()
+        self.tree = None
+        return boards
+
+if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")
+</pre></div></div>
+
+    <p>Run both test_forestry.py and forestry.py.
+        The tests should continue to pass, and the forestry program should run without errors or
+        any output. You'll see a new <b>forestry.log</b>
+        file. Open it and you should see:</p>
+
+<div class="observeBox"><div class="observeTitle">contents of forestry.log</div><div class="observe"><pre>
+INFO:root:Starting up the forestry program
+INFO:root:Starting up the forestry program
+</pre></div></div>
+
+    <p>Look familiar? But why are there two entries? There are two entries because you loaded
+        forestry.py twice, once when you ran it by itself and the other time in test_forestry.py,
+        thanks to the line <b>from forestry import Lumberjack, Tree</b>. Also, because the logging
+        system records things over time, each time it is called it appends to the existing file.
+        This means that your log files are a living history of your application (though that history
+        is of somewhat limited interest right now due to the restricted information that appears in
+        it). But, every time your module is used, it logs that fact in the log file!</p>
+
+    <p>Now let's make it a little more interesting. Sprinkle some log messages throughout the
+        <b>forestry.py</b> code:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import logging
+
+# set up the logger
+logging.basicConfig(filename='forestry.log',level=logging.DEBUG)
+
+# log a message
+logging.info('Starting up the forestry program')
+
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize: insist that size is a valid code."
+        if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            raise ValueError(message)
+        self.size = size
+        <ins>logging.info('Instantiated a tree')</ins>
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        <ins>logging.info('tree.get_boards method called')</ins>
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None
+        <ins>logging.info('Instantiated a Lumberjack')</ins>
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        if not self.tree:
+            raise TypeError("Cannot cut_down_tree(): Lumberjack has no tree!")
+        boards = self.tree.get_boards()
+        self.tree = None
+        <ins>logging.info('Lumberjack.tree cut down')</ins>
+        return boards
+
+if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")
+</pre></div></div>
+
+    <p>Clear the contents of the forestry.log file, then save it as empty. Go
+        ahead and run <b>test_forestry.py</b>, and then check <b>forestry.log</b> again.
+        You'll see a nice list of log
+        entries about progress made.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Contents of log file after a run of test_forestry.py</div><div class="observe"><pre>
+INFO:root:Starting up the forestry program
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a Lumberjack
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+</pre></div></div>
+
+    <p>Also, <i>look</i> at the code. The logging messages are clearly logging messages. As you
+        code, you'll find you mentally filter them out when you don't need them and they pop into
+        focus when you do need them. This tends to be less obtrusive than print() calls that might
+        be program-related or might be merely debugging information.</p>
+
+  </div>
+
+  <!-- OTHER LOGGING FUNCTIONS -->
+  <a name="other_logging_functions"></a>
+  <a name="h_02"></a>
+  <div class="heading">Other Logging Functions</div>
+  <div class="headingText">
+
+    <p>The logging module makes it easy to flag issues with different levels of severity—in
+        this next change, instead of <span class="darkgreen">logging.debug()</span>, you'll use
+        <span class="darkgreen">logging.error()</span>. Try it out by adding
+        <span class="darkgreen">logging.error()</span> to the <span class="darkgreen">__init__()</span> method of
+        your Tree class and the <span class="darkgreen">cut_down_tree()</span> method of the Lumberjack.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import logging
+
+# set up the logger
+<del>logging.basicConfig(filename='forestry.log',level=logging.DEBUG)</del>
+<ins>logging.basicConfig(filename='forestry.log',level=logging.ERROR)</ins>
+
+# log a message
+logging.info('Starting up the forestry program')
+
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize: insist that size is a valid code."
+        if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            <ins>logging.error(message)</ins>
+            raise ValueError(message)
+        self.size = size
+        logging.info('Instantiated a tree')
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        logging.info('tree.get_boards method called')
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None
+        logging.info('Instantiated a Lumberjack')
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        if not self.tree:
+            <del>raise TypeError("Cannot cut_down_tree(): Lumberjack has no tree!")</del>
+            <ins>msg = "Cannot cut_down_tree(): Lumberjack has no tree!"
+            logging.error(msg)
+            raise TypeError(msg)</ins>
+        boards = self.tree.get_boards()
+        self.tree = None
+        logging.info('Lumberjack.tree cut down')
+        return boards
+
+if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")
+</pre></div></div>
+
+    <p>Now clear the forestry.log file again, and run <b>test_forestry.py</b>. Your tests should
+        continue to pass:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: test_forestry.py results</div><div class="observe"><pre>
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.008s
+</pre></div></div>
+
+    <p>Now, check the new forestry.log:</p>
+
+<div class="observeBox"><div class="observeTitle">added items to forestry.log</div><div class="observe"><pre>
+ERROR:root:Tree size must be one of: S,M,L,XL,XXL
+ERROR:root:Cannot cut_down_tree(): Lumberjack has no tree!
+</pre></div></div>
+
+    <p>With the Python logging library, you can set the logging level to filter out debug, info,
+        warning, and error messages. The change we made at the beginning of the file ensured that
+        only messages with ERROR or CRITICAL severity levels were even added to the log file.</p>
+
+    <p>The logging library includes these levels of built-in logger functions:</p>
+
+    <table class="tbl">
+      <tr><th>Level</th><th>Precedence</th><th>Description</th></tr>
+      <tr><td>DEBUG</td><td>10</td><td>Use for low-level debugging output</td></tr>
+      <tr><td>INFO</td><td>20</td><td>General information</td></tr>
+      <tr><td>WARNING</td><td>30</td><td>Warning messages such as deprecated functions and code</td></tr>
+      <tr><td>ERROR</td><td>40</td><td>Reporting exceptions and errors</td></tr>
+      <tr><td>CRITICAL</td><td>50</td><td>System crashes, security penetrations, data corruption, etc.</td></tr>
+    </table>
+
+    <p>If the level at which you log a message is of lower priority than the level established for
+        the logger when it is created, nothing is actually logged. This level of control is a
+        good compromise, allowing you to easily suppress the logging of usually-unimportant
+        messages without throwing away important ones.</p>
+
+  </div>
+
+  <!-- OTHER LOGGING LEVELS -->
+  <a name="other_logging_levels"></a>
+  <a name="h_03"></a>
+  <div class="heading">Other Logging Levels</div>
+  <div class="headingText">
+
+    <p>Logging presents a way to store data about programs in operation, and this is a good thing.
+        But most of the time you do not want your program recording the mundane trivia of its
+        existence. That is why you can specify a logging level when you create the logger.  This
+        will also log anything of higher precedence, so when you set it to ERROR, it also includes
+        CRITICAL results. If you set the logging level to logging.INFO, it would show the INFO,
+        WARNING, ERROR, and CRITICAL levels.</p>
+
+    <p>From now on, we'll set our logging level using a <span class="darkgreen">start_logging()</span>
+        function. Note that this uses a dict as a lookup table, allowing the caller to supply
+        string values like "error" rather than having to import the numeric values from the
+        logging module.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import logging
+<ins>LOG_FILENAME = "forestry.log"
+DEFAULT_LOG_LEVEL = "error" # Default log level
+LEVELS = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL
+         }
+
+def start_logging(filename=LOG_FILENAME, level=DEFAULT_LOG_LEVEL):
+    "Start logging with given filename and level."
+    logging.basicConfig(filename=filename, level=LEVELS[level])
+    # log a message
+    logging.info('Starting up the forestry program')</ins>
+
+<del># set up the logger
+logging.basicConfig(filename='forestry.log',level=logging.ERROR)
+
+# log a message
+logging.info('Starting up the forestry program')</del>
+
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize: insist that size is a valid code."
+        if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            logging.error(message)
+            raise ValueError(message)
+        self.size = size
+        logging.info('Instantiated a tree')
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        logging.info('tree.get_boards method called')
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None
+        logging.info('Instantiated a Lumberjack')
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        if not self.tree:
+            msg = "Cannot cut_down_tree(): Lumberjack has no tree!"
+            logging.error(msg)
+            raise TypeError(msg)
+        boards = self.tree.get_boards()
+        self.tree = None
+        logging.info('Lumberjack.tree cut down')
+        return boards
+
+if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")
+</pre></div></div>
+
+    <p>We now need to modify test_forestry.py to ensure that it still passes its tests. It needs to
+        call the forestry module's start_logging function, which it does so with a level argument
+        value of "error," which is automatically converted inside the function to logging.ERROR.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import unittest
+
+from forestry import Lumberjack, Tree<ins>, start_logging</ins>
+
+sizes = (("S", 1), ("M", 2), ("L", 3), ("XL", 4), ("XXL", 5))
+
+class TestTree(unittest.TestCase):
+
+    def test_lumber(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            self.assertEqual(boards, tree.get_boards())
+
+    def test_string(self):
+        tree = Tree("L")
+        self.assertEqual(str(tree), "Tree: Size L")
+
+    def test_exceptions(self):
+        self.assertRaises(ValueError, Tree, "parrot")
+        self.assertRaises(TypeError, Lumberjack().cut_down_tree)
+
+class TestLumberjack(unittest.TestCase):
+
+    def test_lumberjack(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            graham = Lumberjack()
+            self.assertIsNone(graham.tree)
+            graham.tree = tree
+            brds = graham.cut_down_tree()
+            self.assertIsNone(graham.tree)
+            self.assertEqual(boards, brds)
+
+if __name__ == "__main__":
+    <ins>start_logging(level="error")</ins>
+    unittest.main()
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">When logging calls appear in frequently-executed code paths, prefer
+        <em>lazy %-style argument passing</em> over pre-formatted strings or f-strings:
+        write <code>logging.info('Instantiated a %s', type(obj).__name__)</code> rather than
+        <code>logging.info(f'Instantiated a {type(obj).__name__}')</code>. The logger only
+        formats the message string when the message will actually be emitted, which avoids
+        unnecessary string construction when the log level filters it out.
+        Additionally, for library or module code the idiomatic approach is to obtain a
+        per-module logger with <code>logger = logging.getLogger(__name__)</code> and call
+        <code>logger.info(...)</code> rather than using the root logger directly; this gives
+        callers fine-grained control over which modules produce log output.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- GETTING TESTS TO USE DIFFERENT LOGGING LEVELS -->
+  <a name="getting_tests_to_use_different_logging_levels"></a>
+  <a name="h_04"></a>
+  <div class="heading">Getting Tests to Use Different Logging Levels</div>
+  <div class="headingText">
+
+    <p>Right now, when you run test_forestry.py, it always runs under the ERROR level because it
+        overrides the forestry.py default logging level. Which means all that is logged from the
+        current code base is:</p>
+
+<div class="observeBox"><div class="observeTitle">test_forestry.py results - Error level restricts output!</div><div class="observe"><pre>
+ERROR:root:Tree size must be one of: S,M,L,XL,XXL
+ERROR:root:Cannot cut_down_tree(): Lumberjack has no tree!
+</pre></div></div>
+
+    <p>Since you probably want as much information as possible to be generated by your unittests,
+        you can do a local override of the logger configuration item by modifying the call to
+        <b>start_logging</b> in test_forestry.py.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import unittest
+
+from forestry import Lumberjack, Tree, start_logging
+
+sizes = (("S", 1), ("M", 2), ("L", 3), ("XL", 4), ("XXL", 5))
+
+class TestTree(unittest.TestCase):
+
+    def test_lumber(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            self.assertEqual(boards, tree.get_boards())
+
+    def test_string(self):
+        tree = Tree("L")
+        self.assertEqual(str(tree), "Tree: Size L")
+
+    def test_exceptions(self):
+        self.assertRaises(ValueError, Tree, "parrot")
+        self.assertRaises(TypeError, Lumberjack().cut_down_tree)
+
+class TestLumberjack(unittest.TestCase):
+
+    def test_lumberjack(self):
+        for code, boards in sizes:
+            tree = Tree(code)
+            graham = Lumberjack()
+            self.assertIsNone(graham.tree)
+            graham.tree = tree
+            brds = graham.cut_down_tree()
+            self.assertIsNone(graham.tree)
+            self.assertEqual(boards, brds)
+
+if __name__ == "__main__":
+    <del>start_logging(level="error")</del>
+    <ins>start_logging(level="info")</ins>
+    unittest.main()
+</pre></div></div>
+
+<div class="observeBox"><div class="observeTitle">Run test_forestry.py to get these added log entries in forestry.log</div><div class="observe"><pre>
+INFO:root:Starting up the forestry program
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+INFO:root:Instantiated a tree
+INFO:root:Instantiated a Lumberjack
+INFO:root:tree.get_boards method called
+INFO:root:Lumberjack.tree cut down
+ERROR:root:Tree size must be one of: S,M,L,XL,XXL
+INFO:root:Instantiated a Lumberjack
+ERROR:root:Cannot cut_down_tree(): Lumberjack has no tree!
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+INFO:root:tree.get_boards method called
+INFO:root:Instantiated a tree
+</pre></div></div>
+
+  </div>
+
+  <!-- LOG FORMATTING -->
+  <a name="log_formatting"></a>
+  <a name="h_05"></a>
+  <div class="heading">Log Formatting</div>
+  <div class="headingText">
+
+    <p>The log entries are providing a lot of information, but the default formatting we've used so
+        far only provides a small subset of what the logger can capture for you. You'll use the log
+        formatter to display significantly more data. </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import logging
+LOG_FILENAME = "forestry.log"
+<ins>LOG_FORMAT = "%(asctime)s %(name)s:%(levelname)s:%(filename)s function:%(funcName)s line:%(lineno)d %(message)s"</ins>
+DEFAULT_LOG_LEVEL = "warning" # Default log level
+LEVELS = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL
+         }
+
+def start_logging(filename=LOG_FILENAME, level=DEFAULT_LOG_LEVEL):
+    "Start logging with given filename and level."
+    logging.basicConfig(filename=filename, level=LEVELS[level]<ins>, format=LOG_FORMAT</ins>)
+    # log a message
+    logging.info('Starting up the forestry program')
+
+class Tree(object):
+    "Represent a tree in a forest that can be converted into boards."
+    sizes = dict(S=1, M=2, L=3, XL=4, XXL=5)
+
+    def __init__(self, size="L"):
+        "Initialize: insist that size is a valid code."
+        if size not in self.sizes:
+            message = "Tree size must be one of: %s" % ",".join(self.sizes.keys())
+            logging.error(message)
+            raise ValueError(message)
+        self.size = size
+        logging.info('Instantiated a tree')
+
+    def get_boards(self):
+        "Return number of boards equivalent."
+        logging.info('tree.get_boards method called')
+        return self.sizes[self.size]
+
+    def __str__(self):
+        "Render as a string."
+        return "Tree: Size %s" % self.size
+
+class Lumberjack(object):
+    "Represent a lumberjack who can cut down trees."
+    def __init__(self):
+        "Initialize: start with no tree."
+        self.tree = None
+        logging.info('Instantiated a Lumberjack')
+
+    def cut_down_tree(self):
+        "Convert tree to boards and go back to not having a tree."
+        if not self.tree:
+            msg = "Cannot cut_down_tree(): Lumberjack has no tree!"
+            logging.error(msg)
+            raise TypeError(msg)
+        boards = self.tree.get_boards()
+        self.tree = None
+        logging.info('Lumberjack.tree cut down')
+        return boards
+
+if __name__ == "__main__":
+    "Demonstrate basic usage."
+    john = Lumberjack()
+    john.tree = Tree("XXL")
+    if john.cut_down_tree() != 5:
+        print("Error: XXL tree should yield 5 boards")
+</pre></div></div>
+
+    <p>This small change to the forestry framework makes a great deal of difference to the output
+        in the logging stream. If you clear the log file and run <b>test_forestry.py</b>,
+        your log should look like the following. </p>
+
+<div class="observeBox"><div class="observeTitle">Results of test_forestry.py</div><div class="observe"><pre>
+2010-11-08 20:04:58,319 root:INFO:forestry.py function:start_logging line:17 Starting up the forestry program
+2010-11-08 20:04:58,382 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,382 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,382 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:cut_down_tree line:56 Lumberjack.tree cut down
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:cut_down_tree line:56 Lumberjack.tree cut down
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,384 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,385 root:INFO:forestry.py function:cut_down_tree line:56 Lumberjack.tree cut down
+2010-11-08 20:04:58,385 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,385 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,385 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,387 root:INFO:forestry.py function:cut_down_tree line:56 Lumberjack.tree cut down
+2010-11-08 20:04:58,387 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,387 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,387 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,388 root:INFO:forestry.py function:cut_down_tree line:56 Lumberjack.tree cut down
+2010-11-08 20:04:58,388 root:ERROR:forestry.py function:__init__ line:27 Tree size must be one of: S,M,L,XL,XXL
+2010-11-08 20:04:58,388 root:INFO:forestry.py function:__init__ line:46 Instantiated a Lumberjack
+2010-11-08 20:04:58,388 root:ERROR:forestry.py function:cut_down_tree line:52 Cannot cut_down_tree(): Lumberjack has no tree!
+2010-11-08 20:04:58,388 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,388 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,388 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,390 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:get_boards line:34 tree.get_boards method called
+2010-11-08 20:04:58,391 root:INFO:forestry.py function:__init__ line:30 Instantiated a tree
+</pre></div></div>
+
+    <p>You now have log entries that provide the date and time down to the microsecond for when the
+        entry was recorded, the name of the file and the function/method that called it, and the line
+        number if was called from. All of this from this line of Formatter String: </p>
+
+<div class="observeBox"><div class="observeTitle">It should look like this but all on one line</div><div class="observe"><pre>
+<span class="darkred">%(asctime)s</span>
+    <span class="darkred">%(name)s</span><span class="darkblue">:</span><span class="darkred">%(levelname)s</span><span class="darkblue">:</span><span class="darkred">%(filename)s</span>
+        <span class="darkblue">function:</span><span class="darkred">%(funcName)s</span><span class="darkblue"> line:</span><span class="darkred">%(lineno)d</span>
+    <span class="darkred">%(message)s</span>
+</pre></div></div>
+
+    <p>The <span class="darkblue">dark blue</span> elements above, such as "<b>function:</b>," are there to display the output in a more
+        readable format. The <span class="darkred">dark red</span> elements above are mapping keys that
+        tell the logger where to put the data it collects. Some of the most useful keys are:</p>
+
+    <table class="tbl">
+      <tr><th>Key</th><th>Provides</th></tr>
+      <tr><td>%(name)</td><td>The owner of the log file</td></tr>
+      <tr><td>%(levelno)s</td><td>Numeric logging level for the message (DEBUG=10, INFO=20, WARNING=30, ERROR=40,
+               CRITICAL=50)</td></tr>
+      <tr><td>%(levelname)s</td><td>Text logging level for the message ('DEBUG', 'INFO', 'WARNING', 'ERROR',
+               'CRITICAL')</td></tr>
+      <tr><td>%(pathname)s</td><td>Full pathname of the source file where the logging call was issued (if available)</td></tr>
+      <tr><td>%(filename)s</td><td>Filename portion of pathname</td></tr>
+      <tr><td>%(module)s</td><td>Module (name portion of filename)</td></tr>
+      <tr><td>%(funcName)s</td><td>Name of function/method containing the logging call</td></tr>
+      <tr><td>%(lineno)d</td><td>Source line number where the logging call was issued (if available)</td></tr>
+      <tr><td>%(asctime)s</td><td>Time when the log entry was created</td></tr>
+      <tr><td>%(message)s</td><td>The message passed into the log entry by the logger</td></tr>
+    </table>
+
+    <p>It is often tempting to put <i>everything</i> into the log entry, but this can prove to be a
+        mistake because too much text on a single line is hard for the human eye to interpret. In
+        addition, if you have to scroll side-to-side on a log file you are prone to miss things. So
+        here are some quick tips to making your log formats useful:</p>
+
+    <ul>
+      <li>Well-written messages make log files much more readable and searchable.</li>
+      <li>Instead of adding <span class="darkgreen">print()</span> calls, try changing your log format to
+             include more information.</li>
+      <li>%(pathname)s and %(filename)s are useful to identify the source of a message.</li>
+      <li>Since you can search your code for log messages, recording the line number (%(lineno)d),
+             though tempting, is less useful than you might imagine.</li>
+      <li>Because the Python logging module can't capture which class objects generated an entry,
+             the %(module)s and %(funcName)s keys can be troublesome.</li>
+    </ul>
+
+    <p>The following is a reasonable example of a log file format:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: A Good Log File Format</div><div class="observe"><pre>
+<span class="darkred">%(asctime)s</span> - <span class="darkred">%(name)s</span> - <span class="darkred">%(levelname)s</span> - <span class="darkred">%(message)s</span>
+</pre></div></div>
+
+  </div>
+
+  <p>Logging isn't just a useful tool, it is like code comments and tests in that consistent use of
+      it will impress experienced developers and good IT managers. That is because as much as good
+      developers try to have all their code properly covered by tests, bugs creep in. Without
+      logging, it can be nearly impossible to analyze sophisticated software behavior, uncover subtle
+      errors, or see exactly step-by-step how a hacker tried to penetrate a system. With logging,
+      you can provide a usage history that allows yourself and others to see what has happened with your
+      programs. It is just another way to make processes visible. Don't be afraid of that visibility
+      or the mistakes it may uncover; instead embrace it and learn from what is exposed. </p>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-10.html">Properties</a>
+    <a class="next" href="Python3-12.html">Engineering Your Programs</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

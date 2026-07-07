@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Engineering Your Programs</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Engineering Your Programs</div>
+
+  <p>In a previous lesson, we learned how to use <b>sys.argv</b> to access command line elements.
+      However, <b>sys.argv</b> is only useful for providing per-run information about what you
+      want a program to do. If there are actions you want a program to always take, you need a
+      mechanism that allows that (while still allowing the use of command-line arguments for the
+      per-run data). </p>
+
+  <p>For example, problems quickly arise if you need to accept several arguments. Let's say besides
+      logging when you start a program, you need to point a program to a specific database, let the
+      user set a specific directory to save files, and accept user name/password combinations. Now
+      instead of one, you have five command-line arguments, each of which needs validation and
+      precise help instructions. The logic to handle this would likely involve lots of nested
+      <b>if</b> blocks to handle field determination/validation and <span class="darkgreen">print()</span>
+      calls for help instructions, and you'd spend significant effort, not just in writing and
+      testing the command-line code, but also in maintaining it. </p>
+
+  <p>Thankfully, Python provides two libraries for handling this exact issue. The first library,
+      <span class="darkblue">optparse</span>, is a more powerful command-line system than simply processing
+      <b>sys.argv</b> "by hand." The second library, <span class="darkblue">configparser</span>, lets you
+      create configuration files, often used to establish default program settings that can become,
+      either for a single user or across a system, the defaults for command-line operation. This can
+      sometimes shorten the "average" command line.</p>
+
+  <table class="noteBox is-tip"><tr>
+    <td class="noteTitle">Modern Python</td>
+    <td class="note"><code>optparse</code> has been deprecated since Python 3.2. The recommended replacement
+      is <code>argparse</code> (also in the standard library), which supports sub-commands, type
+      coercion, and richer help formatting. Everything in this lesson translates directly to
+      <code>argparse</code>: <code>ArgumentParser</code> replaces <code>OptionParser</code>, and
+      <code>add_argument()</code> replaces <code>add_option()</code>. The <code>configparser</code>
+      library is unchanged and remains the standard approach for INI-style configuration files.</td>
+  </tr></table>
+
+  <p>This lesson includes these sections:</p>
+  <ul>
+    <li><a href="#optparse_a_powerful_command_line_processor">optparse: A Powerful Command-line Processor</a></li>
+    <li><a href="#configparser_controlling_settings_the_right_way">configparser: Controlling Settings the Right Way</a></li>
+  </ul>
+
+  <!-- OPTPARSE -->
+  <a name="optparse_a_powerful_command_line_processor"></a>
+  <a name="h_01"></a>
+  <div class="heading">optparse: A Powerful Command-line Processor</div>
+  <div class="headingText">
+
+    <p><b>optparse</b> is a convenient, flexible, and powerful library for parsing command-line
+        options. It follows the conventional GNU/POSIX syntax, which sounds fancy but really just
+        means that command-line users on Windows, Mac, Unix, Linux, and BSD will find it matches the
+        general operation of their existing command-line tools. </p>
+
+    <!-- A SIMPLE OPTPARSE EXAMPLE -->
+    <a name="s_01"></a>
+    <div class="subheading">A Simple optparse Example</div>
+    <div class="subheadingText">
+
+      <p>Here we'll see how to capture a loglevel using the <b>optparse</b>
+          library. This behavior may be useful to other programs, so we'll implement it in a new file.
+          Create <b>commands.py</b> as shown: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+commands.py: Parse logging level options from sys.argv
+"""
+from optparse import OptionParser
+
+if __name__ == "__main__":
+
+    # instantiate an OptionParser object
+    parser = OptionParser()
+    parser.add_option("-l", "--loglevel",
+                        action="store",
+                        dest="level",
+                        default="warning",
+                        help="set level of logger: debug, info, warning (default), error, critical")
+    (options, args) = parser.parse_args()
+    print("level: %s" % options.level)</ins>
+</pre></div></div>
+
+      <p>Now, let's try this out by using <b>-l debug</b> as command-line arguments.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: commands.py called with '-l debug' argument</div><div class="observe"><pre>
+level: debug
+</pre></div></div>
+
+      <p>Try the same thing with <b>-l critical</b>
+          for a different result:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: commands.py called with '-l critical'</div><div class="observe"><pre>
+level: critical
+</pre></div></div>
+
+      <p>Run it again, leaving the arguments field
+          empty. It even provides a default value:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: commands.py called without any argument</div><div class="observe"><pre>
+level: warning
+</pre></div></div>
+
+      <p>Pretty handy, but besides a lot more typing, this isn't doing anything that <b>sys.argv</b>
+          doesn't do, right? Let's go ahead and prove that assumption wrong. Run it with the <b>-h</b>
+          argument: </p>
+
+<div class="observeBox"><div class="observeTitle">Observe: commands.py called with -h argument</div><div class="observe"><pre>
+Usage: commands.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -l LEVEL, --loglevel=LEVEL
+                        set level of logger: debug, info, warning (default),
+                        error, critical
+</pre></div></div>
+
+      <p>There you have it—instant help! And help that follows the same format that you get any
+          time you do '-h' or '--h' on a command-line tool. Also, note that the
+          <span class="darkgreen">print()</span> command did not run. This is because all Python programs,
+          regardless of whether or not they use the <span class="darkblue">optparse</span> library, do not run
+          any code except to produce the help text when the user calls for help. So users can call the
+          <b>-h</b> command without fear that they will inadvertently run your program. </p>
+
+    </div>
+
+    <!-- A COMPLEX OPTPARSE EXAMPLE -->
+    <a name="s_02"></a>
+    <div class="subheading">A Complex optparse Example</div>
+    <div class="subheadingText">
+
+      <p>Let's do something familiar and create a very simple email address book program. It will
+          allow you to add, delete, and list all addresses from the command line. The addresses will
+          be stored using the shelve module.</p>
+
+      <p>The first thing to do is to get our program to add and delete emails. You'll need two
+          options for this, the first one to let your users pick the add, edit, or delete actions, and
+          the second being the email value in question. So create <b>addressbook.py</b> as shown below.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from optparse import OptionParser
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store", help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email", action="store", help="email used in the -a option")
+    (options, args) = parser.parse_args()</ins>
+</pre></div></div>
+
+      <p>Save and run it with the <b>-h</b> option:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py With -h Argument</div><div class="observe"><pre>
+Usage: addressbook.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -a ACTION, --action=ACTION
+                        requires -e option. Actions: add/delete
+  -e EMAIL, --email=EMAIL
+                        email used in the -a option
+</pre></div></div>
+
+    </div>
+
+    <!-- VALIDATING OPTPARSE OPTIONS -->
+    <a name="s_03"></a>
+    <div class="subheading">Validating optparse Options</div>
+    <div class="subheadingText">
+
+      <p>Now, we'll add some more validation. First we'll check that, when a user provides the
+          <b>--action</b> option, they also provide an <b>--email</b> option. Then we'll check that
+          the email provided is valid (for the sake of simplicity, we'll just check that it contains
+          the "@" character). </p>
+
+      <p>The first validation, that --action has an --email (and vice versa) is done by checking that
+          if one of those options exists, so should the other. If only one exists, a
+          <span class="red">parser.error()</span> is called. Edit <b>addressbook.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from optparse import OptionParser
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store",
+                            help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email", action="store",
+                            help="email used in the -a option")
+    (options, args) = parser.parse_args()
+    <ins># validation
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    print(options)</ins>
+</pre></div></div>
+
+      <p>Save and run it with <b>-a add</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -a add</div><div class="observe"><pre>
+Usage: addressbook.py [options]
+
+addressbook.py: error: option -a requires option -e
+</pre></div></div>
+
+      <p>Now, run it with <b>-e steve@oreilly.com</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -e steve@oreilly.com</div><div class="observe"><pre>
+Usage: addressbook.py [options]
+
+addressbook.py: error: option -e requires option -a
+</pre></div></div>
+
+      <p>The requirement for both options to appear together is working, so it only remains to ensure
+          that when both options are present they are correctly captured in the <b>options</b> dict.
+          You can do this by running the program with both options.</p>
+
+      <p>Run it with  <b>-a steve -e something</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -a steve -e something</div><div class="observe"><pre>
+{'action': 'steve', 'email': 'something'}
+</pre></div></div>
+
+      <p>Now, can you figure out how to validate that user-provided email includes "@"? Try it before
+          we show you!</p>
+
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>Go ahead; <i>try</i> it!</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>We're waiting!</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+      <p>...</p>
+
+      <p>You should have arrived at something like this:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from optparse import OptionParser
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action",
+            action="store", help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email",
+            action="store", help="email used in the -a option")
+    (options, args) = parser.parse_args()
+
+    # validation
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    <ins>elif options.email and '@' not in options.email:
+        parser.error("option -e requires a valid email address")</ins>
+    print(options)
+</pre></div></div>
+
+      <p>Run it with  <b>-a steve -e something</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -a steve -e something</div><div class="observe"><pre>
+Usage: addressbook.py [options]
+
+addressbook.py: error: option -e requires a valid email address
+</pre></div></div>
+
+    </div>
+
+    <!-- SHOWTIME -->
+    <a name="s_04"></a>
+    <div class="subheading">Showtime!</div>
+    <div class="subheadingText">
+
+      <p>Okay, it's time to add the code that handles the emails. But before we do that, let's add
+          the obligatory tests. Create <b>test_addressbook.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+import addressbook
+
+class TestEmailHandlers(unittest.TestCase):
+
+    def setUp(self):
+        self.email = 'test123@t.com'
+
+    def test_email_delete(self):
+        addressbook.email_add(self.email) # ensure the email is active
+        self.assertEqual(addressbook.email_delete(self.email)[0], True)
+        self.assertEqual(addressbook.email_delete(self.email)[0], False)
+
+    def test_email_add(self):
+        self.assertEqual(addressbook.email_add(self.email)[0], True)
+        self.assertEqual(addressbook.email_add(self.email)[0], False)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Now edit the <b>addressbook</b> program to accommodate the tests:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from optparse import OptionParser
+<ins>import shelve
+import sys
+
+shelf_location = 'email.shelf'
+
+def email_add(email):
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    if email in emails:
+        message = False, 'Email "%s" already in address book' % email
+    else:
+        emails.append(email)
+        message = True, 'Email "%s" added to address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def email_delete(email):
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    try:
+        emails.remove(email)
+        message = True, 'Email "%s" removed from address book' % email
+    except ValueError:
+        message = False, 'Email "%s" was not in the address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def main(options):
+    "routes requests"
+    if options.action == 'add':
+        return email_add(options.email)
+    elif options.action == 'delete':
+        return email_delete(options.email)</ins>
+
+if __name__ == '__main__':
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    shelf.close()
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store",
+                            help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email",
+                            action="store", help="email used in the -a option")
+    (options, args) = parser.parse_args()
+    # validation
+    <ins>if options.action is None:
+        sys.exit("You must specify an action (add or delete) with '-a action'")</ins>
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    elif options.email and '@' not in options.email:
+        parser.error("option -e requires a valid email address")
+    <del>print(options)</del>
+    <ins>print(main(options)[1])</ins>
+</pre></div></div>
+
+      <p>Of course, you wrote tests for this code before writing it. Better try out the tests before
+          trying to exercise the code. Save both programs and run <b>test_addressbook.py</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Testing with test_addressbook.py</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.003s
+
+OK
+</pre></div></div>
+
+      <p>Well, that seemed to work out OK, or at least the tests seem to indicate that the add and
+          delete functionality is succeeding and failing where expected. So let's see what we get with
+          various calls from the command line.</p>
+
+      <p>Run addrbook.py with
+          <b>-a add -e steve@h.com</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -a add -e steve@h.com</div><div class="observe"><pre>
+Email "steve@h.com" added to address book
+</pre></div></div>
+
+      <p>Run addrbook.py with
+          <b>-a add -e steve@h.com</b> again:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py again with -a add -e steve@h.com</div><div class="observe"><pre>
+Email "steve@h.com" already in address book
+</pre></div></div>
+
+      <p>Run addrbook.py with
+          <b>-a delete -e steve@h.com</b>:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with -a delete -e steve@h.com</div><div class="observe"><pre>
+Email "steve@h.com" removed from address book
+</pre></div></div>
+
+      <p>Run addrbook.py with
+          <b>-a delete -e steve@h.com</b> again:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py again with -a delete -e steve@h.com</div><div class="observe"><pre>
+Email "steve@h.com" was not in the address book
+</pre></div></div>
+
+      <p>You've now got a grip on quite a few of the fundamentals of using <b>optparse</b>. Notice
+          how, once the code gets past <b>optparse</b> validation, the action turns to functions.
+          This makes things much easier to extend and test, in turn helping you to reuse this code in
+          other modules. In fact, the email validation ought to take place in its own function called
+          by the email handlers, and would raise an exception that would be caught by the parse
+          handler. Something like this could work: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from optparse import OptionParser
+import shelve
+import sys
+
+shelf_location = 'email.shelf'
+
+<ins>class InvalidEmail(Exception):
+    pass
+
+def validate_email(email):
+    if '@' not in email:
+        raise InvalidEmail("Invalid email: "+email)</ins>
+
+def email_add(email):
+    <ins>validate_email(email)</ins>
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    if email in emails:
+        message = False, 'Email "%s" already in address book' % email
+    else:
+        emails.append(email)
+        message = True, 'Email "%s" added to address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def email_delete(email):
+    <ins>validate_email(email)</ins>
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    try:
+        emails.remove(email)
+        message = True, 'Email "%s" removed from address book' % email
+    except ValueError:
+        message = False, 'Email "%s" was not in the address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def main(options):
+    "routes requests"
+    if options.action == 'add':
+        return email_add(options.email)
+    elif options.action == 'delete':
+        return email_delete(options.email)
+
+if __name__ == '__main__':
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    shelf.close()
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store",
+                            help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email",
+                            action="store", help="email used in the -a option")
+    (options, args) = parser.parse_args()
+    # validation
+    if options.action is None:
+        sys.exit("You must specify an action (add or delete) with '-a action'")
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    <del>elif options.email and '@' not in options.email:
+        parser.error("option -e requires a valid email address")
+    print(main(options)[1])</del>
+    <ins>try:
+        print(main(options)[1])
+    except InvalidEmail:
+        parser.error("option -e requires a valid email address")</ins>
+</pre></div></div>
+
+      <p>Go ahead and test this code. All tests should
+          continue to pass.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Refactored code passes all tests</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.016s
+
+OK
+</pre></div></div>
+
+      <p>Then run the program itself. It should work
+          just as before, but the refactoring makes the code more easily extended.</p>
+
+    </div>
+
+    <!-- DISPLAYING ALL THE RECORDS -->
+    <a name="s_05"></a>
+    <div class="subheading">Displaying All the Records</div>
+    <div class="subheadingText">
+
+      <p>Now, suppose we want to list the contents of the shelf file. For this, all we need is an
+          option without a value. Perhaps just <b>-d</b> or <b>--display</b> without a value to show
+          every address in the system. We'll do it with this parser option:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: boolean flag parser option</div><div class="observe"><pre> parser.add_option('-d',
+        '--display', dest="display", action="store_true", help="show all emails")
+</pre></div></div>
+
+      <p>In this parser option, the action of 'store_true' means that if you call it via the box
+          above, the display attribute of options will be a boolean True. Otherwise it is a
+          <b>None</b> object. With that in your tool-chest, you can add to your existing code base.
+          First, as usual, we'll add a test for the new functionality. Edit <b>test_addressbook.py</b>
+          as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import unittest<ins>, shelve</ins>
+import addressbook
+
+class TestEmailHandlers(unittest.TestCase):
+
+    def setUp(self):
+        self.email = 'test123@t.com'
+        <ins>shelf_location = addressbook.shelf_location
+
+        shelf = shelve.open(shelf_location)
+        if 'emails' in shelf:
+            if self.email in shelf['emails']:
+                shelf['emails']=[]
+        shelf.close()</ins>
+
+    def test_email_delete(self):
+        addressbook.email_add(self.email) # ensure the email is active
+        self.assertEqual(addressbook.email_delete(self.email)[0], True)
+        self.assertEqual(addressbook.email_delete(self.email)[0], False)
+
+    def test_email_add(self):
+        self.assertEqual(addressbook.email_add(self.email)[0], True)
+        self.assertEqual(addressbook.email_add(self.email)[0], False)
+
+    <ins>def test_email_display(self):
+        addressbook.email_add(self.email)
+        val, display = addressbook.email_display()
+        self.assertTrue(self.email in display)</ins>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Now, add the functionality; edit <b>addressbook.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from optparse import OptionParser
+import shelve
+<del>import sys</del>
+
+shelf_location = 'email.shelf'
+
+class InvalidEmail(Exception):
+    pass
+
+def validate_email(email):
+    if '@' not in email:
+        raise InvalidEmail("Invalid email: "+email)
+
+def email_add(email):
+    validate_email(email)
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    if email in emails:
+        message = False, 'Email "%s" already in address book' % email
+    else:
+        emails.append(email)
+        message = True, 'Email "%s" added to address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def email_delete(email):
+    validate_email(email)
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    try:
+        emails.remove(email)
+        message = True, 'Email "%s" removed from address book' % email
+    except ValueError:
+        message = False, 'Email "%s" was not in the address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+<ins>def email_display():
+    shelf = shelve.open(shelf_location)
+    emails = shelf['emails']
+    shelf.close()
+    text = ''
+    for email in emails:
+        text += email + '\n'
+    return True,text</ins>
+
+def main(options):
+    "routes requests"
+    if options.action == 'add':
+        return email_add(options.email)
+    elif options.action == 'delete':
+        return email_delete(options.email)
+    <ins>elif options.display == True:
+        return email_display()</ins>
+
+if __name__ == '__main__':
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    shelf.close()
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store",
+                            help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email",
+                            action="store", help="email used in the -a option")
+    <ins>parser.add_option('-d', '--display', dest="display", action="store_true",
+                            help="show all emails")</ins>
+    (options, args) = parser.parse_args()
+    # validation
+    <del>if options.action is None:
+        sys.exit("You must specify an action (add or delete) with '-a action'")</del>
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    try:
+        print(main(options)[1])
+    except InvalidEmail:
+        parser.error("option -e requires a valid email address")
+</pre></div></div>
+
+      <p>Run your tests, and then add some emails and
+          run <b>addressbook.py</b> with the <b>-d</b>/--display flag. You'll get a printed display
+          of all your email entries. </p>
+
+    </div>
+
+    <!-- OPTPARSE TYPE VALIDATION -->
+    <a name="s_06"></a>
+    <div class="subheading">optparse Type Validation</div>
+    <div class="subheadingText">
+
+      <p>Let's say we want to change the -d/--display flag to provide a number of records based on
+          an integer we pass in. Normally that means we'll have to do type checking via the
+          <span class="darkgreen">int()</span> built-in, but with <b>optparse</b>, we get a shortcut. </p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Adding an Integer Check</div><div class="observe"><pre>
+parser.add_option('-d', '--display', <ins>dest="display", type="int",</ins>
+    action="store<del>_true</del>", help="show all emails <ins>limited by value</ins>")
+</pre></div></div>
+
+      <p>The <span class="darkblue">optparse</span> module also includes type checking for string, float, and
+          <i>choices</i>. These should all be obvious, except for <i>choices</i>.</p>
+
+    </div>
+
+    <p>The <b>optparse</b> module lets you easily write scripts that handle arguments in a fashion
+        that is consistent with the rest of the world. In other words, it is common to put all of
+        your optparse code under the <b>if __name__ == '__main__'</b> block of code, since that
+        means if another module extends your code it doesn't trigger the optparse code in your
+        program.</p>
+
+  </div>
+
+  <!-- CONFIGPARSER -->
+  <a name="configparser_controlling_settings_the_right_way"></a>
+  <a name="h_02"></a>
+  <div class="heading">configparser: Controlling Settings the Right Way</div>
+  <div class="headingText">
+
+    <p>Let's say you just bought a brand new computer. The first time you start it up, the computer
+        asks you your name, password, time zone, language, and probably some other questions. It
+        isn't hard to do, but it takes away from your time with your new machine. Wouldn't it be nice
+        if you could simply save this configuration information on one computer and place it on
+        another as needed? </p>
+
+    <p>Actually, you can. System Engineers often use tools that set up computers with all the
+        configuration information set exactly how they want it. With some automated scripting, they
+        can start up a new computer this way in minutes and sometimes seconds. This is how companies
+        that provide hosting for individuals or firms that run gigantic server farms can maintain
+        hundreds and thousands of machines. </p>
+
+    <p>Python's <span class="darkblue">configparser</span> library provides an easily used API for interacting
+        with one of the popular formats used to save configurations, the INI file format. Frequently
+        associated with Microsoft Windows, INI is in fact also used by other platforms such as Linux
+        and Mac OS X. </p>
+
+    <!-- CONFIGPARSER TO STORE DATABASE SETTINGS -->
+    <a name="s_01"></a>
+    <div class="subheading">configparser to Store Database Settings</div>
+    <div class="subheadingText">
+
+      <p>In previous courses and earlier in this lesson, we used simple files, pickle, shelve, or SQL
+          databases to save information. The information that handled your settings was coded right
+          into your programs. While this works on small projects under well-defined academic
+          conditions such as Eclipse, Ellipse, and the O'Reilly teaching environment, it can be
+          problematic under professional conditions. For example, because Python is so portable you
+          might save data on Windows at <b>c:\data\emails.shelf</b>, but this simply won't work on
+          Linux or Mac OS X, which might want to see something like <b>/usr/local/data/emails.shelf</b>.
+          Python has tools that make it easy to detect operating systems, but then users might want to
+          save their data in a specific location. This forces them to change your code to store data
+          where they want, which introduces the risk of breaking your code, and only works if they
+          were actually given access to your code (source files). </p>
+
+      <p>This is where config files can be priceless. Users not familiar with Python can quickly
+          figure out the format and change things. Furthermore, since the file usually has a
+          <b>.cfg</b> (or less commonly, <b>.ini</b>) extension, most users will be able to quickly
+          identify it as a configuration file.</p>
+
+      <p>So, let's make a configuration file. Create <b>addressbook.cfg</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>[database]
+# mac os x or linux
+# file = /workspace/Python3_lesson12/src/email.shelf
+# windows
+file = email.shelf</ins>
+</pre></div></div>
+
+      <p><b>[database]</b> is a section header. That means any option variables defined under it use
+          "database" as part of the process of displaying them. Under that are a series of comments
+          that use Python '#' syntax so that they are not loaded. Finally,
+          <b>file = email.shelf</b> sets the file variable under
+          the database section. To display this addressbook.cfg file, create a <b>config.py</b> file
+          as shown: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import configparser
+
+# create a config parser object
+config = configparser.RawConfigParser()
+
+# open and read the addressbook.cfg file into the config parser
+config.read('addressbook.cfg')
+
+# loop through the sections
+for section in config.sections():
+    print(section)
+    # get all the options for the current section
+    for option in config.options(section):
+        # print the option and its value indented for clarity
+        text = '    %s = %s' % (option, config.get(section, option))
+        print(text)</ins>
+</pre></div></div>
+
+      <p>Save and run it:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: the results of running config.py</div><div class="observe"><pre>
+database
+    file = email.shelf
+</pre></div></div>
+
+      <p>As you can see, this gives us the ability to provide per-system config files. This is a
+          good thing, because it means you don't have to worry so much about users needing to change
+          settings. A system administrator can establish a central configuration file (and savvy users
+          can provide their own configurations). Let's use the addressbook.cfg file to set the
+          database location in addressbook.py:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+<ins>import configparser</ins>
+from optparse import OptionParser
+import shelve
+
+<del>shelf_location = 'email.shelf'</del>
+<ins>config = configparser.RawConfigParser()
+config.read('addressbook.cfg')
+shelf_location = config.get('database', 'file')</ins>
+
+class InvalidEmail(Exception):
+    pass
+
+def validate_email(email):
+    if '@' not in email:
+        raise InvalidEmail("Invalid email: "+email)
+
+def email_add(email):
+    validate_email(email)
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    if email in emails:
+        message = False, 'Email "%s" already in address book' % email
+    else:
+        emails.append(email)
+        message = True, 'Email "%s" added to address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def email_delete(email):
+    validate_email(email)
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    emails = shelf['emails']
+    try:
+        emails.remove(email)
+        message = True, 'Email "%s" removed from address book' % email
+    except ValueError:
+        message = False, 'Email "%s" was not in the address book' % email
+    shelf['emails'] = emails
+    shelf.close()
+    return message
+
+def email_display():
+    shelf = shelve.open(shelf_location)
+    emails = shelf['emails']
+    shelf.close()
+    text = ''
+    for email in emails:
+        text += email + '\n'
+    return True,text
+
+def main(options):
+    "routes requests"
+    if options.action == 'add':
+        return email_add(options.email)
+    elif options.action == 'delete':
+        return email_delete(options.email)
+    elif options.display == True:
+        return email_display()
+
+if __name__ == '__main__':
+    shelf = shelve.open(shelf_location)
+    if 'emails' not in shelf:
+        shelf['emails'] = []
+    shelf.close()
+    parser = OptionParser()
+    parser.add_option('-a', '--action', dest="action", action="store",
+                            help="requires -e option. Actions: add/delete")
+    parser.add_option('-e', '--email', dest="email",
+                            action="store", help="email used in the -a option")
+    parser.add_option('-d', '--display', dest="display", action="store_true",
+                            help="show all emails")
+    (options, args) = parser.parse_args()
+    # validation
+    if options.action and not options.email:
+        parser.error("option -a requires option -e")
+    elif options.email and not options.action:
+        parser.error("option -e requires option -a")
+    try:
+        print(main(options)[1])
+    except InvalidEmail:
+        parser.error("option -e requires a valid email address")
+</pre></div></div>
+
+      <p>Save and run your tests and your code. There
+          should be no difference in the results. Now, let's see what happens when we don't provide a
+          file option. Comment it out in the cfg file as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+[database]
+# mac os x or linux
+# file = /workspace/Python3_lesson12/src/email.shelf
+# windows
+<ins>#</ins>file = email.shelf
+</pre></div></div>
+
+      <p>Save it and run your <b>addressbook.py</b>.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Running addressbook.py with no defined database.</div><div class="observe"><pre>
+Traceback (most recent call last):
+    File "addressbook.py", line 7, in &lt;module&gt;
+        shelf_location = config.get('database', 'file')
+    File "configparser.py", line 327, in get
+        raise NoOptionError(option, section)
+configparser.NoOptionError: No option 'file' in section: 'database'
+</pre></div></div>
+
+      <p>Your code has just thrown an exception! You can have the <span class="darkgreen">config.get()</span>
+          method pass in a default, but usually you want to leave these exceptions as they are.
+          Users who play with config files need as much information as possible to get their
+          configurations working, and passing in defaults means they may not understand what happens
+          when they pass in a setting incorrectly. Remember, good Python programmers like to be as
+          explicit as possible!</p>
+
+    </div>
+
+    <!-- MULTIPLE SECTIONS -->
+    <a name="s_02"></a>
+    <div class="subheading">Multiple Sections</div>
+    <div class="subheadingText">
+
+      <p>Here's a sample config file that might be used to set up a computer. This is just a simple
+          example to show you how system engineers often work:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Operating System Basic Setup</div><div class="observe"><pre>
+[personal]
+first_name = Steve
+last_name = Holden
+age = 33
+gender = male
+
+[professional]
+occupation = author
+website = http://holdenweb.com
+
+[location]
+language = English (USA)
+timezone = EST
+
+[authentication]
+username = sholden
+password = like I'm going to tell you
+</pre></div></div>
+
+      <p>The <b>configparser</b> tool is extremely readable and quite machine-friendly. A significant
+          portion of the Python community uses the INI format to describe critical dependency lists
+          and so do users from other programming languages. While there are other competing formats,
+          such as XML, the INI format remains popular because quite simply it is easy for humans to
+          read and for machines it is as fast as, if not faster than, the others to parse and
+          interpret. This ease of interpretation has meant that XML usage for configuration has
+          declined in recent years while use of the older INI format has grown. </p>
+
+    </div>
+
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-11.html">A First Look at Logging</a>
+    <a class="next" href="Python3-13.html">Time-Based Computations</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handling Electronic Mail Messages</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Handling Electronic Mail Messages</div>
+
+  <!-- HANDLING EMAIL -->
+  <a name="h_01"></a>
+  <div class="heading">Handling Email</div>
+  <div class="headingText">
+
+    <p>In this lesson we'll learn how to create and send email messages. We'll start by creating a plain
+      text email, and send out that email with Python's <b>email</b> and <b>smtplib</b> modules. We'll
+      look at the source of an email, and get a quick overview of RFC 2822, the request for comments that
+      specifies an email's format.</p>
+
+    <p>Once you have an understanding of plain text emails, we'll move on to messages that have attachments
+      and multiple parts—<i>MIME messages</i>. Again, we'll be dealing with Python's email module,
+      which contains classes for handling messages that are composed of multiple parts and types. Just
+      like with plain text emails, we'll experiment with creating and sending MIME messages. We'll see how
+      MIME messages are composed, and how you can manipulate them when you have a MIME message to pick
+      apart.</p>
+
+  </div>
+
+  <!-- AN EXAMPLE OF EMAIL WRITTEN TO A FILE -->
+  <a name="h_02"></a>
+  <div class="heading">An Example of Email Written to a File</div>
+  <div class="headingText">
+
+    <p>First, let's write a plain text email file. Create a file named <b>example-email.txt</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>From: <i>anybody@work.com</i>
+To: <i>anybody@home.com</i>
+Subject: Handling Emails With Python
+
+
+This email was sent using Python's smtplib!
+</ins></pre></div></div>
+
+    <p>Replace the "From:" address, <i>anybody@work.com</i>, with your own email address. Replace the "To:" address,
+      <i>anybody@home.com</i>, with the same address, or any other address you can
+      access. Also, take note of the format of the headers and the empty line
+      separating the headers from the body.</p>
+
+  </div>
+
+  <!-- REPRESENTING AN EMAIL WITH MESSAGE OBJECTS -->
+  <a name="h_03"></a>
+  <div class="heading">Representing an Email with Message Objects</div>
+  <div class="headingText">
+
+    <p>Python's <span class="darkblue">email</span> module contains <span class="darkred">Message</span>—a class with
+      instances that represent email messages. (You'll learn more about the structure of an email later in this
+      lesson when you get an overview of RFC 2822.) A Message object has headers and payloads. Headers
+      and the body are the two main parts of an email. You can access the headers using dictionary-like
+      syntax, or you can use the Message class's instance methods. The Message class handles
+      the object representation of an email; it does not actually have the functionality to send emails
+      (that functionality is in the smtplib module).</p>
+
+    <p>The email module also has <span class="darkred">FeedParser</span> and <span class="darkred">Parser</span> classes. These
+      objects allow you to parse a stream of characters or a file as an email. However, since
+      instantiating a parser and then calling a parse method is such a common sequence of operations for
+      creating Message objects, there are convenience functions in the email module that bypass the use of
+      these two classes. Instead, you can create a Message object from a flat file by using the email module's
+      built-in <span class="darkgreen">message_from_file()</span> function. There is also a similar
+      <span class="darkgreen">message_from_string()</span> function. The next example shows the
+      creation and usage of a Message object. It incorporates the plain text email that you
+      created earlier. Type the code below into an interactive Python console as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import email, datetime</ins>
+&gt;&gt;&gt; <ins>msg = email.message_from_file(open(r'example-email.txt'))</ins>
+&gt;&gt;&gt; <ins>msg['From']</ins>
+'anybody@work.com'
+&gt;&gt;&gt; <ins>msg['from']</ins>
+'anybody@work.com'
+&gt;&gt;&gt; <ins>msg['To']</ins>
+'anybody@home.com'
+&gt;&gt;&gt; <ins>msg['Date'] = datetime.datetime.now().strftime("%d %b %Y %H:%M:%S -0600") </ins>
+'5 Aug 2010 10:00:00 -0700'
+&gt;&gt;&gt; <ins>msg['Subject']</ins>
+'Handling Emails With Python'
+&gt;&gt;&gt; <ins>msg.get('From')</ins>
+'anybody@work.com'
+&gt;&gt;&gt; <ins>msg.get('from')</ins>
+'anybody@work.com'
+&gt;&gt;&gt; <ins>msg</ins>
+&lt;email.message.Message object at 0x00BF8970&gt;
+&gt;&gt;&gt; <ins>print(msg.as_string())</ins>
+From: anybody@work.com
+To: anybody@home.com
+Subject: Handling Emails With Python
+Date: 5 Aug 2010 10:00:00 -0700
+
+This email was sent using Python's smtplib!
+
+&gt;&gt;&gt; <ins>msg['X-Holden-Web'] = "Root beer for everyone!"</ins>
+&gt;&gt;&gt; <ins>print(msg.as_string())</ins>
+From: anybody@work.com
+To: anybody@home.com
+Subject: Handling Emails With Python
+Date: 5 Aug 2010 10:00:00 -0700
+X-Holden-Web: Root beer for everyone!
+&gt;&gt;&gt; <ins>msg.get_payload()</ins>
+"This email was sent using Python's smtplib!\n"
+
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <p>The <b>message_from_file()</b> function takes an opened file, and reads the file's contents to
+      create a new <b>Message</b> object. You access its headers using the same kind of indexing that you
+      use with dicts (you can also add headers by indexing the same way—you are even
+      allowed to add proprietary headers, as long as their names begin with <b>"X-"</b>). </p>
+
+    <p>Header access is case-<b>in</b>sensitive. You can refer to the From header as either "From" or
+      "from," using mapping style accessors or the <span class="darkgreen">get()</span> method.
+      There are multiple methods for poking and prodding the header and body information in a Message
+      object—<span class="darkgreen">get_payload()</span>, <span class="darkgreen">as_string()</span>, and so on.</p>
+
+  </div>
+
+  <!-- SENDING EMAILS WITH SMTPLIB -->
+  <a name="h_04"></a>
+  <div class="heading">Sending Emails with smtplib</div>
+  <div class="headingText">
+
+    <p>So, now that you have a representation of an email as a Python object, how do you actually send an email?
+      In order to send an email, you'll need access to a mail server. Public email services like Yahoo,
+      hotmail, or gmail, offer you access to their mail servers. If you've ever set up an email client,
+      like Outlook, Thunderbird, or mail.app, to work with your web mail account, you should be familiar
+      with configuring an outgoing mail server. You'll need to know the host name and port of the mail
+      server you're going to use when you send emails with Python. The <span class="darkblue">smtplib</span>
+      module's SMTP class represents a connection to a mail server. It allows you to <i>connect to
+        and send mail from</i> that server. </p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">If you know where to find your regular email settings, you can use those same SMTP server settings in the
+        next few exercises. Otherwise, substitute the host and port for your own mail provider.</td>
+    </tr></table>
+
+    <p>Type the code below into an interactive Python console as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import smtplib</ins>
+&gt;&gt;&gt; <ins>srv = smtplib.SMTP('mail.oreillyschool.com', 25)</ins>
+&gt;&gt;&gt; <ins>srv.sendmail(msg['From'], msg['To'], msg.as_string())</ins>
+{}
+&gt;&gt;&gt; <ins>srv.quit()</ins>
+(221, b'Service Closing transmission')
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <table class="noteBox is-warning"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">You may see a warning that you are attempting to send spam. This is a security feature of
+        the SMTP server; we are currently working on a solution.</td>
+    </tr></table>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Modern SMTP servers require authenticated, encrypted connections. Rather than connecting on
+        port 25, use <code>smtplib.SMTP_SSL</code> (port 465) or <code>smtplib.SMTP</code> with
+        <code>starttls()</code> (port 587), followed by <code>login(username, password)</code>.
+        The <code>send_message(msg)</code> method (available since Python 3.2) is more convenient than
+        <code>sendmail()</code> — it extracts the envelope addresses from the message headers automatically:
+        <pre>with smtplib.SMTP('smtp.example.com', 587) as srv:
+    srv.starttls()
+    srv.login('user@example.com', 'password')
+    srv.send_message(msg)</pre>
+      </td>
+    </tr></table>
+
+    <p>When you instantiated the SMTP object <span class="darkblue">srv</span>, you passed a host name
+      and a port to its constructor. An alternative would be to instantiate the object and then immediately
+      call its <span class="darkgreen">connect()</span> method. If you are using a mail server that requires
+      authentication, you'll need to call <span class="darkgreen">login()</span> (with a username and a password as
+      its arguments) before using the <span class="darkgreen">sendmail()</span> method. Finally, as
+      its name implies, <span class="darkgreen">sendmail()</span> actually transmits your message. The From and To
+      addresses must be supplied as the first two arguments, and the entire message as a string must be
+      passed in as the third argument. We used the <span class="darkgreen">as_string()</span> method to
+      convert the entire message—the headers and the body—into a string. The entire message is
+      required, including the headers; <span class="darkgreen">get_payload()</span> would not be sufficient.
+      Finally, you must call <span class="darkgreen">quit()</span> to close your connection to your mail server.</p>
+
+    <p>You should receive the message that you just sent in the destination "To:" email account. Most email
+      clients allow you to view an email's source. If you examine the source of the email that was sent,
+      you'll get something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+Delivered-To: smtplib.example@gmail.com
+Received: by 10.229.248.19 with SMTP id me19cs11861qcb;
+    Thu, 4 Aug 2010 06:16:42 -0700 (PDT)
+Received: by 10.227.69.17 with SMTP id x17mr4348340wbi.171.1273151801377;
+    Thu, 5 Aug 2010 06:16:41 -0700 (PDT)
+Return-Path: &lt;smtplib.example@yahoo.com&gt;
+Received: from smtp112.plus.mail.re1.yahoo.com (smtp112.plus.mail.re1.yahoo.com [69.147.102.75])
+    by mx.google.com with SMTP id p18si2812439wbc.13.2010.05.06.06.16.39;
+    Thu, 5 Aug 2010 06:16:40 -0700 (PDT)
+Received-SPF: pass (google.com: best guess record for domain of smtplib.example@yahoo.com designates 69.147.102.75 as permitted sender) client-ip=69.147.102.75;
+Authentication-Results: mx.google.com; spf=pass (google.com: best guess record for domain of smtplib.example@yahoo.com designates 69.147.102.75 as permitted sender) smtp.mail=smtplib.example@yahoo.com; dkim=pass (test mode) header.i=@yahoo.com
+Received: (qmail 71453 invoked from network); 6 May 2010 13:16:39 -0000
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+s=s1024; d=yahoo.com;
+h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date;
+b=2tutdYAS4lFp/y5bosZZbKefffTkEYgEzwkuBVBotA/MwnbX70g0+xWuNN2Fv9PqQNYkmL817pOEJJdWOqXmEQUnp1FOkACuXG7B8UWbjzJmJLhbncuWd9tvXKPqtYc0PTXeGT+8Uy1t0fJGi38p3UYHxgH1vM5+VuDEQwT3W8Y=  ;
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s1024; t=1273151799; bh=mBI+mFk/NBVawMtbV/D/wFxf8YugJRFLgkauQ63aW3I=; h=Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date; b=p5sdatt7A9NABwx85pQE0yfN9vK3BXUgAcFm7rN/v4zjCn2TxXKYvekLaGuNj3La8kl71pbf5Xv6vPjRKbcIizuNoXRnuB3lr6aR75rqzVZexRFHDMjIKYnI9YyM5XemXbmG71WVAhEThkGm+K0TH4EhVvpNErLHo/y6cNtjQt0=
+Message-ID: &lt;317179.69250.qm@smtp112.plus.mail.re1.yahoo.com&gt;
+Received: from [192.168.1.146] (smtplib.example@XXX.XXX.XXX.XXX with plain)
+    by smtp112.plus.mail.re1.yahoo.com with SMTP; 05 Aug 2010 06:16:39 -0700 PDT
+X-Yahoo-SMTP: TvYTIr2swBBLfJ4hwbbruqy1ImdZ_uFJ9iC3Ww--
+X-YMail-OSG: 1xdPB3cVM1mWl_7QIy3YY_1iLhS0cF29P0hOsaItTnh2cV5
+AVGlSBuGUl30V8SuFKhKicU3FPPX5wCnZrzWz_I2anv4G3n.Mnak.bqWkyOj
+Wa_T36GBd8PlXAIEMVRLnjBd3DaqEQCu3DgDP_5_w3u4CmwIrHI6pkDbGd3o
+PT9xapGWr6M79XG2JE_SKC5VdCE8SvksSGfmtxX0mIZtwB61ZbhnlY5WOuLL
+aHPML.XnABew_SwVbIGCARyGniU7.p_gz9DxmLnk3j64BCDa1ZGigG0w1bJ1
+iyF.3uSWgsVG5OK03UGra6w_BjeSbDNaSGzM0jYG8KVFRR81DsotekR5O.3E
+W99v26BEU
+X-Yahoo-Newman-Property: ymail-3
+From: anybody@work.com
+To: anybody@home.com
+Subject: Handling Emails With Python
+Date: 5 Aug 2010 10:00:00 -0700
+
+This email was sent using Python's smtplib!
+</pre></div></div>
+
+    <p>Do you see the "X-Holden-Web" header in your message?</p>
+
+  </div>
+
+  <!-- RFC 2822 -->
+  <a name="h_05"></a>
+  <div class="heading">RFC 2822</div>
+  <div class="headingText">
+
+    <p>The email's source looks a bit complicated at first glance. You normally don't see all of that
+      stuff when you send and receive emails; mail clients like Outlook, Thunderbird, and gmail,
+      remove all of the nitty gritty details. But in order to enable your program to send
+      email, you'll need to be familiar with the specifications of an email's
+      syntax. These specifications can be found in documents called RFCs—Requests for Comments.
+      RFC 2822 contains the information you need to use Python's email-handling
+      modules. </p>
+
+    <p>There's a lengthy, detailed standard for RFCs. For more information,
+      refer to the
+      <a href="http://docs.python.org/library/email.header.html" target="_blank">Python library</a>.</p>
+
+    <p>Essentially, RFC 2822 is the standard that specifies the message content format to be passed between email systems.
+      A message is actually a series of characters. According to RFC 2822, a message has two parts:
+      the headers and the body (which is optional). Think of the headers as an envelope and the body as
+      the letter. The envelope, or headers, contain all of the information necessary for sending the
+      message—the sender, the recipient, the date the message was created, and so on. The
+      contents, or body (also referred to as the payload), is the actual message to be transmitted.</p>
+
+    <p>The header is separated from the payload by exactly one blank line (two consecutive line breaks).
+      Line breaks can be represented by different characters, or in some cases, by combinations of
+      characters. The RFC 2822 specification for emails uses the carriage return and
+      line feed pair (CRLF) to represent a line break. Two consecutive CRLFs separate an
+      email's headers from its body.</p>
+
+    <p>RFC 2822 is not the final word on email. Subsequent RFCs refine and clarify standards further.
+      For example, RFCs 2045 through 2049 describe sending
+      structured data, such as images and audio, via email. These RFCs, known together as Multipurpose
+      Internet Mail Extensions (MIME), extend the definition of an email body.
+      For now, RFC 2822 is enough to get us
+      started with Python's email module. The four headers that we'll
+      use are Orig-date, From, To, and Subject:</p>
+
+    <table class="tbl">
+      <tr><td>Field Name</td><td>Example</td></tr>
+      <tr><td>orig-date</td><td>Date: 24 Apr 2010 10:00:00 -0700</td></tr>
+      <tr><td>from</td><td>From: someone@domain.bar</td></tr>
+      <tr><td>to</td><td>To: foo@example.bar</td></tr>
+      <tr><td>subject</td><td>Subject: Hello</td></tr>
+    </table>
+
+    <p>Take another look now, at the
+      source of the email that you sent and received earlier. Pick out the fields that were required. Look at all
+      of the headers that were inserted by the mail client and the mail server! Find the blank line that
+      separates the headers from the body.</p>
+
+  </div>
+
+  <!-- MIME MESSAGES -->
+  <a name="h_06"></a>
+  <div class="heading">MIME Messages</div>
+  <div class="headingText">
+
+    <p>So far, you've used string
+      representations of Message objects to send emails with smtplib. But you could as easily have
+      skipped parsing your email text into a Message object, and just passed a string directly from your
+      file to the <span class="darkgreen">sendmail()</span> method. The basic RFC 2822 format can make using a Message
+      object to represent a plain text email seem like overkill.</p>
+
+    <p>The real value of the Message object abstraction will become more apparent when you use it to create
+      emails that have multiple parts, contain non-English text (that is, character sets other than
+      ASCII), or have non-text attachments. MIME is a set of standards that allows emails to contain
+      those elements.
+      Incorporating MIME requires some
+      modification to the way you send plain text emails. You'll need boundaries for
+      multipart messages, and extra headers that specify which content you're sending. The MIME
+      RFCs specify several headers that are not present in RFC 2822, such as Content-Type and MIME-Version.
+      Rather than going through each MIME-related RFC, we'll start with an
+      example of how to send a basic MIME message with Python's email module.</p>
+
+    <p>MIME Messages in Python use the Message class. <span class="darkred">MIMEBase</span>, a subclass
+      of Message, encapsulates common MIME Message functionality. MIMEBase, in turn, serves as the parent
+      of a family of classes that provide functionality for specific MIME types. Our next example shows
+      how to create a MIME Message that's composed of two other messages—a
+      plain text message and an html message. Let's get going already! Create a container message that holds
+      the two text messages. Type this code into an interactive Python console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from email.mime.multipart import MIMEMultipart</ins>
+&gt;&gt;&gt; <ins>msg = MIMEMultipart()</ins>
+&gt;&gt;&gt; <ins>msg</ins>
+&lt;email.mime.multipart.MIMEMultipart object at 0x00BEB7D0&gt;
+&gt;&gt;&gt; <ins>msg['To'] = 'anybody@home.com'</ins>
+&gt;&gt;&gt; <ins>msg['From'] = 'anybody@work.com'</ins>
+&gt;&gt;&gt; <ins>msg['Subject'] = 'Sending Multipart HTML Mail'</ins>
+&gt;&gt;&gt; <ins>print(msg.as_string())</ins>
+Content-Type: multipart/mixed; boundary="===============1941993348=="
+MIME-Version: 1.0
+To: anybody@home.com
+From: anybody@work.com
+Subject: Sending Multipart HTML Mail
+
+--===============1941993348==
+
+--===============1941993348==--
+&gt;&gt;&gt; <ins>msg.get_content_type()</ins>
+'multipart/mixed'
+&gt;&gt;&gt; <ins>msg.is_multipart()</ins>
+True
+&gt;&gt;&gt; <ins>msg.get_boundary()</ins>
+'===============2020970424=='
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The <code>email.mime.*</code> construction API shown here is the older (legacy) interface.
+        Current Python favours <code>email.message.EmailMessage</code> with
+        <code>policy=email.policy.default</code> and methods like <code>set_content()</code>,
+        <code>add_alternative()</code>, and <code>add_attachment()</code>, which handle charset, encoding,
+        and MIME boundaries automatically — much simpler than assembling <code>MIMEMultipart</code> by hand:
+        <pre>from email.message import EmailMessage
+import email.policy
+
+msg = EmailMessage(policy=email.policy.default)
+msg['To'] = 'anybody@home.com'
+msg['From'] = 'anybody@work.com'
+msg['Subject'] = 'Sending Multipart HTML Mail'
+msg.set_content('hello!')                          # plain text
+msg.add_alternative('&lt;strong&gt;hello!&lt;/strong&gt;', subtype='html')
+</pre>
+        The author's original code is kept verbatim throughout; these notes annotate it alongside.</td>
+    </tr></table>
+
+    <p>We used a specific MIME class rather than the Message class or the MIMEBase class to
+      create our container. MIMEBase is an <i>abstract class</i>—it is not intended to be
+      instantiated directly. Instead, we used a subclass of MIMEBase—in this case,
+      MIMEMultipart. A MIMEMultipart object automatically sets a couple of headers for you: Content-Type
+      and MIME-Version. You can see the values of these headers, along with the rest of the message, by
+      calling the MIMEMultipart instance's <span class="darkgreen">as_string()</span> method.
+      Its headers indicate that its Content-Type is multipart/mixed. Alternatively, we can call
+      <span class="darkgreen">get_content_type()</span> to view the Content-Type value directly. We can also
+      call the <span class="darkgreen">is_multipart()</span> method to determine whether a message may be composed
+      of subparts. Finally, the <span class="darkgreen">get_boundary()</span> method shows the string that
+      separates the different parts of a message.</p>
+
+    <p>Now that we have a container message, we can create the other two messages that we'll attach to it.
+      Continue the interactive Python console session. Type the code below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from email.mime.text import MIMEText</ins>
+&gt;&gt;&gt; <ins>text_msg = MIMEText('hello!', 'plain')</ins>
+&gt;&gt;&gt; <ins>html_msg = MIMEText('&lt;strong&gt;hello!&lt;/strong&gt;', 'html')</ins>
+&gt;&gt;&gt; <ins>print(text_msg.as_string())</ins>
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+hello!
+&gt;&gt;&gt; <ins>print(html_msg.as_string())</ins>
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+&lt;strong&gt;hello!&lt;/strong&gt;
+&gt;&gt;&gt; <ins>text_msg.is_multipart()</ins>
+False
+&gt;&gt;&gt; <ins>html_msg.is_multipart()</ins>
+False
+&gt;&gt;&gt; <ins>text_msg.get_content_type()</ins>
+'text/plain'
+&gt;&gt;&gt; <ins>html_msg.get_content_type()</ins>
+'text/html'
+</pre></div></div>
+
+    <p>You created another two objects that are instances of a type-specific MIME class—MIMEText.
+      The MIMEText constructor takes the payload as the first argument, and the subtype of the
+      message as the second. Both messages are of type text, but one is text/plain, while the other is
+      text/html. These objects do not have subparts; when you call <span class="darkgreen">is_multipart()</span> on
+      them, the result is False. By using <span class="darkgreen">get_content_type()</span>, we see that the
+      appropriate Content-Type headers are set. Again, the actual headers can be viewed by calling
+      <span class="darkgreen">as_string()</span> on either of these objects, or on the container message.</p>
+
+    <p>With these two messages created, we can insert them into the original multipart message that serves
+      as the container. Continue the interactive Python console session. Type the code below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>msg.attach(html_msg)</ins>
+&gt;&gt;&gt; <ins>msg.attach(text_msg)</ins>
+&gt;&gt;&gt; <ins>msg.as_string()</ins>
+'Content-Type: multipart/mixed; boundary="===============1941993348=="
+MIME-Version: 1.0
+To: anybody@home.com
+From: anybody@work.com
+Subject: Sending Multipart HTML Mail
+
+--===============1941993348==
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+&lt;strong&gt;hello!&lt;/strong&gt;
+--===============1941993348==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+hello!
+--===============1941993348==--'
+&gt;&gt;&gt; <ins>msg.get_payload()</ins>
+[&lt;email.mime.text.MIMEText object at 0x00C035B0&gt;, &lt;email.mime.text.MIMEText object at 0x00C035D0&gt;]
+&gt;&gt;&gt; <ins>messages = msg.get_payload()</ins>
+&gt;&gt;&gt; <ins>for m in messages:</ins>
+...     <ins>print(m.get_content_type())</ins>
+...
+text/html
+text/plain
+&gt;&gt;&gt; <ins>msg.walk()</ins>
+&lt;generator object walk at 0x00C048C8&gt;
+&gt;&gt;&gt; <ins>for m in msg.walk():</ins>
+...     <ins>print(m.is_multipart())</ins>
+...     <ins>print(m.get_content_type())</ins>
+...
+True
+multipart/mixed
+False
+text/html
+False
+text/plain
+</pre></div></div>
+
+    <p>Using the <span class="darkgreen">attach()</span> method, you can nest messages into your original container
+      email. The submessages that you attached to your container email still retained their headers.
+      Again, by using <span class="darkgreen">as_string()</span>, you can see the headers of your message. This
+      time though, you can see the headers of all of the messages because two them are subparts of the
+      original. The boundary separates the messages.</p>
+
+    <p>When the <span class="darkgreen">get_payload(</span>) method is called on the top-level
+      multipart message, the result is the list of the submessages it contains. The items in this list
+      are also message objects. They are the text and html messages that you created. As is the case with regular
+      Message objects, you can get the content type and the payload from them. In fact, everything you can
+      do with Message objects, you can do with the submessages on this list.
+      Going through nested messages by constantly calling <span class="darkgreen">get_payload()</span> would be
+      tedious. So for messages with complex nesting, the Message object supplies a
+      <span class="darkgreen">walk()</span> method which allows you to move through all of the messages parts and subparts.</p>
+
+    <p>Now that you have your multipart message constructed, you can send it using the smtplib module.
+      Continue the interactive Python console session. Type the code below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import smtplib</ins>
+&gt;&gt;&gt; <ins>srv = smtplib.SMTP('mail.oreillyschool.com', 25)</ins>
+&gt;&gt;&gt; <ins>srv.sendmail(msg['From'], msg['To'], msg.as_string())</ins>
+{}
+&gt;&gt;&gt; <ins>srv.quit()</ins>
+(221, b'Service Closing transmission')
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <p>When you check your email, the source will look something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+Delivered-To: smtplib.example@gmail.com
+Received: by 10.229.184.72 with SMTP id cj8cs27998qcb;
+    Wed, 5 Aug 2010 04:47:15 -0700 (PDT)
+Received: by 10.229.230.76 with SMTP id jl12mr584775qcb.134.1273664835572;
+    Wed, 5 Aug 2010 04:47:15 -0700 (PDT)
+Return-Path: &lt;smtplib.example@yahoo.com&gt;
+Received: from smtp107.plus.mail.re1.yahoo.com (smtp107.plus.mail.re1.yahoo.com [69.147.102.70])
+    by mx.google.com with SMTP id h8si95375qce.35.2010.05.12.04.47.12;
+    Wed, 5 Aug 2010 04:47:14 -0700 (PDT)
+Received-SPF: pass (google.com: best guess record for domain of smtplib.example@yahoo.com designates 69.147.102.70 as permitted sender) client-ip=69.147.102.70;
+Authentication-Results: mx.google.com; spf=pass (google.com: best guess record for domain of smtplib.example@yahoo.com designates 69.147.102.70 as permitted sender) smtp.mail=smtplib.example@yahoo.com; dkim=pass (test mode) header.i=@yahoo.com
+Received: (qmail 14018 invoked from network); 5 Aug 2010 11:47:12 -0000
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+s=s1024; d=yahoo.com;
+h=DKIM-Signature:Message-ID:Date:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Content-Type:MIME-Version:To:From:Subject;
+b=lg6OxX1OKZAXksTKkzq8e1oO8ieAxFAappES61HNBM+0dbg+8W4EumPAipkzXc+FrfTxp9baEcuEOZHs6NymhCsSrGitG8YdH65q2DSyZ1nZfx+J8vTwnmBPWUERbDnb0jc0BjL8Yxp67CoPl5sQK70RQwRFA8zfuHVRKOF3CGY=  ;
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s1024; t=1273664832; bh=9jXFcWGXd3kqMgAgceETpi+pfKBH4iw1lLP8TtNzJIo=; h=Message-ID:Date:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Content-Type:MIME-Version:To:From:Subject; b=X4f15CkB4Nncb53WVyv7W8DTvRH26barOUPgtgqRXSWaDoVp16Sh0auxPqto0wjHFYSb+k3RHQ7cDV2mmLLdacPcbhm7nCnE1kcyjN+9YHyc1vDjcvSv4mC8cfCBh0BlBwPAQUpDzvEe5O8WHiAHHpeoRcrhdMk2vJ8zz75fc=
+Message-ID: &lt;666948.12858.qm@smtp107.plus.mail.re1.yahoo.com&gt;
+Date: Wed, 5 Aug 2010 04:47:12 -0700 (PDT)
+Received: from [192.168.1.146] (smtplib.example@XXX.XXX.XXX.XXX with plain)
+    by smtp107.plus.mail.re1.yahoo.com with SMTP; 5 Aug 2010 04:47:12 -0700 PDT
+X-Yahoo-SMTP: TvYTIr2swBBLfJ4hwbbruqy1ImdZ_uFJ9iC3Ww--
+X-YMail-OSG: .WEVb9sVM1lBMCoj.KTsuu4ud9OTVz2xFhg_0fgAIj82I6t
+wG.lW3STKxIRYDBpPxsHAlHKn6nVLd_SHkOFi5Q3QqNDxvN1rURL3r4rLV5g
+wal.7VIWZYVtB9dzHB3BTCUczn7WN_fojpSzk2muQn0DlpOLd_6_Pj2A1wgm
+xGpHCqGgBSrvBzdtTAfWvSGqrkEzXpopsRBwrJcnODFF3W65LVua0x9b6Z41
+zCr_HHODZIPOBdgOKOPDANhvpWoCY1hAHbsQoT4eLexZX63jSZ06VylQ1u_j
+qlbqDaAFRgPltsNs4sxMASuTOjJr9dVK_vP5OtqQL11dxDqR6OJJrEQnNR96
+cjM1EiGVD
+X-Yahoo-Newman-Property: ymail-3
+Content-Type: multipart/mixed; boundary="===============0044803118=="
+MIME-Version: 1.0
+To: smtplib.example@gmail.com
+From: smtplib.example@yahoo.com
+Subject: Sending Multipart HTML Mail
+
+--===============0044803118==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+hello!
+--===============0044803118==
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+&lt;strong&gt;hello!&lt;/strong&gt;
+--===============0044803118==--
+</pre></div></div>
+
+    <p>There are a few headers in the source that you haven't encountered yet. Again, MIME
+      adds several new headers to the email specification to describe the contents of an email. These new
+      headers include:</p>
+
+    <ul>
+      <li>MIME-Version</li>
+      <li>Content-Type</li>
+      <li>Content-Transfer-Encoding</li>
+      <li>Content-ID</li>
+      <li>Content-Disposition</li>
+    </ul>
+
+    <p>Only the first three—MIME-Version, Content-Type, and Content-Transfer-Encoding—are
+      required for a MIME message.</p>
+
+    <p><b>MIME-Version</b> indicates that the message conforms to the MIME standard. This is a signal to
+      email clients and other email programs to perform the additional processing necessary to handle
+      MIME messages. In practice, the value of this header is usually "1.0." It should appear at the
+      top level of a message, though it can appear again if more MIME messages are attached to the
+      original message (more on nesting messages later in this lesson).</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: MIME-Version header</div><div class="observe"><pre>
+MIME-Version: 1.0
+</pre></div></div>
+
+    <p>Once you have signaled that a message conforms to the MIME standards by using the MIME-Version
+      header, you have to specify the type of content that is in the message. MIME messages are not
+      limited to just text! The <b>Content-Type</b> header describes the kind of data that comprises the body. This
+      description is made up of two parts, separated by a forward slash: type/subtype. The type is the
+      general kind of data. The subtype is the format of that data. Some common Content-Type values are:</p>
+
+    <table class="tbl">
+      <tr><th>Type/Subtype; Parameter</th><th>Description</th></tr>
+      <tr><td>text/plain</td><td>A plain text message. In the absence of a Content-Type header, text/plain is usually
+          assumed.</td></tr>
+      <tr><td>text/html</td><td>An HTML email—this tells your mail client that the email should be rendered as HTML,
+          like a web page.</td></tr>
+      <tr><td>Message/RFC822</td><td>The Content-Type of another message; for example, in a reply, the original message may be
+          attached.</td></tr>
+      <tr><td>Image/Jpeg</td><td>An image in jpeg format.</td></tr>
+      <tr><td>multipart/mixed; boundary=gc0y0pkb9ex</td><td>A message with multiple parts. The parts are separated by the boundary—gc0y0pkb9ex.</td></tr>
+    </table>
+
+<div class="observeBox"><div class="observeTitle">Observe: Content-Type header</div><div class="observe"><pre>
+Content-Type: text/plain; charset="us-ascii"
+</pre></div></div>
+
+    <p><b>Content-ID</b> is a "world-unique" identifier for a part of MIME message. Just like the Message-ID
+      header, this is usually automatically generated so that it is unique, regardless of when and where it
+      was created. A message's Content-ID can be used in several different contexts. For example, it can
+      aid in caching message parts, or it can serve as mechanism for maintaining references between
+      different message parts.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Content-ID header</div><div class="observe"><pre>
+Content-ID: &lt;d41d8cd98f00b204e9800998ecf8427e@foo.bar&gt;
+</pre></div></div>
+
+    <p>The <b>Content-Disposition</b> header is an optional field that specifies how a MIME message part is
+      displayed in your mail client. An <b>inline</b> part is automatically displayed in the regular flow
+      of the message. An attachment part is not automatically displayed; instead, it requires some user
+      action in order for it to be viewed (such as opening a pdf reader). The Content-Disposition header
+      also allows you to specify a file name for an attachment. This is done by adding a filename
+      parameter to the end of the header.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Content-Disposition header</div><div class="observe"><pre>
+Content-Disposition: attachment; filename="files.zip"
+</pre></div></div>
+
+    <p>Because binary data can't be transferred over some protocols, it has to be represented as ASCII text.
+      For example, images and audio need a binary-to-text encoding in order to be sent. The
+      <b>Content-Transfer-Encoding</b> header specifies which encoding—if any—was used. Base64
+      is a common binary-to-text encoding scheme. Save the image below as <b>python-logo.png</b> in
+      your working directory.</p>
+
+    <p><div class="c"><img src="images/lessonImages/python-logo-master-v3-TM.png" alt="Python logo (PNG image used to demonstrate MIMEImage)"></div></p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Content-Transfer-Encoding header</div><div class="observe"><pre>
+Content-Transfer-Encoding: base64
+</pre></div></div>
+
+    <p>Go ahead and type the code below into an interactive Python console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import os</ins>
+&gt;&gt;&gt; <ins>from email.mime.image import MIMEImage</ins>
+&gt;&gt;&gt; <ins>fn = 'python-logo.png'</ins>
+&gt;&gt;&gt; <ins>import mimetypes</ins>
+&gt;&gt;&gt; <ins>mimetypes.guess_type(fn)</ins>
+('image/png', None)
+&gt;&gt;&gt; <ins>with open(fn, 'rb') as fp:</ins>
+...     <ins>img = MIMEImage(fp.read())</ins>
+...
+&gt;&gt;&gt; <ins>img['MIME-Version']</ins>
+'1.0'
+&gt;&gt;&gt; <ins>img['Content-Type']</ins>
+'image/png'
+&gt;&gt;&gt; <ins>img['Content-Transfer-Encoding']</ins>
+'base64'
+&gt;&gt;&gt; <ins>img['Content-Disposition']</ins>
+&gt;&gt;&gt; <ins>img.get_filename()</ins>
+&gt;&gt;&gt; <ins>img.add_header('Content-Disposition', 'attachment', filename=os.path.basename(fn))</ins>
+&gt;&gt;&gt; <ins>img['Content-Disposition']</ins>
+'attachment; filename="python-logo.png"'
+&gt;&gt;&gt; <ins>img.get_filename()</ins>
+'python-logo.png'
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">With <code>EmailMessage</code>, attaching an image file is a single call:
+        <pre>with open('python-logo.png', 'rb') as fp:
+    msg.add_attachment(fp.read(), maintype='image', subtype='png',
+                       filename='python-logo.png')</pre>
+        The Content-Type, Content-Transfer-Encoding (base64), and Content-Disposition headers are all
+        set automatically.</td>
+    </tr></table>
+
+    <p>There is a mimetypes module that contains a <span class="darkgreen">guess_type()</span>
+      method that guesses the content type of a file by looking at its extension. This can be handy for
+      determining which MIME type class you should use to represent a message or file in your program,
+      without doing content analysis. A few headers, such as MIME-Version,
+      Content-Type, and Content-Transfer-Encoding, are automatically set by using the MIMEImage
+      constructor. If you want to attach a file so that it's displayed as an attachment rather than
+      inline, you can use the <span class="darkgreen">add_header()</span> method and put in the
+      appropriate header names and header values manually. The <span class="darkgreen">add_header()</span> method takes as
+      keyword arguments, the
+      header name, the header value, and any optional parameters that you want to set for the header.
+      Once you set the attachment's filename, you can retrieve the attachment's
+      filename programmatically, using the <b>get_filename()</b> method.</p>
+
+  </div>
+
+  <!-- IN THE HOME STRETCH -->
+  <a name="h_07"></a>
+  <div class="heading">In the Home Stretch</div>
+  <div class="headingText">
+
+    <p>Using Python's email and smtplib modules, along with your knowledge about how emails are formatted,
+      you can send emails as well as parse them. An email can be a single plain text email, or it can be
+      a message that contains several sub-parts. Depending on what type of email you're sending, you'll
+      set various headers that specify the details of your email—who it's from, who it goes
+      to, what kind of content it contains, and so on. Python's email module offers a variety of classes,
+      from the base Message class to the MIME* classes, to represent email messages. These classes offer
+      conveniences like setting certain headers automatically, as well as methods that allow access to various parts
+      of an email message (such as <span class="darkgreen">get_payload()</span>, or <span class="darkgreen">get()</span>), and
+      methods that aid in the creation
+      of messages (<span class="darkgreen">add_header()</span>, <span class="darkgreen">attach()</span>, etc.).
+      Once you've created a Python representation of your
+      message, you can use the smtplib module to connect to your mail server and send your message. </p>
+
+    <p>Wow, can you believe it? You've only got one more lesson to go. It seems like only
+      yesterday you were learning about unittest...just look at you now! We've covered a lot of ground here, and you've done
+      a great job. Still, if any part of it is confusing or you need some guidance, please call on your faithful instructor.
+      See you in the next and final lesson!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="DatabaseHintsAndTricks.html">Database Hints and Tricks</a>
+    <a class="next" href="EmailSearchAndDisplay.html">Email Search and Display</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

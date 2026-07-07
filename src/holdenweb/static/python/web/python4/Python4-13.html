@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Functions and Other Objects</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Functions and Other Objects</div>
+
+  <p>This lesson includes the following topics:</p>
+  <ul>
+    <li><a href="#a_deeper_look_at_functions">A Deeper Look at Functions</a></li>
+    <li><a href="#more_magic_methods">More Magic Methods</a></li>
+  </ul>
+
+  <!-- A DEEPER LOOK AT FUNCTIONS -->
+  <a name="a_deeper_look_at_functions"></a>
+  <a name="h_01"></a>
+  <div class="heading">A Deeper Look at Functions</div>
+  <div class="headingText">
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Required Keyword Arguments</div><div class="subheadingText">
+
+      <p>You already know that the arguments passed to a function call must match the parameter specifications in the function's
+          definition. Any mismatch can be taken up in the definition, where a parameter of the form *name associates unmatched
+          positional arguments with a tuple and one of the form **name associates the names and values of unmatched keyword
+          arguments with the keys and values of a dict.</p>
+
+      <p>You have also seen that a positional argument may be associated with a keyword parameter and vice versa. You currently
+          have no way, however, of requiring that specific arguments be presented as keyword arguments. You can specify such a
+          requirement by inserting an asterisk on its own as a parameter specification: any parameters that follow the star (other
+          than the *args and **kwargs arguments, if present) <i>must</i> be provided as keyword arguments on the call.</p>
+
+      <p>Investigating this phenomenon is quite easy in the interactive console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Investigating function signatures</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def f(a, *, b, c=2):</ins>
+...     <ins>print("A", a, "B", b, "C", c)</ins>
+...
+&gt;&gt;&gt; <ins>f(1, 2)</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: f() takes 1 positional argument but 2 were given
+&gt;&gt;&gt; <ins>f(1, c=3)</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: f() missing 1 required keyword-only argument: 'b'
+&gt;&gt;&gt; <ins>f(1, b=2, c=3)</ins>
+A 1 B 2 C 3
+&gt;&gt;&gt; <ins>f(1, b=2)</ins>
+A 1 B 2 C 2
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Attempting to provide a positional argument for b raises an exception because of the wrong number of positional
+          arguments. The second test is the most telling one, as that explains the <i>requirement</i> for a keyword argument b.</p>
+
+    </div></div>
+
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Function Annotations</div><div class="subheadingText">
+
+      <p>We mention this feature because you may come across some code that uses it, and wonder what on Earth is going on. In
+          Python 3, functions and their parameters can be <i>annotated</i>. A parameter is annotated by following its name with
+          a colon and an expression, and a function is annotated by following its parameter list with "-&gt;" and an expression.</p>
+
+      <p>The language definition specifically avoids associating any kind of meaning to annotations. The stated intention is that
+          if people find ways of using annotations that find general acceptance, specific semantics may be added to the
+          interpreter at a later date; for now you can access them through the <b>__annotations__</b> attribute of the function
+          object. This is a dict in which each of the function's annotated parameters is stored against the parameter name as key.
+          The function's return-value annotation, if present, is stored against key "return" which, being a Python keyword, cannot
+          be the name of any parameter.</p>
+
+      <p>Just to show you how annotations appear in practice, we'll create an annotated function in an interactive interpreter
+          session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE SESSION:</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def f(i: int, x:float=1.2) -&gt; str:</ins>
+...     <ins>return str(i*x)</ins>
+...
+&gt;&gt;&gt; <ins>f.__annotations__</ins>
+{'i': &lt;class 'int'&gt;, 'x': &lt;class 'float'&gt;, 'return': &lt;class 'str'&gt;}
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Although there is no restriction on the expressions used as annotations, in practice most people see them as being
+          useful for making assertions about the types of arguments and the function's return value. At present, nothing in the
+          interpreter uses the annotation information at all. You would need to specifically action such uses with additional code
+          if you don't want your annotation data to be ignored. It is likely that, as the feature becomes better known,
+          frameworks will emerge to make use of different types of annotation data.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">Since Python 3.5, <code>typing</code> annotations have become the standard way to express type
+          hints. Tools such as <code>mypy</code>, <code>pyright</code>, and <code>pytype</code> use them for static
+          analysis without any runtime cost. The <code>from __future__ import annotations</code> directive (PEP 563,
+          available since 3.7) makes all annotations lazy strings, avoiding forward-reference problems.
+          <code>typing.get_type_hints()</code> evaluates them on demand.</td>
+      </tr></table>
+
+    </div></div>
+
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Nested Functions and Namespaces</div><div class="subheadingText">
+
+      <p>Although you have seen functions with function definitions inside them, we have not yet formalized the rules for looking
+          up names within those functions. You already know the general rule for (unqualified) name resolution in Python: first
+          look in the local namespace, then look in the (module) global namespace, and finally look in the built-in namespace.</p>
+
+      <p>The only additional complexity that nested functions introduce is that the local namespace is actually enhanced by
+          names from surrounding functions (unless they are redefined in the contained function). Remember that <i>a name is only
+              considered local to a function if the name is bound in that function</i>. So when a function is defined inside a
+          function, a name can be a reference from the function call's namespace, or a reference to the namespace of the function
+          call during which the inner function was defined, and this regress can go on until the outermost function call is
+          encountered.</p>
+
+      <p>Understanding Python as you do now, you will see that it requires some trickery to allow a function to return another
+          function defined inside the first function. That is because the returned function may contain references to values
+          defined in the local namespace of the (now completed) function call that returned it! We do not need to examine the
+          mechanism the interpreter uses to resolve this issue, but since it is a genuine feature of the language, it is one
+          that every implementation has to solve in its own way.</p>
+
+      <p>Python 3 also introduces a second declaration statement, the <b>nonlocal</b> statement. This can be used to force an
+          apparently local variable to instead be treated as though it came from the containing scope where it is already
+          defined. This is slightly different from the <i>global</i> statement, in that the interpreter searches the containing
+          scopes (function namespaces) to locate the one that already contains a definition of the name(s) listed after the
+          <b>nonlocal</b> keyword. (The <b>global</b> statement always and unambiguously places the name in the module global
+          namespace, whether it has been defined there or not).</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+a, b, c = "Module a", "Module b", "Module c"
+def outer():
+    def inner():
+        nonlocal b
+        global c
+        a = "Inner a"
+        b = "Inner b"
+        c = "Inner c"
+        print("inner", a, b, c)
+    a = "Outer a"
+    b = "Outer b"
+    c = "Outer c"
+    print("outer", a, b, c)
+    inner()
+    print("outer", a, b, c)
+
+print("module", a, b, c)
+outer()
+print("module", a, b, c)
+</pre></div></div>
+
+      <p>When you run this program, you should see the following output:</p>
+
+<div class="observeBox"><div class="observeTitle">The result of running nonloc.py</div><div class="observe"><pre>
+module Module a Module b Module c
+outer Outer a Outer b Outer c
+inner Inner a Inner b Inner c
+outer Outer a Inner b Outer c
+module Module a Module b Inner c</pre></div></div>
+
+      <p>Just as the <b>global</b> statement allows the inner() function to refer to the module-global "c" name, so the
+          <b>nonlocal</b> statement allows it to use the name "b" to refer to the outer function's "b." After the call to outer(),
+          only the module-global "c" has changed, because only "c" was declared as <b>global</b> in the inner() function.</p>
+
+    </div></div>
+
+    <a name="s_04"></a><div id="s_04"><div class="subheading">Partial Functions</div><div class="subheadingText">
+
+      <p>You learned about the <b>functools</b> module when we were discussing decorators earlier in this course. The module
+          contains another useful function that allows you to take a function and define another function that is the same as
+          the first function, <i>but with fixed values for some arguments</i>. The signature of the function is:</p>
+
+      <p><b>functools.partial(f[, *args[, **kw]])</b> returns a function <b>g</b> which is the same as <b>f</b> with the
+          positional arguments <i>args</i> giving values for the initial positional arguments and the keyword arguments
+          <i>kw</i> setting default values for the given named arguments. The intention is to allow you to fix some arguments of
+          a function, leaving you with a function-like object to which the remaining arguments can be applied at your
+          convenience. The resulting partial function objects cannot be called with quite the same abandon as real functions,
+          however, since certain counterintuitive behaviors can occur.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Partial function examples</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import functools</ins>
+&gt;&gt;&gt; <ins>def fp(a, b, c="summat", d="nowt"):</ins>
+...     <ins>print("a b c d", a, b, c, d)</ins>
+...
+&gt;&gt;&gt; <ins>fp("ayeup", "geddaht")</ins>
+a b c d ayeup geddaht summat nowt
+&gt;&gt;&gt; <ins>fp1 = functools.partial(fp, 1, b=2)</ins>
+&gt;&gt;&gt; <ins>fp1()</ins>
+a b c d 1 2 summat nowt
+&gt;&gt;&gt; <ins>fp1("ayeup", "geddaht")</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: fp() got multiple values for argument 'b'
+&gt;&gt;&gt; <ins>fp1(c="ayeup", d="geddaht")</ins>
+a b c d 1 2 ayeup geddaht
+&gt;&gt;&gt; <ins>fp2 = functools.partial(fp, 1, c="two")</ins>
+&gt;&gt;&gt; <ins>fp2("ayeup", "geddaht")</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: fp() got multiple values for argument 'c'
+&gt;&gt;&gt; <ins>fp2</ins>
+&lt;functools.partial object at 0x...&gt;
+&gt;&gt;&gt; <ins>fp2("ayeup", c="geddaht")</ins>
+a b c d 1 ayeup geddaht nowt
+&gt;&gt;&gt; </pre></div></div>
+
+      <p><b>fp1</b> is ostensibly a function taking two keyword arguments (its two positionals having been applied in the
+          creation of the partial). The expression <b>fp1("ayeup", "geddaht")</b>, however, makes it plain that the first
+          positional argument is being provided to match up with <b>fp()</b>'s <i>b</i> argument, and that when the same keyword
+          argument is later applied a duplication is detected.</p>
+
+      <p>The simplest solution to this dilemma is to always replace positional parameters with positional arguments and replace
+          keyword parameters with keyword arguments when using partial(). This rule also has to be extended to the calls of the
+          partial functions. The first call to <b>fp2()</b> shows that although the partial function has one positional and one
+          keyword parameter, it is not possible to match a positional argument to the keyword parameter <i>d</i> as would be
+          possible with a real function. So remember to treat partials carefully when you encounter them.</p>
+
+      <p>One very nice little example from the documentation shows how a default can be applied to a required argument. The int()
+          built-in type can be called with a number or a string as an argument. When called with a string, a second argument
+          <i>base</i> can be provided which determines the number system used to interpret the string. Providing that argument
+          creates a partial object that will convert base-2 strings to integers.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Partial(int) function converts binary strings</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from functools import partial</ins>
+&gt;&gt;&gt; <ins>basetwo = partial(int, base=2)</ins>
+&gt;&gt;&gt; <ins>basetwo.__doc__ = "Convert base-2 string to int."</ins>
+
+&gt;&gt;&gt; <ins>basetwo("1111")</ins>
+15
+&gt;&gt;&gt; <ins>basetwo("1001010")</ins>
+74
+&gt;&gt;&gt;</pre></div></div>
+
+      <p>Beware of the differences between partial objects and true functions, and respect them. While partials can be very
+          helpful, they are only a shorthand and not a complete replacement.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><code>functools.partial</code> remains the standard tool for argument binding. A complementary
+          approach is the <code>operator</code> module's named callables (<code>operator.add</code>,
+          <code>operator.mul</code>, etc.), which pair well with <code>partial</code>. For truly general currying,
+          third-party libraries such as <code>toolz</code> offer <code>curry()</code>, but
+          <code>functools.partial</code> is usually sufficient and always available.</td>
+      </tr></table>
+
+    </div></div>
+
+  </div>
+
+  <!-- MORE MAGIC METHODS -->
+  <a name="more_magic_methods"></a>
+  <a name="h_02"></a>
+  <div class="heading">More Magic Methods</div>
+  <div class="headingText">
+
+    <p>We have explained in the past how certain operations and functions cause the interpreter to invoke various "magic"
+        methods—methods whose names usually start and end with a double underscore, causing some people to refer them as
+        "dunder methods." In particular you should now be aware of the attribute access methods (__getattr__(), __setattr__(),
+        and __delattr__()) and the indexing methods (__getitem__(), __setitem__(), and __delitem__(), which parallel the
+        attribute access methods but operate on mappings rather than namespaces (and can also be used to index lists and other
+        sequences, with slice objects as arguments where necessary).</p>
+
+    <p>Now we are going to cover a few more of those magic methods and explain a little more about the interpreter's
+        interfaces to the various objects you can create. Understanding in this area allows you to take advantage of the
+        natural operation of the interpreter. It's a little like jiu-jitsu: you write your objects to fit in with the way the
+        interpreter naturally does things rather than trying to overpower the interpreter.
+    </p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">How Python Expressions Work</div><div class="subheadingText">
+
+      <p>This simplified treatment expresses the way that the interpreter works to a first approximation. As always, we try to be
+          as precise as possible without necessarily providing <i>exact</i> detail of what goes on in the more complex corner
+          cases.</p>
+
+      <p>When you see the expression <b>s = x + y</b> in a program, the interpreter has to decide how to evaluate it. It does so
+          by looking for specific methods on the <b>x</b> and <b>y</b> objects. For addition, the relevant methods are
+          <b>__add__()</b> and <b>__radd__()</b>. First the interpreter looks for an <b>x.__add__()</b> method (special/magic
+          methods are always looked up on the class and its parents, never on the instance). If such a method exists,
+          <b>x.__add__(y)</b> is called. If this call returns a result, that becomes the value of the expression.</p>
+
+      <p>The method may, however, choose to indicate that it is unable to compute a response (for example because <b>y</b> is
+          incompatible) by returning a special built-in value <b>NotImplemented</b>. In that case, the interpreter next looks for
+          a <b>y.__radd__()</b> method ("radd" is intended to be a mnemonic for "reflected add"). If such a method exists,
+          <b>y.__radd__(x)</b> is called and, unless it returns <b>NotImplemented</b>, the return value becomes the value of the
+          expression. There is one exception to this rule: if the two values are of the same type, the <b>__radd__()</b> method
+          is not called. The assumption is that if <b>a</b> and <b>b</b> are of the same type and you can't (say) add <b>a</b> to
+          <b>b</b>, then you shouldn't be able to add <b>b</b> to <b>a</b> either, and there is no point trying.</p>
+
+      <p>Try it out in an interactive session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Verifying use of reflected operators</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class mine:</ins>
+...     <ins>def __add__(self, other):</ins>
+...         <ins>print("__add__({}, {})".format(self, other))</ins>
+...         <ins>return NotImplemented</ins>
+...     <ins>def __radd__(self, other):</ins>
+...         <ins>print("__radd__({}, {})".format(self, other))</ins>
+...         <ins>return 42</ins>
+...     <ins>def __repr__(self):</ins>
+...         <ins>return "[Mine {}]".format(id(self))</ins>
+...
+&gt;&gt;&gt; <ins>class yours:</ins>
+...     <ins>def __add__(self, other):</ins>
+...         <ins>print("__add__({}, {})".format(self, other))</ins>
+...         <ins>return NotImplemented</ins>
+...     <ins>def __radd__(self, other):</ins>
+...         <ins>print("__radd__({}, {})".format(self, other))</ins>
+...         <ins>return NotImplemented</ins>
+...     <ins>def __repr__(self):</ins>
+...         <ins>return "[Yours {}]".format(id(self))</ins>
+...
+&gt;&gt;&gt; <ins>m1 = mine()</ins>
+&gt;&gt;&gt; <ins>m2 = mine()</ins>
+&gt;&gt;&gt; <ins>m1, m2</ins>
+([Mine 0x...], [Mine 0x...])
+&gt;&gt;&gt; <ins>y1 = yours()</ins>
+&gt;&gt;&gt; <ins>y2 = yours()</ins>
+&gt;&gt;&gt; <ins>y1, y2</ins>
+([Yours 0x...], [Yours 0x...])
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>m1+m2</ins>
+__add__([Mine 0x...], [Mine 0x...])
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: unsupported operand type(s) for +: 'mine' and 'mine'
+&gt;&gt;&gt; <ins>y1+y2</ins>
+__add__([Yours 0x...], [Yours 0x...])
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: unsupported operand type(s) for +: 'yours' and 'yours'
+&gt;&gt;&gt; <ins>m1+y2</ins>
+__add__([Mine 0x...], [Yours 0x...])
+__radd__([Yours 0x...], [Mine 0x...])
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+TypeError: unsupported operand type(s) for +: 'mine' and 'yours'
+&gt;&gt;&gt; <ins>y1+m2</ins>
+__add__([Yours 0x...], [Mine 0x...])
+__radd__([Mine 0x...], [Yours 0x...])
+42
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>As you can see, since both classes' <b>__add__()</b> methods return <b>NotImplemented</b>, attempting to add a
+          <b>mine</b> to a <b>mine</b> or a <b>yours</b> to a <b>yours</b> will fail, raising an exception. The third case also
+          raises an exception because the <b>__radd__()</b> method of the <b>yours</b> right-hand operand also returns
+          the value <b>NotImplemented</b>. The final test works, however, because <b>mine.__radd__()</b> actually returns a value
+          (albeit one that does not depend on its operands at all).</p>
+
+      <p>There is another series of special methods associated with the augmented arithmetic operations (that is, "+=", "-=" and
+          so on). When you see a statement such as <b>x += y</b> (that is to say, any statement using augmented assignment
+          operations) in a program, the interpreter evaluates it by looking for a specific method on the <b>x</b> object. For
+          addition, the relevant method is <b>__iadd__()</b>. If this method does not exist, the statement is treated as though
+          it read <b>x = x+y</b>. If the <b>x.__iadd__()</b> method is found, however, it is called with <b>y</b> as an argument,
+          and the result (which may be a modified version of the existing object or a completely new object, entirely at the
+          option of the implementor of the object in question) is bound to <b>x</b>. Following are the methods corresponding to
+          the basic Python arithmetic operations.</p>
+
+      <table class="tbl"><tr><th>Operator</th><th>Standard Method</th><th>Reflected Method</th><th>Augmented Method</th></tr><tr><td>+</td><td>__add__()</td><td>__radd__()</td><td>__iadd__()</td></tr><tr><td>-</td><td>__sub__()</td><td>__rsub__()</td><td>__isub__()</td></tr><tr><td>*</td><td>__mul__()</td><td>__rmul__()</td><td>__imul__()</td></tr><tr><td>/</td><td>__truediv__()</td><td>__rtruediv__()</td><td>__itruediv__()</td></tr><tr><td>//</td><td>__floordiv__()</td><td>__rfloordiv__()</td><td>__ifloordiv__()</td></tr><tr><td>%</td><td>__mod__()</td><td>__rmod__()</td><td>__imod__()</td></tr><tr><td>divmod()</td><td>__divmod__()</td><td>__rdivmod__()</td><td>__idivmod__()</td></tr><tr><td>**</td><td>__pow__()</td><td>__rpow__()</td><td>__ipow__()</td></tr><tr><td>&lt;&lt;</td><td>__lshift__()</td><td>__rlshift__()</td><td>__ilshift__()</td></tr><tr><td>&gt;&gt;</td><td>__rshift__()</td><td>__rrshift__()</td><td>__irshift__()</td></tr><tr><td>&amp;</td><td>__and__()</td><td>__rand__()</td><td>__iand__()</td></tr><tr><td>^</td><td>__xor__()</td><td>__rxor__()</td><td>__ixor__()</td></tr><tr><td>|</td><td>__or__()</td><td>__ror__()</td><td>__ior__()</td></tr></table>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">Objects that implement <code>__call__(self, ...)</code> are <i>callable objects</i>—they behave
+          like functions but can carry state. <code>callable(obj)</code> returns <code>True</code> for them, as it does
+          for functions, methods, classes, and <code>functools.partial</code> objects. The <code>operator</code> module
+          also exposes every arithmetic and comparison operator as a named callable
+          (<code>operator.add</code>, <code>operator.lt</code>, etc.), which is handy when you need to pass an operator
+          as a first-class argument.</td>
+      </tr></table>
+
+    </div></div>
+
+  </div>
+
+  <p>So you now understand a little more about functions in Python, and understand more of the role of "magic" methods in
+      Python.</p>
+
+  <p>In the next lesson, we consider some of the differences between small projects and large ones.</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-12.html">Multi-Processing</a>
+    <a class="next" href="Python4-14.html">Context Managers</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

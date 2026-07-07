@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>More About Looping</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">More About Looping</div>
+
+  <p>Earlier, you learned about <b>for</b> and <b>while</b> loops. The <b>for</b> loop repeats the loop body once for each element of a
+    container. The <b>while</b> loop repeats the loop body continuously, testing before each execution whether some condition is true;
+    it stops only when the condition becomes false (or a <b>break</b> statement is executed, which terminates any loop). In this
+    lesson, we'll show you some other cool things you can do with loops.</p>
+
+  <!-- FUN WITH range() -->
+  <a name="h_01"></a>
+  <div class="heading">Fun with the range() function.</div>
+  <div class="headingText">
+
+    <p>Can you say 'Python is fun' 1,000 times fast? You might not be able to, but Python can!</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i in range(1000):</ins>
+...     <ins>print("Python is fun!")</ins>
+...
+Python is fun!
+Python is fun!
+[... 996 lines omitted ...]
+Python is fun!
+Python is fun!
+&gt;&gt;&gt; <ins>range(1000)</ins>
+range(0, 1000)
+&gt;&gt;&gt; <ins>type(range(1000))</ins>
+&lt;class 'range'&gt;
+</pre></div></div>
+
+    <p>You just printed <b>Python is fun!</b> one thousand times, using the <span class="darkgreen">range()</span> function, which generates
+      arithmetic progressions. When we ask the interpreter to print out the result of a call to <span class="darkgreen">range(1000)</span>, it
+      doesn't print out a list or a tuple, as you might expect. In fact, <span class="darkgreen">range()</span> returns a special type of
+      object known as a <i>range</i> object. You can iterate over this object just like you can iterate over a list [0, 1, 2, ..., 998,
+      999]. Using the object is different from using a list because it produces the numbers one by one as needed. This saves time and
+      storage space that would be needed to construct a list instead.</p>
+
+    <p>The last example printed a string constant. In this next example, we'll print out some numbers:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i in range(4):</ins>
+...    <ins>print(i)</ins>
+...
+0
+1
+2
+3
+</pre></div></div>
+
+    <p>Did you notice that the <b>4</b> did not print? The range starts at zero, so the given end point is never part of the generated
+      sequence. This may be confusing at first, but the interpreter has good reason for doing it like that. You'll see in this next
+      example:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>names = ['John', 'Paul', 'George', 'Ringo']</ins>
+&gt;&gt;&gt; <ins>for i in range(3):</ins>
+...     <ins>print(names[i])</ins>
+...
+John
+Paul
+George
+</pre></div></div>
+
+    <p>(Nothing personal, Ringo; we just wanted to make a point.) Generally, if you want to print only the names, you wouldn't loop over
+      the indexes and use them to select the appropriate list elements. Instead you would loop over the list directly. If you ever see
+      code like <b>for i in range(len(something))</b>, that normally indicates what's sometimes called a <i>code smell</i>. I know,
+      funny, right? It's code that works, but still stinks a little. Code smells are usually an indication that something needs to be
+      changed.</p>
+
+    <p>By now you can see that <span class="darkgreen">range()</span> is a bit like indexing—it starts counting at zero (unless you tell it
+      to start somewhere else) and goes on until just before it gets to the end value. What if you want a range of numbers that starts
+      at 5 and ends at 7? You give <span class="darkgreen">range()</span> two arguments instead of one:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i in range(5, 8):</ins>
+...     <ins>print(i)</ins>
+...
+5
+6
+7
+</pre></div></div>
+
+    <p>Remember the <i>stride</i> we used with lists? We can do it in <span class="darkgreen">range()</span> as well. Add a third argument as
+      shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i in range(10, 40, 10):</ins>
+...     <ins>print(i)</ins>
+...
+10
+20
+30
+</pre></div></div>
+
+    <p>You can also use a negative stride if you want a numerically descending sequence. In the next example, you'll see that again, the
+      sequence stops before it actually reaches the final value:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i in range(10, -30, -10):</ins>
+...      <ins>print(i)</ins>
+...
+10
+0
+-10
+-20
+</pre></div></div>
+
+  </div>
+
+  <!-- ENUMERATE -->
+  <a name="h_02"></a>
+  <div class="heading">Using the enumerate() function</div>
+  <div class="headingText">
+
+    <p>The range function is really useful and powerful. But what if you need to step through a set of numbers by tens <i>and</i> track
+      which iteration you are in? For example, when counting by tens:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+0 10
+1 20
+2 30
+3 40
+4 50
+</pre></div></div>
+
+    <p>We can do that, right? We'll provide a counter variable and increase it with each iteration:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>c = 0</ins>
+&gt;&gt;&gt; <ins>for i in range(10, 60, 10):</ins>
+...   <ins>print(c, i)</ins>
+...   <ins>c += 1</ins>
+...
+0 10
+1 20
+2 30
+3 40
+4 50
+</pre></div></div>
+
+    <p>This method works, but Python gives us a better way: the function <span class="darkgreen">enumerate()</span>. Like
+      <span class="darkgreen">range()</span>, it generates a sequence of values, but in this case, the values are tuples, each containing two
+      elements. The first element is a counter that starts at zero, and the second element is the current item from the sequence that
+      was given as an argument to <span class="darkgreen">enumerate()</span>. In a <b>for</b> loop, you can use a tuple of two names to
+      receive the elements, similar to the unpacking assignments we used earlier. In the example below, <b>i</b> is the index and
+      <b>e</b> is the element from the sequence:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i, e in enumerate(range(10, 60, 10)):</ins>
+...     <ins>print(i, e)</ins>
+0 10
+1 20
+2 30
+3 40
+4 50
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">When you need both an index and the value while iterating,
+        <code>enumerate()</code> is the idiomatic choice. It works on any iterable,
+        not just ranges: <code>for i, name in enumerate(names):</code> is the
+        preferred pattern rather than <code>for i in range(len(names)):</code>.</td>
+    </tr></table>
+
+    <p>Now we'll take a look at two ways to print out a numbered list of names. There's more than one way to do it; Python has an older
+      way of formatting, not deprecated, still works, based on the C language printf. Then it has a new "formatting mini-language"
+      more like C#, introduced with Python 3 but also back-ported to 2.6 and above, using numbers in {curly brackets} to identify
+      objects to format, and the .format() function we learned about in the last lesson. The format() version has more bells and
+      whistles and makes it easier to do certain things. Also, one could argue it's cleaner in not requiring a separate operator.
+      Here's an example using the old way:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>names = ['John', 'Paul', 'George']</ins>
+&gt;&gt;&gt; <ins>for i, name in enumerate(names): </ins>
+...     <ins>print('%s. %s' % (i+1, name))</ins>
+...
+1. John
+2. Paul
+3. George
+</pre></div></div>
+
+    <p>Now, the same thing using the new way of formatting:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>for i, name in enumerate(names): </ins>
+...     <ins>print('{0}. {1}'.format(i+1, name))</ins>
+...
+1. John
+2. Paul
+3. George
+</pre></div></div>
+
+    <p>Same results, different methods. We'll usually use the .format method in this course, but you're likely to encounter
+      the %s method in the real world, so we'll use it occasionally.</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">In the above examples, we add one to the count because, although Python counts from
+        zero, we humans normally prefer to start at one.</td>
+    </tr></table>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Both <code>%</code>-formatting and <code>.format()</code> remain valid today. A
+        third option—<i>f-strings</i>, introduced in Python 3.6—is now the most concise:
+        <code>print(f'{i+1}. {name}')</code>. F-strings embed expressions directly in
+        the string literal, which many find the most readable of the three styles.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- WHILE LOOPS: FACTORIALS -->
+  <a name="h_03"></a>
+  <div class="heading">A More Complex While Loop Example</div>
+  <div class="headingText">
+
+    <p>Suppose you want to print a list of all the factorials under 1000. In mathematics, N factorial is written as "N!" A factorial is
+      calculated by multiplying successive numbers together:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Factorial Calculations</div><div class="observe"><pre>
+1! = 1 = 1
+2! = 1 x 2 = 2
+3! = 1 x 2 x 3 = 6
+4! = 1 x 2 x 3 x 4 = 24
+</pre></div></div>
+
+    <p>I'm about to get mathematical and academic on you for a minute here, so settle in. The textbook definition of <i>n factorial</i>
+      (as long as n is a non-negative integer) is the product of all positive integers less than or equal to n. Factorials are used in
+      calculus, combinatorics, and probability theory.</p>
+
+    <p>You <i>could</i> figure out all factorials under 1000 by figuring out the pattern of calculations manually, but that would get
+      pretty tedious with larger sets, don't you think? In order to avoid that agony and its inherent potential for errors, let's use
+      a <b>while</b> loop to resolve the calculation instead. Create a new file in the editor window as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Print all factorials less than 1000."""
+
+c = 0
+f = 1
+while (f &lt; 1000):
+    print(f)
+    c += 1
+    f = 1
+    for n in range(c, 0, -1):
+        f = f * n
+</pre></div></div>
+
+    <p>Save it as <span class="darkred">factorial.py</span> and run it. The program prints all the factorials under 1000.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>1
+1
+2
+6
+24
+120
+720
+</pre></div></div>
+
+    <p>There are actually <i>two</i> loops here. The first (or <i>outer</i>) loop uses the c variable to simply count upwards. The
+      second (or <i>inner</i>) loop generates the factorial, based on the value of the counter.</p>
+
+    <p>Each iteration of the <i>outer</i> loop increments our counter variable <span class="darkred">c</span> by 1, copies that to
+      <span class="darkred">n</span>, and resets the factorial variable <span class="darkred">f</span> to 1. The <i>inner</i> loop does its work by taking
+      the value of <span class="darkred">n</span>, which is simply a copy of the counter, and multiplying that repeatedly against the factorial
+      variable.</p>
+
+    <p>So, if you already know <b>N!</b>, then you can produce <b>(N+1)!</b> (the next value in the sequence) by multiplying <b>N!</b>
+      by <b>N+1</b>. You can make this program even more efficient by avoiding the second loop, since the second loop would be run for
+      each factorial. This saves a lot of work. Give it a try. Edit the code as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Print all factorials less than 1000."""
+
+<ins>c = 1</ins>
+f = 1
+while (f &lt; 1000):
+    print(f)
+    c += 1
+    <ins>f *= c</ins>
+</pre></div></div>
+
+    <p>Save and run it. The program produces the same sequence of values, but it does not repeat
+      work unnecessarily. This becomes more important as your programs expand.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>1
+2
+6
+24
+120
+720
+</pre></div></div>
+
+  </div>
+
+  <!-- WHILE LOOPS: USER INPUT VALIDATION -->
+  <a name="h_04"></a>
+  <div class="heading">While Loops and User Input Validation</div>
+  <div class="headingText">
+
+    <p>We can use the While loop when we need to validate user input. It lets us return the user back to the prompt until they provide a
+      valid response. To implement this feature, we create an infinite loop that can only be broken by correct action by the user.</p>
+
+    <p>Suppose we want to force the user to provide a yes or no response. Create a new file in the editor window as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Validate user input"""
+
+while True:
+    s = input("Type 'yes' or 'no':")
+    if s == 'yes':
+        break
+    if s == 'no':
+        break
+    print("Wrong! Try again.")
+print(s)
+</pre></div></div>
+
+    <p>Save it as <b>validate_input.py</b> and run it. The console
+      asks you to type yes or no. Instead, type <b>spam</b> and press <b>Enter</b>. The console responds with <b>Wrong! Try again.</b>.
+      If you enter anything besides <b>yes</b> or <b>no</b>, you'll get the same response. When you finally enter <b>yes</b> or
+      <b>no</b>, you break the While loop and your entry is printed.</p>
+
+    <p>The problem with this program is that it doesn't adapt itself well to more options. For example, if you need to add <b>maybe</b>
+      as a possible response, that involves adding two lines of code and modifying a third. With your <b>validate_input.py</b> in the
+      editor window, save it as
+      <b>better_validate_input.py</b>, and edit it as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Validate user input"""
+
+<ins>valid_inputs = ['yes', 'no', 'maybe']
+input_query_string = 'Type %s: ' % ' or '.join(valid_inputs)</ins>
+while True:
+    <ins>s = input(input_query_string)
+    if s in valid_inputs:</ins>
+        break
+    print("Wrong! Try again.")
+print(s)
+</pre></div></div>
+
+    <p>Save and run it. In this new program, the <span class="darkred">valid_inputs</span> list variable is
+      used to build the string that queries the user for input. It's also used to validate the user's input. So in order to add an
+      option, you can just replace <b>valid_inputs = ['yes', 'no', 'maybe']</b> with
+      <b>valid_inputs = ['yes', 'no', 'maybe', <i>'another option'</i>]</b>.</p>
+
+    <p>More sophisticated user interface validation <b>while</b> loops are used in applications such as operating systems and web site
+      registration systems.</p>
+
+  </div>
+
+  <!-- DICTS AND LOOPS -->
+  <a name="h_05"></a>
+  <div class="heading">Dicts and Loops</div>
+  <div class="headingText">
+
+    <p>Earlier, we learned about a useful construct for handling data called <i>Dicts</i>. In this next set of examples, we'll use loops
+      to add, retrieve, and delete data. Eventually we'll combine everything into one large example to handle invitations to a
+      party.</p>
+
+    <p>In the first example, you'll create a dictionary using the words of the phrase <b>Python is awesome</b>, using an enumerated loop
+      to do all the hard work:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>data = {}</ins>
+&gt;&gt;&gt; <ins>for index, word in enumerate('Python is awesome'.split(' ')):</ins>
+...     <ins>data[index] = word</ins>
+...
+&gt;&gt;&gt; <ins>print(data)</ins>
+{0: 'Python', 1: 'is', 2: 'awesome'}
+</pre></div></div>
+
+    <p>Keep this interactive session open. First you created an empty dict, then enumerated over a list containing the words split out
+      of the "Python is awesome" string. With each execution of the loop body, you added the index of the loop as a dict key, using the
+      word as the value of the dict element. You can do this over any list of data, from a list of words to lines of text in a file.</p>
+
+    <p>Our next example uses the <span class="darkgreen">items()</span> method for retrieving data from a dict. <span class="darkgreen">items()</span>
+      returns a generator object, which then produces two-element tuples of keys and their corresponding values from the dict:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>data.items()</ins>
+dict_items([(0, 'Python'), (1, 'is'), (2, 'awesome')])
+&gt;&gt;&gt; <ins>for element in data.items():</ins>
+...     <ins>print(element)</ins>
+...
+(0, 'Python')
+(1, 'is')
+(2, 'awesome')
+&gt;&gt;&gt; <ins>for key, value in data.items():</ins>
+...     <ins>print(key, value)</ins>
+...
+0 Python
+1 is
+2 awesome
+</pre></div></div>
+
+    <p>The last two commands you entered are extremely useful, because they allow you to access all the data in a dict quickly. This is a
+      very common pattern in working with dicts in Python. The dict's <span class="darkgreen">items()</span> method produces (key, value) pairs,
+      and the <b>for</b> loop unpacks the tuples and binds them to <span class="purple">key</span> and <span class="purple">value</span>, respectively.</p>
+
+    <p>Of course, there will be times when you'll need to remove key/value pairs from a dict. Suppose you had a dict whose keys were
+      words, and you wanted to remove all <i>noise words</i> (words that are not normally indexed, such as 'is' and 'at'). You can use
+      a loop to accomplish this task:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>noise = ['is', 'at']</ins>
+&gt;&gt;&gt; <ins>data</ins>
+{0: 'Python', 1: 'is', 2: 'awesome'}
+&gt;&gt;&gt; <ins>for key, value in data.items():</ins>
+...     <ins>if value in noise:</ins>
+...          <ins>del data[key]</ins>
+...
+Traceback (most recent call last):
+File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+RuntimeError: dictionary changed size during iteration
+&gt;&gt;&gt; <ins>data</ins>
+{0: 'Python', 2: 'awesome'}
+</pre></div></div>
+
+    <p>The data was deleted, but the deletion changed the size of data.items, which Python reports as an error. To avoid this problem,
+      you need to produce a separate list rather than iterating over the dict's items (or keys) directly:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>data = {}</ins>
+&gt;&gt;&gt; <ins>for index, word in enumerate('Python is awesome'.split(' ')):</ins>
+...   <ins>data[index] = word</ins>
+...
+&gt;&gt;&gt; <ins>for key, value in list(data.items()):</ins>
+...   <ins>if value in noise:</ins>
+...     <ins>del data[key]</ins>
+...
+&gt;&gt;&gt; <ins>data</ins>
+{0: 'Python', 2: 'awesome'}
+</pre></div></div>
+
+    <p>We used the same techniques here that we used in earlier examples to loop through the key/values of the dictionary. And in this
+      new example, when one key/value matched one of the listed prepositions, it deleted the element of the dict that contained that
+      noise word. Can you think of a data structure that would have been better than a list to hold the noise words?</p>
+
+  </div>
+
+  <!-- A MORE COMPLEX EXAMPLE -->
+  <a name="h_06"></a>
+  <div class="heading">A More Complex Example</div>
+  <div class="headingText">
+
+    <p>Good programmers build applications out of smaller code pieces. Our final example in this lesson will give you a chance to do just
+      that. You'll combine the pieces of code and programming skills you've learned in this lesson to make a program that prepares a
+      list of invitations. The program will take input as commands from the user. There are five commands: "add" to add a name to the
+      invitation list, "delete" to delete a name, "approve" to approve an invitation that has been added, "list" to list the current
+      invitations, and "quit" to terminate the program's operations.</p>
+
+    <p>Create a new file in the editor window as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>invites = {}
+options = ['add', 'list', 'approve', 'delete', 'quit']
+prompt = 'Pick an option from the list (%s): ' % ', '.join(options)
+status_1 = 'unapproved'
+status_2 = 'approved'
+while True:
+    inp = input(prompt)
+    if inp not in options:
+        print('Please pick a valid option')
+        continue
+    if inp == 'add':
+        name = input('Enter name:')
+        if not name:
+            continue
+        invites[name] = status_1
+    elif inp == 'list':
+        for name, status in invites.items():
+            print('%s (%s)' % (name, status))
+    elif inp == 'approve':
+        for name in invites:
+            if invites[name] == status_1:
+                break
+        else:
+            print('There must be %s status invites. Please pick another option' % status_1)
+            continue
+        while True:
+            print('Please enter a valid name from the list below')
+            unapproved = []
+            for name in invites:
+                if invites[name] == status_1:
+                    unapproved.append(name)
+            print(", ".join(unapproved))
+            name = input('Enter name:')
+            if not name:
+                break # user changed mind about approving
+            if name in unapproved:
+                invites[name] = status_2
+                print('%s %s' % (name, status_2))
+                break
+    elif inp == 'delete':
+        if not invites:
+            print('There must be invites before you delete any of them')
+            continue # user changed mind about deleting
+        while True:
+            print('Please enter a valid name from the list below')
+            for name, status in invites.items():
+                print('%s (%s)' % (name, status))
+            name = input('Enter name:')
+            if not name:
+                break
+            if name in invites:
+                del invites[name]
+                print('%s deleted' % name)
+                break
+    elif inp == 'quit':
+        print('Quitting invites')
+        print('The final invitation list follows')
+        for name, status in invites.items():
+            print('%s (%s)' % (name, status))
+        break
+</pre></div></div>
+
+    <p>Save it as <b>invite.py</b> and run it. The program is really just
+      one input validation loop that checks to make sure that the user has entered one of the five available commands. If the user has
+      not done this, the program repeats the request for input. Most of the commands require further input, and each command allows the
+      user to just press the <b>Enter</b> key to ignore the command and request another.</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">We used the %s method for formatting our prompts here. You should be able to change the program to use the .format()
+        method.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- LOOP THIS (closing) -->
+  <a name="h_07"></a>
+  <div class="heading">Loop This</div>
+  <div class="headingText">
+
+    <p>We love loops because they let us repeat the same logic again and again as necessary. This means that your program can execute
+      some pretty complex behaviors, particularly when one loop contains others.</p>
+
+    <p>In the next lesson, we'll learn how programs can use and store information in files. See you there!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="stringFormatting.html">String Formatting</a>
+    <a class="next" href="readingAndWritingFiles.html">Reading and Writing Files</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

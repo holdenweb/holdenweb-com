@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-Threading</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Multi-Threading</div>
+
+  <p>This lesson includes the following topics:</p>
+  <ul>
+    <li><a href="#threads_and_processes">Threads and Processes</a></li>
+    <li><a href="#the_threading_library_module">The Threading Library Module</a></li>
+  </ul>
+
+  <!-- THREADS AND PROCESSES -->
+  <a name="threads_and_processes"></a>
+  <a name="h_01"></a>
+  <div class="heading">Threads and Processes</div>
+  <div class="headingText">
+
+    <p>When you are new to programming (as some students were when they started this Certificate Series), you don't necessarily
+        think too much about all the other things that the computer is doing besides running your programs. Technically you
+        connect to a Windows system using remote desktop protocols, and the same computer that is supporting your session may be
+        supporting other student sessions as well. It has to share its attention between these different tasks, as well as
+        handling your keyboard and mouse input and providing output in various GUIs. There is an enormous amount of activity
+        going on in a modern server computer.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Multiprogramming</div><div class="subheadingText">
+
+      <p>Early computers worked on exactly one problem at a time. As their resources grew and they became faster, people
+          observed that much of the computer's time was spent idling, waiting for some external event (such as reading an
+          80-column card punched with data). Techniques were developed to allow several programs to reside in the computer at
+          the same time, so that when one program was waiting, the processor could be working on another. The classic name for
+          this technique is <i>multiprogramming</i>.</p>
+
+      <p>In a modern computer, each program is written as though it had exclusive use of the machine that it runs on, even
+          though in fact the operating system will share its available processing power among hundreds or even thousands of
+          <i>processes</i>. Each process is isolated from the others by running in a special protected mode, which can only
+          access the memory that the operating system has allocated to it. To use storage and communications features, for
+          example, processes have to make calls to the operating system. Thus the separate processes are isolated from each
+          other. Only the operating system has the ability to access all processes' memory.</p>
+
+    </div></div>
+
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Multiprocessing</div><div class="subheadingText">
+
+      <p>Nowadays, the engineers who design the chips that go into computers are running up against some fairly fundamental
+          speed constraints. Generally you can make things run faster by making them smaller (because this reduces the
+          travelling time of the minute almost-light-speed electrical currents on which logic circuits rely). The faster a
+          circuit works, the more energy it dissipates as heat. But when you make the chips too small or too fast they melt,
+          because too much energy is being dissipated in too small a space, leading to overheating.</p>
+
+      <p>To try and overcome the speed limitations chip designers have started instead to build computers with more than one
+          processor on the same chip, and computer engineers are putting several of those chips on a single motherboard to build
+          so-called multi-processor computers. The different processors share memory and peripherals but are otherwise
+          independent of each other. As long as there are no conflicting requirements for resources, each of the processors can
+          be running a different process in parallel—literally, the different processes are executed at the same time on
+          different processors, and the operating system tries to keep all the processors as busy as it can. So speed increases
+          today are being achieved by running several computations in parallel on separate processors. This ability to execute
+          several instruction streams truly simultaneously is referred to as <i>multiprocessing</i>.</p>
+
+    </div></div>
+
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Multi-Threading</div><div class="subheadingText">
+
+      <p>In the same way that the operating system shares the processor power between lots of processes all contending for its
+          use at certain times, so you can write programs that take a similar approach. They manage lots of separate activities
+          in essentially the same way, but independently of each other. Each independent activity is usually referred to as a
+          <i>thread</i>, and programs that manage multiple threads are said to be <i>multi-threaded</i>.</p>
+
+      <p>For example, around the turn of the century I was asked to help a client send its monthly invoices out by e-mail. It
+          was impractical to write a program that sent the emails one by one. Firstly, formulating the messages took a
+          significant amount of time, with waits for data to come in from the database and the networked domain name system that
+          translates names like holdenweb.com into IP addresses like 174.120.139.138. Furthermore, there can be significant
+          holdups in communication when a server is no longer present, and a connection attempt takes minutes to time out. Early
+          experiment established that it would take upwards of two days to send out the invoices, and that performance would be
+          flaky with occasional complete hang-ups. </p>
+
+      <p>Consequently, I had to take a different approach. Because I had written the code to send an email as a Python function,
+          it was relatively easy to refactor the code so that the function became the <b>run()</b> method of a Python
+          <b>threading.thread</b> subclass. This allowed me to easily create threads to send individual emails. Some additional
+          plumbing was required, with a thread extracting invoicing tasks from the database, dispatching threads to send the
+          emails, and finally updating the database with the record of success or failure. The plumbing code could easily be
+          adjusted to create and use any number of threads, and after a very short time the client was able to send out almost
+          50,000 emails in under two hours using 200 parallel threads. </p>
+
+      <p>That represented a monthly saving of at least $10,000 to the client in postage, so the time spent programming was well
+          worthwhile.</p>
+
+    </div></div>
+
+    <a name="s_04"></a><div id="s_04"><div class="subheading">Threading, Multiprocessing, CPython and the GIL</div><div class="subheadingText">
+
+      <p>The CPython implementation of Python is currently the only implementation of Python 3, though the developers of the
+          other major implementations (PyPy, Jython and IronPython) have all expressed a commitment to support this latest
+          version of Python. The CPython implementation retains a feature from Python version 2 (which was the basis for
+          development of the Python 3.x code)—the so-called <i>Global Interpreter Lock</i>, better known as the
+          <i>GIL</i>.</p>
+
+      <p>Only one thread in a Python program can hold the GIL at any time. In effect this means that <i>multi-threaded programs
+          in Python find it very difficult to take advantage of more than one processor</i>—the purpose of the GIL is to
+          allow speed-up of common primitive operations by ensuring that the same object is never being accessed in incompatible
+          ways at the same time by two processors.</p>
+
+      <p>Guido van Rossum, Python's inventor, is on public record as saying that he sees no reason to remove the GIL from
+          CPython. He suggests that people wanting to take advantage of hardware parallelism should either write their
+          applications to run as multiple cooperating processes or use a Python implementation that does not rely on a GIL for
+          thread safety. As you will see in a later lesson, once you understand how to use the <b>threading</b> library, it is
+          not much more effort to use the <b>multiprocessing</b> library to achieve a true multi-process solution. Since this
+          runs multiple processes rather than multiple threads, each process runs with an independent interpreter, and can take
+          full advantage of multiprocessing hardware if processes are created in sufficient number.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The GIL limitation described above remains true in the standard CPython interpreter. For
+          CPU-bound parallelism, use <code>multiprocessing</code> or <code>concurrent.futures.ProcessPoolExecutor</code>
+          rather than threads. For I/O-bound work (network calls, database queries, file I/O), threads remain a
+          practical choice because threads release the GIL while waiting on I/O. The high-level
+          <code>concurrent.futures.ThreadPoolExecutor</code> is the modern way to manage a pool of worker threads
+          without manually subclassing <code>threading.Thread</code>:
+          <pre style="margin:0.5em 0 0 0">from concurrent.futures import ThreadPoolExecutor
+with ThreadPoolExecutor(max_workers=8) as pool:
+    futures = [pool.submit(send_email, task) for task in tasks]</pre>
+          Note also that as of Python 3.13 an experimental &ldquo;free-threaded&rdquo; build (<code>--disable-gil</code>)
+          is available; it is not yet the default, but it signals that the GIL's days may be numbered.</td>
+      </tr></table>
+
+    </div></div>
+
+    <p>In essence you will only see benefits from multi-threading if the tasks performed by each thread require significant
+        "waiting time" (such as awaiting a response from a user, or from a remote computer, or from some file). In CPython only
+        one thread at a time can hold the GIL, so multiple threads can only take advantage of multiple processors if they use
+        C extensions specifically written to release the GIL while performing work that does not require access to the
+        interpreter's resources. Multi-threaded solutions are frequently seen as "difficult" to communicate to beginners, but
+        most threading problems seem to come from not retaining strict isolation between the namespaces and object space used
+        by different threads. This is not as simple as it seems, because some standard library functions can alter the
+        environment of <i>all threads in a particular process</i>.</p>
+
+  </div>
+
+  <!-- THE THREADING LIBRARY MODULE -->
+  <a name="the_threading_library_module"></a>
+  <a name="h_02"></a>
+  <div class="heading">The Threading Library Module</div>
+  <div class="headingText">
+
+    <p><b>threading</b> is the primary library for handling threads in Python. In many implementations, you will find there is
+        also an underlying <b>_thread</b> module, used to access threading libraries from the underlying system. In all cases,
+        the threading library works in roughly the same way.</p>
+
+    <p>When multiple threads are present, the interpreter will share its time between the threads. Threads can become blocked
+        for the same reasons that processes can become blocked: they need to wait for something (incoming network data, a
+        connection request, data from filestore). In CPython, the interpreter runs a certain number of bytecodes of one thread
+        before moving on to the next in a round-robin between non-blocked threads. If a thread is holding the GIL, no other
+        threads can be scheduled (except those that have explicitly released it, usually in an extension module). </p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Creating Threads (1)</div><div class="subheadingText">
+
+      <p>The simplest way to create a new thread is by instantiating the <b>threading.thread</b> class. You are expected to
+          provide a <b>target</b> keyword argument, which will be called in the context of the new thread when it is started.
+          You can also provide <b>args</b>, a tuple of positional arguments and <b>kwargs</b>, a dict of keyword arguments.
+          These arguments will be passed to the <b>target</b> call when the thread is started. Finally, you can give your
+          thread a name if you want by passing a <b>name</b> keyword argument. Default names for threads are typically names
+          like "Thread-N." Create <b>thread.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">thread.py: doing six things in parallel</div><div class="listing"><pre>
+"""
+thread.py: demonstrate creation and parallel execution of threads.
+"""
+
+import threading
+import time
+
+def run(i, name):
+    """Sleep for a given number of seconds, report and terminate."""
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+
+for i in range(6):
+    t = threading.Thread(target=run, args=(i, "T"+str(i)))
+    t.start()
+print("Threads started")
+</pre></div></div>
+
+      <p>The program defines a function that sleeps for a while, then prints a message and terminates. It then loops, creating
+          and starting six threads, each of which uses the function to sleep a second longer than the last before reporting,
+          using its given name. When you run this program, you should see:</p>
+
+<div class="observeBox"><div class="observeTitle">Results of running thread.py</div><div class="observe"><pre>
+T0 finished after 0 seconds
+Threads started
+T1 finished after 1 seconds
+T2 finished after 2 seconds
+T3 finished after 3 seconds
+T4 finished after 4 seconds
+T5 finished after 5 seconds
+</pre></div></div>
+
+      <p>As soon as the interpreter has more than one active thread it starts sharing its time between the threads. This,
+          coupled with the zero wait time for the first task, means that the very first thread created has finished even before
+          the main thread has completed its creation and starting of all six threads (which is when it prints the "Threads
+          started" message. The other threads then report in at one-second intervals.</p>
+
+      <p>When Python creates a new thread, that thread is to a degree isolated from the other threads in the same process.
+          Threads can share access to module-global variables, although you must be very careful not to change anything that
+          could be changed concurrently by any other thread. There are safe ways for threads to communicate with each other
+          (discussed in the next lesson), and you
+          should use those. The namespace of the function call that starts the thread is unique to the thread, however, and any
+          functions that are called similarly have new namespaces created.</p>
+
+    </div></div>
+
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Waiting for Threads</div><div class="subheadingText">
+
+      <p>Our initial thread.py program just assumed that the threads would all terminate in the end and everything would come
+          out nicely. If you don't want to make this assumption, you can either monitor the thread count or you can wait for
+          individual threads. The first approach is rather simpler, but it relies on your main thread being the only part of the
+          program that is creating threads. Otherwise, the thread count would vary apparently randomly. The function to access
+          the current number of threads is <b>threading.active_count()</b>.  </p>
+
+<div class="listingBox"><div class="listingTitle">Modify thread.py to monitor the number of active threads</div><div class="listing"><pre>
+"""
+thread.py: demonstrate <ins>simple monitoring of</ins> execution of threads.
+"""
+
+import threading
+import time
+
+def run(i, name):
+    """Sleep for a given number of seconds, report and terminate."""
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+
+<ins>bgthreads = threading.active_count()</ins>
+for i in range(6):
+    t = threading.Thread(target=run, args=(i, "T<ins>hread-</ins>"+str(i)))
+    t.start()
+print("Threads started")
+<ins>while threading.active_count() &gt; bgthreads:
+    print("Tick ...")
+    time.sleep(2)
+print("All threads done")</ins>
+</pre></div></div>
+
+      <p>Your output should look something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Output of updated thread.py</div><div class="observe"><pre>
+Thread-0 finished after 0 seconds
+Threads started
+Tick ...
+Thread-1 finished after 1 seconds
+Thread-2 finished after 2 seconds
+Tick ...
+Thread-3 finished after 3 seconds
+Thread-4 finished after 4 seconds
+Tick ...
+Thread-5 finished after 5 seconds
+All threads done</pre></div></div>
+
+      <p>The program now takes a thread count before starting any threads, and then after starting them waits in a timed loop
+          until the thread count returns to what it was before. An alternative is to wait for each thread to complete by calling
+          its <b>join()</b> method. This blocks the current thread until the thread whose <b>join()</b> method was called has
+          finished. Generally this works best when the order of the threads is known, or unimportant: once your thread blocks on
+          a join() it can do <i>nothing</i> until that thread terminates. </p>
+
+<div class="listingBox"><div class="listingTitle">Modify thread.py to wait for each thread using join()</div><div class="listing"><pre>
+"""
+thread.py: demonstrate <ins>thread monitoring by awaiting termination</ins>.
+"""
+
+import threading
+import time
+
+def run(i, name):
+    """Sleep for a given number of seconds, report and terminate."""
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+
+<del>bgthreads = threading.active_count()</del>
+<ins>threads = []</ins>
+for i in range(6):
+    t = threading.Thread(target=run, args=(i, "Thread-"+str(i)))
+    t.start()
+    <ins>threads.append((i, t))</ins>
+print("Threads started")
+<del>while threading.active_count() &gt; bgthreads:
+    print("Tick ...")
+    time.sleep(2)</del>
+<ins>for i, t in threads:
+    t.join()
+    print("Thread", i, "done")</ins>
+print("All threads done")
+</pre></div></div>
+
+      <p>The "worker" threads actually terminate in the order in which the main thread created and waits for them, and so the
+          output shows each thread logged as terminated as soon as it terminates. Your output should look like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Threads finish in the same order the main thread waits</div><div class="observe"><pre>
+Thread-0 finished after 0 seconds
+Threads started
+Thread 0 done
+Thread-1 finished after 1 seconds
+Thread 1 done
+Thread-2 finished after 2 seconds
+Thread 2 done
+Thread-3 finished after 3 seconds
+Thread 3 done
+Thread-4 finished after 4 seconds
+Thread 4 done
+Thread-5 finished after 5 seconds
+Thread 5 done
+All threads done
+</pre></div></div>
+
+      <p>A very simple modification to the source makes the threads started earlier finish later:</p>
+
+<div class="listingBox"><div class="listingTitle">thread.py still waits, but worker threads finish last first</div><div class="listing"><pre>
+"""
+thread.py: demonstrate thread monitoring by awaiting termination.
+"""
+
+import threading
+import time
+
+def run(i, name):
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+
+threads = []
+for i in range(6):
+    t = threading.Thread(target=run, args=(<ins>6-</ins>i, "Thread-"+str(i) ))
+    t.start()
+    threads.append((i, t))
+print("Threads started")
+for i, t in threads:
+    t.join()
+    print("Thread", i, "done")
+print("All threads done")</pre></div></div>
+
+      <p>This time the threads are all reported together, because by the time the first thread completes all others have already
+          completed and so their <b>join()</b> methods return immediately. This changes the nature of the output somewhat.</p>
+
+<div class="observeBox"><div class="observeTitle">Once the first join() returns so will all others</div><div class="observe"><pre>
+Threads started
+Thread-5 finished after 1 seconds
+Thread-4 finished after 2 seconds
+Thread-3 finished after 3 seconds
+Thread-2 finished after 4 seconds
+Thread-1 finished after 5 seconds
+Thread-0 finished after 6 seconds
+Thread 0 done
+Thread 1 done
+Thread 2 done
+Thread 3 done
+Thread 4 done
+Thread 5 done
+All threads done
+</pre></div></div>
+
+    </div></div>
+
+    <a name="s_03"></a><div id="s_03"><div class="subheading">Creating Threads (2)</div><div class="subheadingText">
+
+      <p>The second way to create threads is to define a subclass of <b>threading.thread</b>, overriding its run() method with
+          the code you want to run in the threaded context. In this case, you are expected to pass any data in through the
+          __init__() method, which also means making an explicit call to <b>threading.Thread.__init__()</b> with appropriate
+          arguments. So there is a cost associated with creating threads this way, because the programming is a little more
+          detailed. </p>
+
+      <p>The approach can win if the logic gets complex, however, because other methods can be added to the subclass and used to
+          implement complex functionality in a reasonably modular way: all logic is still attached to a single class. Further,
+          each thread is a separate instance of the class and so the methods can communicate via instance variables as well as
+          explicit arguments. When the thread is run as a function, there is no corresponding "global" namespace that can be
+          used.</p>
+
+      <p>First let's try and re-cast the thread.py program to use a threading.thread subclass. When you use such subclasses, it
+          is possible to access the thread name, so the only argument required will be the sleep time. This argument is saved in
+          an instance variable, and any other arguments are passed to the standard thread initialization routine (though
+          arguments are not normally passed to instantiate subclasses with run() methods, who knows how the API may change
+          in the future—this way is future-proof). When the thread is started, its run() method begins to execute and the
+          sleep time is extracted from the instance variable. As before, the main thread ticks every two seconds and waits for
+          the thread count to go back to its "main thread only" value.</p>
+
+<div class="listingBox"><div class="listingTitle">Modify thread.py to subclass threading.thread</div><div class="listing"><pre>
+"""
+thread.py: <ins>Use threading.Thread subclass to specify thread logic in run() method</ins>.
+"""
+import threading
+import time
+
+<ins>class MyThread(threading.Thread):
+    def __init__(self, sleeptime, *args, **kw):
+        threading.Thread.__init__(self, *args, **kw)
+        self.sleeptime = sleeptime
+    def run(self):
+        print(self.name, "started")
+        time.sleep(self.sleeptime)
+        print(self.name, "finished after", self.sleeptime, "seconds")</ins>
+
+<del>def run(i, name):
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+
+threads = []</del>
+<ins>bgthreads = threading.active_count()
+tt = [MyThread(i+1) for i in range(6)]
+for t in tt:</ins>
+<del>for i in range(6):
+    t = threading.Thread(target=run, args=(6-i, "Thread-"+str(i) ))</del>
+    t.start()
+    <del>threads.append((i, t))</del>
+print("Threads started")
+<del>for i, t in threads:
+    t.join()
+    print("Thread", i, "done")</del>
+<ins>while threading.active_count() &gt; bgthreads:
+    time.sleep(2)
+    print("tick")</ins>
+print("All threads done")</pre></div></div>
+
+      <p>There should be no surprises in the output:</p>
+
+<div class="observeBox"><div class="observeTitle">Subclassing threading.thread works too!</div><div class="observe"><pre>
+Thread-1 started
+Thread-2 started
+Thread-3 started
+Thread-4 started
+Thread-5 started
+Thread-6 started
+Threads started
+Thread-1 finished after 1 seconds
+tick
+Thread-2 finished after 2 seconds
+Thread-3 finished after 3 seconds
+Thread-4 finished after 4 seconds
+tick
+Thread-5 finished after 5 seconds
+Thread-6 finished after 6 seconds
+tick
+All threads done
+</pre></div></div>
+
+      <p>So far, the threads we've written haven't done very much—simply sleeping and printing a message doesn't really
+          amount to a convincing computation. The computer is still doing nothing but wait (in our process) for sleep times to
+          expire. Now let's see what happens when we replace the sleep with some "real" computation.</p>
+
+<div class="listingBox"><div class="listingTitle">Modifying thread.py to compute instead of sleep</div><div class="listing"><pre>
+"""
+thread.py: Use threading.Thread subclass to specify thread logic in run() method.
+"""
+import threading
+import time
+
+class MyThread(threading.Thread):
+    def __init__(self, sleeptime, *args, **kw):
+        threading.Thread.__init__(self, *args, **kw)
+        self.sleeptime = sleeptime
+    def run(self):
+        <del>print(self.name, "started")
+        time.sleep(self.sleeptime)</del>
+        <ins>for i in range(self.sleeptime):
+            for j in range(500000):
+                k = j*j
+            print(self.name, "finished pass", i)</ins>
+        print(self.name, "finished after", self.sleeptime, "seconds")
+
+bgthreads = threading.active_count()
+tt = [MyThread(i+1) for i in range(6)]
+for t in tt:
+    t.start()
+print("Threads started")
+while threading.active_count() &gt; bgthreads:
+    time.sleep(2)
+    print("tick")
+print("All threads done")</pre></div></div>
+
+      <p>You can see that this time the output from the different threads is intermingled, indicating that all active threads
+          are receiving some processor time rather than one thread running until it finishes. Without this "scheduling" behavior,
+          threading would not be very popular.</p>
+
+<div class="observeBox"><div class="observeTitle">thread.py now shows threads sharing compute resource</div><div class="observe"><pre>
+Threads started
+Thread-1 finished pass 0
+Thread-1 finished after 1 seconds
+Thread-4 finished pass 0
+Thread-3 finished pass 0
+Thread-2 finished pass 0
+Thread-5 finished pass 0
+Thread-6 finished pass 0
+Thread-4 finished pass 1
+Thread-3 finished pass 1
+Thread-2 finished pass 1
+Thread-2 finished after 2 seconds
+Thread-5 finished pass 1
+Thread-4 finished pass 2
+Thread-5 finished pass 2
+Thread-6 finished pass 1
+Thread-3 finished pass 2
+Thread-3 finished after 3 seconds
+Thread-4 finished pass 3
+Thread-4 finished after 4 seconds
+Thread-6 finished pass 2
+Thread-5 finished pass 3
+tick
+Thread-6 finished pass 3
+Thread-6 finished pass 4
+Thread-5 finished pass 4
+Thread-5 finished after 5 seconds
+Thread-6 finished pass 5
+Thread-6 finished after 6 seconds
+tick
+All threads done
+</pre></div></div>
+
+      <p>Your results will probably differ from those shown above, precisely because the way the different threads are scheduled
+          may well not be as "equitable" as you think. When you look at the long-lived threads, you can see that Thread-4
+          finishes pass 3 before Thread-6 has finished pass 2. But ultimately all threads are computing and they are all "pushed
+          along" at roughly the same speed.</p>
+
+    </div></div>
+
+  </div>
+
+  <p>Multi-threading is one way to achieve asynchronous processing. For the CPython implementation (and others relying on
+      single-processor guarantees to speed processing) this will not help if the application is CPU-bound, as all processing
+      must take place on a single processor, and so the application cannot benefit from multiple processors in the computer it
+      runs on.</p>
+
+  <p>Next, we will consider how to synchronize multiple threads, and how to pass data safely from one thread to another.</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-09.html">Uses of Introspection</a>
+    <a class="next" href="Python4-11.html">More On Multi-Threading</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

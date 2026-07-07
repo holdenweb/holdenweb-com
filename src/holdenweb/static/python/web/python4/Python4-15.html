@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory-Mapped Files</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Memory-Mapped Files</div>
+
+  <!-- MEMORY MAPPING -->
+  <a href="Python4-15.html" name="memory_mapping"></a>
+  <a name="h_01"></a>
+  <div class="heading">Memory Mapping</div>
+  <div class="headingText">
+
+    <p>Files can be so large that it is impractical to load all of their content into memory at once. The <b>mmap.mmap()</b> function
+        creates a virtual file object. Not only can you perform all the regular file operations on a memory-mapped file, you can also
+        treat it as a vast object (far larger than any real object could be) that you can address just like any other sequence.</p>
+
+    <p>This technique deals with files by mapping them into your process's address space. The <b>mmap</b> module allows you to treat
+        files as similar to <b>bytearray</b> objects—you can index them, slice them, search them with regular expressions and
+        the like. Many of these operations can make it much easier to handle the data in a file: without memory mapping, you have to
+        read the file in chunks and process the chunks (assuming the files are too large to read into memory as a single chunk). This
+        makes it very difficult to process strings that overlap the inter-chunk boundaries. Memory mapping allows you to pretend that
+        all the data is in memory at the same time even when that is not actually the case. The necessary manipulations to allow this
+        are performed automatically.</p>
+
+    <p>In this lesson, we primarily cover only the details of <b>mmap</b> that apply across both Windows and Unix platforms, and a
+        few Windows-specific features. You should be aware that there are different additional feature sets available for Windows
+        and Unix platforms. The documentation on the module is fairly specific about the implementation differences. </p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Memory-Mapped Files Are Still Files</div><div class="subheadingText">
+
+      <p>In standard file operations, there is no difference between a memory-mapped file and one that is opened in the regular
+          way—all regular file access methods continue to work, and you can also treat the file content pretty much like a
+          bytearray. </p>
+
+      <p>Here's a simple example from the module's documentation to get you started. </p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>with open("/tmp/hello.txt", "wb") as f:</ins>
+...     <ins>f.write(b"Hello Python!\n")</ins>
+...
+14
+&gt;&gt;&gt; <ins>import mmap</ins>
+&gt;&gt;&gt; <ins>with open("/tmp/hello.txt", "r+b") as f:</ins>
+...     <ins>mapf = mmap.mmap(f.fileno(), 0)</ins>
+...     <ins>print(mapf.readline())  # prints b"Hello Python!\n"</ins>
+...     <ins>print(mapf[:5])  # prints b"Hello"</ins>
+...     <ins>mapf.tell()</ins>
+...     <ins>mapf[6:] = b" world!\n"</ins>
+...     <ins>mapf.seek(0)</ins>
+...     <ins>print(mapf.readline())  # prints b"Hello  world!\n"</ins>
+...     <ins>mapf.close()</ins>
+...
+b'Hello Python!\n'
+b'Hello'
+14
+b'Hello  world!\n'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>The code above opens a file, then memory maps it. It exercises the readline() method of the mapped file, demonstrating that
+          it works just as with a standard file. It then reads and writes slices of the mapped file (an equally valid way to access
+          the mapped file's content, which does not alter the file pointer). Finally the file pointer is repositioned at the start and
+          the (updated) contents are read in. (The "14" is the return value of the write() function, which always returns the
+      number of bytes written.)</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+&gt;&gt;&gt; with open("/tmp/hello.txt", "wb") as f:
+...     f.write(b"Hello Python!\n")
+...
+14
+&gt;&gt;&gt; with <span class="red">open("/tmp/hello.txt", "r+b")</span> as f:
+...     mapf = mmap.mmap(<span class="green">f.fileno()</span>, 0)
+...     print(<span class="purple">mapf.readline()</span>)  # prints b"Hello Python!\n"
+...     <span class="darkblue">print(mapf[:5])</span>  # prints b"Hello"
+...     <span class="darkred">mapf.tell()</span>
+...     <span class="darkgreen">mapf[6:] = b" world!\n"</span>
+...     mapf.seek(0)
+...     print(mapf.readline())  # prints b"Hello  world!\n"
+...     # close the map
+...     mapf.close()
+...
+b'Hello Python!\n'
+b'Hello'
+14
+b'Hello  world!\n'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>As we observed in an earlier lesson, <span class="red">file objects are context managers</span>, albeit of a slightly degenerate kind
+          (because they return themselves as the result of their __enter__() method). The first argument to <b>mmap.mmap</b> is a
+          <i>file number</i> (an internal number used to identify the file to the operating system), which is obtained by
+          <span class="green">calling the file's fileno() method</span>. The <span class="purple">call to readline()</span> demonstrates normal file
+          handling, but then you see <span class="darkblue">indexed access to the content</span>, which nevertheless demonstrates that
+          <span class="darkred">the file pointer is unchanged</span> by such access.</p>
+
+      <p>Next you see that the content of the file can also be changed <span class="darkgreen">by subscripting</span>, though in this case
+          it is essential that the new content is the same length as the slice being assigned. Finally you observed that the file had
+          been changed by restarting at the beginning. </p>
+
+      <p>The difference between using a memory-mapped file and a standard one is that standard files are independently buffered in
+          each process that uses them, meaning that a write to a file from one program is not necessarily immediately written to disk,
+          and will not necessarily be seen immediately by a separate program reading the file using its own buffers. </p>
+
+    </div></div>
+
+    <a name="s_02"></a><div id="s_02"><div class="subheading">The mmap Interface</div><div class="subheadingText">
+
+      <p> For calls to <b>mmap.mmap()</b> to be cross-platform compatible they should stick to the following signature: </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>mmap(<span class="darkred">fileno</span>, <span class="darkblue">length</span>, <span class="darkgreen">access=ACCESS_WRITE</span>, <span class="purple">offset=0</span>)</pre></div></div>
+
+      <p>The <span class="darkred">file number</span> is used simply because this mirrors the interface of the underlying C library (not always
+          the best design decision, but fortunately the file number is easily obtained from an open file's fileno() method). Using a
+          file number of -1 creates an anonymous share (one that cannot be accessed from the filestore). </p>
+
+      <p>The call above maps <span class="darkblue">length</span> bytes from the beginning of the file, and returns an mmap object that gives
+          both file- and index-based access to that portion of the file's contents. If <span class="darkblue">length</span> exceeds the current
+          length of the file, the file is extended to the new length before operations continue. If <span class="darkblue">length</span> is
+          zero, the mmap object will map the current length of the file, which in turn sets the maximum valid index that can be used.</p>
+
+      <p>The optional <span class="darkgreen">access</span> argument can take one of three values, all defined in the mmap module: </p>
+
+      <table class="tbl"><tr><th>Access Value</th><th>Meaning</th></tr><tr><td>ACCESS_READ</td><td>Any attempt to assign to the memory map raises a TypeError exception.</td></tr><tr><td>ACCESS_WRITE</td><td>Assignments to the map affect both the map's content and the underlying file.</td></tr><tr><td>ACCESS_COPY</td><td>Assignments to the memory map change the map's contents but do not update the file on which the map was based
+              (a copy-on-write mapping).</td></tr></table>
+
+      <p>The <span class="purple">offset</span> argument, when present, establishes an offset within the file for the starting position of the
+          memory map. The offset must be a multiple of the constant <b>mmap.ALLOCATIONGRANULARITY</b> (which is typically the size of
+          a virtual memory block, 4096 bytes on many systems). </p>
+
+    </div></div>
+
+    <a name="s_03"></a><div id="s_03"><div class="subheading">What Use is mmap(), and How Does it Work?</div><div class="subheadingText">
+
+      <p>The real benefit of mmap over other techniques is twofold: first, <i>the file is mapped directly into memory</i> (hence the
+          name). When only one process is using the mapped file, this is a pedestrian application, but remember that modern computers
+          use <i>virtual memory systems</i>. Each process's memory consists of a list of "memory pages." The actual address of the
+          memory page does not matter to the process: the process accesses "virtual memory," and the hardware uses a "memory map" to
+          determine whereabouts in a process's memory a particular page appears. </p>
+
+      <p>When a file is memory-mapped, the operating system effectively reserves enough memory to hold the whole file's contents (or
+          that portion of the file that is being mapped) in memory, and then <i>maps that memory into the process's address space</i>.
+          If another process comes along and maps the same file, then <i>exactly the same block of memory is mapped into the second
+              process's address space</i>. This allows the two processes to exchange information extremely rapidly by writing into the
+          shared memory. Since each is writing into the same memory, each can see the other's changes immediately. </p>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"><b>Be careful with large files</b>. Remember that if you memory map a file it gets mapped into your process's virtual
+          address space. If you are using 32-bit Python (either because you are running on a 32-bit system or because your system
+          administrators chose to install a 32-bit Python interpreter on a system built using 64-bit technology), each process has a
+          4GB upper limit on the size of its address space. Since there are many other claims on a process's memory, it is unlikely
+          you will be able to map all of a file much above 1GB in size in a 32-bit Python environment. </td></tr></table>
+
+    </div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">mmap objects support the <i>buffer protocol</i>, so you can wrap one in a
+        <code>memoryview</code> for zero-copy slicing without creating intermediate <code>bytes</code>
+        objects. In Python 3, all mmap read operations (indexing, slicing, <code>readline()</code>,
+        etc.) return <code>bytes</code>, not <code>str</code>; encode/decode explicitly when crossing
+        the bytes/str boundary. mmap objects are also context managers themselves, so you can write
+        <code>with mmap.mmap(f.fileno(), 0) as mm:</code> and the map will be closed automatically
+        on exit from the <code>with</code> block, without a separate call to <code>mm.close()</code>.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- A MEMORY-MAPPED EXAMPLE -->
+  <a href="Python4-15.html" name="a_memory_mapped_example"></a>
+  <a name="h_02"></a>
+  <div class="heading">A Memory-Mapped Example</div>
+  <div class="headingText">
+
+    <p>The following example code gives you some idea how memory-mapped files might be used for interprocess communication. The
+        program creates a file that will hold data (encoded by the struct module) to be passed between the main program and its
+        subprocesses. The file is split up into "slots," each large enough to hold a byte used to indicate the status of the slot,
+        a 7-character string, and three double-length floating-point numbers. The status starts as <b>EMPTY</b>, and is set to the
+        slot number every time new data becomes available. When there is no more data, the status is set to TERM, which indicates to
+        the subprocess that there is no more work available. </p>
+
+    <p>The whole program is given in the listing below. This is a rather larger program than we normally ask you to enter in one go,
+        but by now you should be able to understand what a lot of the code does as you type it in (explanations follow the listing).</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+mpmmap.py: use memory-mapped file as an interprocess communication area
+           to support multi-processed applications.
+"""
+
+import struct
+import mmap
+import multiprocessing as mp
+import os
+import time
+import sys
+
+FILENAME = "mappedfile"
+SLOTFMT = b"B7s3d"
+SLOTSIZE = struct.calcsize(SLOTFMT)
+SLOTS = 6 # Number of subprocesses
+EMPTY = 255
+TERM = 254
+
+def unpackslot(bytes):
+    """Return slot data as (slot#, string, float, float, float)."""
+    return struct.unpack(SLOTFMT, bytes)
+
+def packslot(slot, s, f1, f2, f3):
+    """Generate slot string from individual data elements."""
+    return struct.pack(SLOTFMT, slot, s, f1, f2, f3)
+
+def run(slot):
+    """Implements the independent processes that will consume the data."""
+    offset = SLOTSIZE*slot
+    print("Process", slot, "running")
+    sys.stdout.flush()
+    f = open(FILENAME, "r+b")
+    mapf = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_WRITE)
+    while True:
+        while mapf[offset] == EMPTY:
+            time.sleep(0.01)
+        if mapf[offset] == TERM:
+            print("Process", slot, "done")
+            sys.stdout.flush()
+            mapf.close()
+            return
+        x, s, f1, f2, f3 = unpackslot(mapf[offset:offset+SLOTSIZE])
+        print(slot, ":", s, f1*f2*f3)
+        sys.stdout.flush()
+        mapf[offset] = EMPTY
+
+def numbers():
+    """Generator: 0.01, 0.02, 0.03, 0.04, 0.05, ..."""
+    i = 1
+    while True:
+        yield i/100.0
+        i += 1
+
+if __name__ == "__main__":
+    f = open(FILENAME, "wb")
+    f.write(SLOTSIZE*SLOTS*b'\0')
+    f.close()
+    f = open(FILENAME, "r+b")
+    mapf = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_WRITE)
+
+    ptbl = []
+    for slot in range(SLOTS):
+        offset = slot*SLOTSIZE
+        mapf[offset] = EMPTY
+        p = mp.Process(target=run, args=(slot, ))
+        ptbl.append(p)
+        print("Starting", p)
+        p.start()
+
+    numseq = numbers()
+    b = next(numseq)
+    c = next(numseq)
+    for i in range(4):
+        for slot in range(SLOTS):
+            a, b, c = b, c, next(numseq)
+            offset = slot*SLOTSIZE
+            while mapf[offset] != EMPTY:
+                time.sleep(0.01)
+            mapf[offset+1:offset+SLOTSIZE] = packslot(slot, b"*******", a, b, c)[1:]
+            mapf[offset] = slot
+
+    for slot in range(SLOTS):
+        offset = SLOTSIZE*slot
+        while mapf[offset] != EMPTY:
+            time.sleep(0.01)
+        mapf[offset] = TERM
+
+    for p in ptbl:
+        p.join()
+
+    mapf.close()
+    print(f.read())
+    sys.stdout.flush()
+    f.close()
+    os.unlink(FILENAME)
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The original source used the string literal <code>"*******"</code> as the second argument
+        to <code>packslot()</code>. In Python 3, <code>struct.pack</code>'s <code>s</code> format requires a
+        <code>bytes</code> object, so this would raise a <code>struct.error</code> at runtime. The listing above
+        corrects it to <code>b"*******"</code>.</td>
+    </tr></table>
+
+    <p>There are a couple of utility functions for packing and unpacking the slot data; these are simple calls to standard
+        <b>struct</b> functions that you may remember. Next comes the <b>run()</b> function that will be the meat of the
+        subprocesses. When it is called it is passed the process's slot number, and it uses the computed size of the slot to work
+        out where its particular portion of the data file begins. It then establishes a mapping onto the standard data file and goes
+        into an infinite loop (which will be terminated by the logic it contains). It repeatedly looks at the first byte of its
+        slot, until the EMPTY value it starts with is changed (by the main program). The process sleeps between different
+        looks at the first byte, to avoid using too much CPU. The sleep should be long enough that the computations in the loop take
+        a relatively insignificant time. If the value has changed to TERM, the process closes everything down and terminates.
+        Otherwise it extracts the data from the slot, performs a calculation and prints out the results, and then sets the slot
+        indicator back to EMPTY so the main program will refill the slot. </p>
+
+    <p>The run() function is followed by a simple numbers() generator function that separates the task of generating numbers
+        from their use inside the main program. It is an infinite generator that yields numbers starting at 0.01 and increasing by
+         0.01 each call. </p>
+
+    <p>Now, we see the logic of the main program. The program first creates a data file large enough to contain the mapped data
+        for all slots, then maps the file into memory. It then iterates over the slots, setting their status to EMPTY, creates a new
+        process with the current slot number, saves it in a list and starts it. The newly-started process will wait until its slot
+        is switched from EMPTY status before taking any action. </p>
+
+    <p>Next the program loops four times over all the slots, filling them with data and only then setting the slot indicator to the
+        slot number. This avoids a potential hazard which might occur if the slot status was set at the same time as the rest of the
+        data: it is just possible that a subprocess might see its status change and start trying to act before the rest of the data
+        is copied in. Yes, this would be a low-probability occurrence, but that does not mean you are at liberty to ignore it. </p>
+
+    <p>Once the main loop is over, the program waits for each slot to become EMPTY and sets it to TERM to indicate that the
+        associated process should terminate. Finally, the program waits for all the processes it started to terminate, deletes the
+        file it created at the start of the run, and itself terminates. When you run the program, you should see the following
+        output. </p>
+
+    <div class="observeBox"><div class="observeTitle">Output from mpmmap.py</div><div class="observe"><pre>
+Starting &lt;Process(Process-1, initial)&gt;
+Starting &lt;Process(Process-2, initial)&gt;
+Starting &lt;Process(Process-3, initial)&gt;
+Process 0 running
+Process 1 running
+Starting &lt;Process(Process-4, initial)&gt;
+Process 2 running
+Starting &lt;Process(Process-5, initial)&gt;
+Starting &lt;Process(Process-6, initial)&gt;
+Process 3 running
+Process 5 running
+5 : b'*******' 0.000336
+1 : b'*******' 2.4e-05
+2 : b'*******' 6e-05
+Process 4 running
+4 : b'*******' 0.00021
+3 : b'*******' 0.00012
+0 : b'*******' 6e-06
+5 : b'*******' 0.002184
+1 : b'*******' 0.00072
+2 : b'*******' 0.00099
+4 : b'*******' 0.001716
+3 : b'*******' 0.00132
+0 : b'*******' 0.000504
+5 : b'*******' 0.00684
+1 : b'*******' 0.00336
+2 : b'*******' 0.00408
+4 : b'*******' 0.005814
+0 : b'*******' 0.00273
+3 : b'*******' 0.004896
+5 : b'*******' 0.0156
+1 : b'*******' 0.00924
+2 : b'*******' 0.010626
+4 : b'*******' 0.0138
+0 : b'*******' 0.00798
+3 : b'*******' 0.012144
+Process 5 done
+Process 1 done
+Process 2 done
+Process 4 done
+Process 3 done
+Process 0 done
+b'\xfe*******R\xb8\x1e\x85\xebQ\xc8?\x9a\x99\x99\x99\x99\x99\xc9?\xe1z\x14\xaeG\xe1\xca?\xfe*******\x9a\x99\x99\x99\x99\x99\xc9?\xe1z\x14\xaeG\xe1\xca?)\\\x8f\xc2\xf5(\xcc?\xfe*******\xe1z\x14\xaeG\xe1\xca?)\\\x8f\xc2\xf5(\xcc?q=\n\xd7\xa3p\xcd?\xfe*******)\\\x8f\xc2\xf5(\xcc?q=\n\xd7\xa3p\xcd?\xb8\x1e\x85\xebQ\xb8\xce?\xfe*******q=\n\xd7\xa3p\xcd?\xb8\x1e\x85\xebQ\xb8\xce?\x00\x00\x00\x00\x00\x00\xd0?\xfe*******\xb8\x1e\x85\xebQ\xb8\xce?\x00\x00\x00\x00\x00\x00\xd0?\xa4p=\n\xd7\xa3\xd0?'
+    </pre></div></div>
+
+    <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> The program above is for demonstration purposes only so you can start to understand the advantages of shared memory.
+        The <b>multiprocessing</b> module actually has other ways to keep processes synchronized, and you should investigate those
+        for production purposes. But if you understand the logic of the code above, you know what mapped files do and how they
+        work, which is a significant piece of learning.</td></tr></table> </p>
+
+    <p>Memory-mapped files allow you to treat huge tracts of data as though they were large strings, and also allow you to share
+        those large chunks of data between independent processes. They allow you to use inter-process communication.</p>
+
+    <p>In the final lesson, we consider some of the differences between small projects and large ones. </p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-14.html">Context Managers</a>
+    <a class="next" href="Python4-16.html">Your Future With Python</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

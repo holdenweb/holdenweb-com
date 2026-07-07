@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test-Driven Development</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Test-Driven Development</div>
+
+  <!-- AGILE PROGRAMMING AND TEST-DRIVEN DEVELOPMENT -->
+  <a name="h_01"></a>
+  <div class="heading">Agile Programming and Test-Driven Development</div>
+  <div class="headingText">
+
+    <p>So far, we've learned that tests enable us to refactor code, and that refactoring lets us
+      improve our code's clarity and performance. To support testing, we've learned two test
+      frameworks in Python, <i>doctest</i> and <i>unittest</i>. With those tools in hand, we're ready to
+      dive into
+      <i>Test-Driven Development</i> (we'll call it TDD from now on) .</p>
+
+    <p>The concept of TDD is pretty straightforward. Once you've identified the requirements of a program, you begin creating it,
+      not by
+      coding, but by writing tests. After you're satisfied with the tests you've written (which may
+      require lots of trial and error, but hey, you're human), you write the code that will pass the
+      tests. The general outline for TDD workflow incorporates the mantra of agile programmers everywhere: "Do the
+      simplest thing that could possibly work." </p>
+
+    <ol>
+      <li>Write tests</li>
+      <li>Run tests</li>
+      <li>Write some code to pass the tests</li>
+      <li>Run tests</li>
+      <li>Refactor code</li>
+      <li>Repeat</li>
+    </ol>
+
+    <p>And that's all there is to it.</p>
+
+    <p>You know, if you think about it, you've already done some TDD—well almost. In the projects for Python 1,
+      as well as your first project for Python 2, you were given a set of requirements and then some expected
+      results. In those cases, formal tests of your code which were performed
+      by running the program, stimulating it with specific inputs, and observing and validating the
+      results.</p>
+
+    <p>If you automate testing, you can repeat the tests reliably
+      whenever you want. And thanks to doctest and unittest, you can include formal tests of your code in
+      the lessons and projects to come.</p>
+
+    <!-- AN EXAMPLE OF TEST-DRIVEN DEVELOPMENT -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">An Example of Test-Driven Development</div>
+    <div class="subheadingText">
+
+      <p>Below is an example of the first step of TDD, <span class="purple">writing tests</span>. Suppose that you have been asked
+        to develop an <span class="darkgreen">adder(x, y)</span> function that takes two arguments and adds
+        them together using a somewhat unusual definition of "add": integer + integer, string + string
+        and list + list, use regular addition; integer + string converts the integer to a string before
+        concatenation; and adding a string or an integer to a list, appends to the list (regardless of whether
+        it's the first or second argument). </p>
+
+      <p>Create a file named <b>testadder.py</b> and type in the code below as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrates the fundamentals of unittest.
+adder() is a function that lets you 'add' integers, strings, and lists.
+"""
+
+from adder import adder # keep the tested code separate from the tests
+
+import unittest
+class TestAdder(unittest.TestCase):
+
+    def test_numbers(self):
+        self.assertEqual(adder(3,4), 7, "3 + 4 should be 7")
+
+    def test_strings(self):
+        self.assertEqual(adder('x','y'), 'xy', "x + y should be xy")
+
+    def test_lists(self):
+        self.assertEqual(adder([1,2],[3,4]), [1,2,3,4], "[1,2] + [3,4] should be [1,2,3,4]")
+
+    def test_number_and_string(self):
+        self.assertEqual(adder(1,'two'), '1two', "1 + two should be 1two")
+
+    def test_numbers_and_list(self):
+        self.assertEqual(adder(4,[1,2,3]), [1,2,3,4], "4 + [1,2,3] should be [1,2,3,4]")
+
+if __name__ == "__main__":
+    unittest.main()</ins></pre></div></div>
+
+      <p>Don't run the program just yet. Although it imports an adder function (the function it's eventually going
+        to test), that import will fail unless that function is defined. The simplest code
+        we have to allow the test harness (automated test framework) to run, is an <b>adder</b> module
+        that contains an empty
+        <span class="darkgreen">adder()</span> function. Create
+        <b>adder.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"adder.py: defines an adder function according to a slightly unusual definition."
+
+def adder(x, y):
+    pass</ins>
+</pre></div></div>
+
+      <p>Now let's go on to step two of the cycle, <span class="purple">run tests</span>.</p>
+
+      <p>Save <b>adder.py</b>, then run <b>testadder.py</b>.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from testadder.py with an incomplete adder function</div><div class="observe"><pre>FFFFF
+======================================================================
+FAIL: test_lists (__main__.TestAdder.test_lists)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 17, in test_lists
+    self.assertEqual(adder([1,2],[3,4]), [1,2,3,4], "[1,2] + [3,4] should be [1,2,3,4]")
+AssertionError: None != [1, 2, 3, 4] : [1,2] + [3,4] should be [1,2,3,4]
+
+======================================================================
+FAIL: test_number_and_string (__main__.TestAdder.test_number_and_string)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 20, in test_number_and_string
+    self.assertEqual(adder(1,'two'), '1two', "1 + two should be 1two")
+AssertionError: None != '1two' : 1 + two should be 1two
+
+======================================================================
+FAIL: test_numbers (__main__.TestAdder.test_numbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 11, in test_numbers
+    self.assertEqual(adder(3,4), 7, "3 + 4 should be 7")
+AssertionError: None != 7 : 3 + 4 should be 7
+
+======================================================================
+FAIL: test_numbers_and_list (__main__.TestAdder.test_numbers_and_list)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 23, in test_numbers_and_list
+    self.assertEqual(adder(4,[1,2,3]), [1,2,3,4], "4 + [1,2,3] should be [1,2,3,4]")
+AssertionError: None != [1, 2, 3, 4] : 4 + [1,2,3] should be [1,2,3,4]
+
+======================================================================
+FAIL: test_strings (__main__.TestAdder.test_strings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 14, in test_strings
+    self.assertEqual(adder('x','y'), 'xy', "x + y should be xy")
+AssertionError: None != 'xy' : x + y should be xy
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (failures=5)</pre></div></div>
+
+      <p>All five tests have failed. But we expected them to fail (yes, we did), because our
+        <span class="darkgreen">adder()</span> method doesn't actually do anything yet. While failed tests are not the
+        ideal result, at least the tests didn't result in error messages. When you see error messages, they
+        usually indicate the presence of a programming mistake, for instance, a function may have the wrong
+        number of arguments, or a call to a method that an object doesn't have. But since our code didn't return any
+        error messages, we can move on to step three of the TDD cycle: <span class="purple">write code to pass the
+          tests</span>. In this first instance, we won't try and pass <i>all</i> of
+        the tests, but instead provide a basic initial implementation that will pass <i>some</i> of
+        them, then build from there. Edit <b>adder.py</b>, <ins>adding</ins>
+        and <del>removing</del> code as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"adder.py: defines an adder function according to a slightly unusual definition."
+
+def adder(x, y):
+    <del>pass</del>
+    <ins>return x + y</ins>
+</pre></div></div>
+
+      <p>Run <b>testadder</b> again.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from the second run of testadder.py</div><div class="observe"><pre>
+.E.E.
+======================================================================
+ERROR: test_number_and_string (__main__.TestAdder.test_number_and_string)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 20, in test_number_and_string
+    self.assertEqual(adder(1,'two'), '1two', "1 + two should be 1two")
+  File "adder.py", line 4, in adder
+    return x + y
+TypeError: unsupported operand type(s) for +: 'int' and 'str'
+
+======================================================================
+ERROR: test_numbers_and_list (__main__.TestAdder.test_numbers_and_list)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 23, in test_numbers_and_list
+    self.assertEqual(adder(4,[1,2,3]), [1,2,3,4], "4 + [1,2,3] should be [1,2,3,4]")
+  File "adder.py", line 4, in adder
+    return x + y
+TypeError: unsupported operand type(s) for +: 'int' and 'list'
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (errors=2)</pre></div></div>
+
+      <p>The first line now contains three dots, each representing a successful test (give
+        yourself a pat on the back for those!), and two "E" characters. Those E's represent errors that we get
+        because our implementation works for only 60% of the test cases. That's not bad for a
+        one-line function though, and the output from the test-run provides lots of information
+        that helps us figure out how to stop the function
+        from throwing exceptions and causing those errors.</p>
+
+      <p>The problems in our code seem to pop up when the arguments aren't of the same type. Since the function
+        appears to do what we need it to do most of the time, we'll modify our
+        program explicitly to change its performance just in the failing cases. We'll do that by adding an integer and
+        a string, and adding an integer and a list (this last case should apply when adding
+        anything to a list, not just an integer). </p>
+
+      <p>Edit your code as shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"adder.py: defines an adder function according to a slightly unusual definition."
+<ins>import numbers</ins>
+
+def adder(x, y):
+    <ins>if isinstance(x, list):
+        return x + [y]
+    elif isinstance(y, list):
+        return y + [x]
+    elif isinstance(x, numbers.Number) and isinstance(y, str):
+        return str(x) + y</ins>
+    return x+y
+</pre></div></div>
+
+      <p>We enhanced our code using the built-in <span class="darkgreen">isinstance()</span>
+        function. This function lets us check to see if a variable is of a particular type, or a
+        subclass of that type. We have to import the <span class="darkred">numbers</span> module in order to
+        use <span class="darkred">numbers.Number</span>, which is a superclass of all numeric types in Python.</p>
+
+      <p>Run <b>testadder</b> again. Now both of
+        the original errors are fixed, but unfortunately, one of the test cases that succeeded previously is now broken.
+        Don't worry too much—this a common occurrence. The good news is that the tests work and let us
+        know about the problems! </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Results of the third testadder.py run</div><div class="observe"><pre>F....
+======================================================================
+FAIL: test_lists (__main__.TestAdder.test_lists)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "testadder.py", line 17, in test_lists
+    self.assertEqual(adder([1,2],[3,4]), [1,2,3,4], "[1,2] + [3,4] should be [1,2,3,4]")
+AssertionError: Lists differ: [1, 2, [3, 4]] != [1, 2, 3, 4]
+
+First differing element 2:
+[3, 4]
+3
+
+Second list contains 1 additional elements.
+First extra element 3:
+4
+
+- [1, 2, [3, 4]]
+?        -     -
+
++ [1, 2, 3, 4] : [1,2] + [3,4] should be [1,2,3,4]
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (failures=1)</pre></div></div>
+
+      <p>In the final version of our code, we want to make sure that the new special
+        cases for lists are not applied when <i>both</i> arguments are lists. In those cases
+        we want them to be left to the default <span class="darkred">elif</span> case at the
+        end of the function. Modify your code as shown: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"adder.py: defines an adder function according to a slightly unusual definition."
+import numbers
+
+def adder(x, y):
+    <ins>if isinstance(x, list) and not isinstance(y, list):</ins>
+        return x + [y]
+    <ins>elif isinstance(y, list) and not isinstance(x, list):</ins>
+        return y + [x]
+    elif isinstance(x, numbers.Number) and isinstance(y, str):
+        return str(x)+y
+    return x+y
+</pre></div></div>
+
+      <p>Run <b>testadder</b> again. Nice. At last we have
+        the pleasure of seeing all of our tests pass, with five dots on the first line of the output.
+        Programmers who use unittest regularly often refer to themselves as "dot-addicted." It's amazing how gratifying
+        it can be to see a row of dots printed out from a test!</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from testadder.py when all tests pass</div><div class="observe"><pre>
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK </pre></div></div>
+
+    </div></div>
+
+    <!-- MORE ABOUT THE UNITTEST.TESTCASE CLASS -->
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">More About the unittest.TestCase Class</div>
+    <div class="subheadingText">
+
+      <p>The <span class="darkred">TestCase</span> class is the cornerstone of the unittest module.
+        We've learned to create our own test cases as subclasses of <span class="darkred">TestCase</span>. Individual
+        tests are written as methods of the subclass and have names that begin with the string "test." If
+        you have only one test to run, you may implement that test as the class's
+        <span class="darkgreen">runTest()</span> method. You probably won't do that very much,
+        but you may see it in other people's code, so it's worth knowing.</p>
+
+    </div></div>
+
+    <!-- TEST FIXTURE SET-UP AND TEAR-DOWN -->
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">Test Fixture Set-up and Tear-down</div>
+    <div class="subheadingText">
+
+      <p>If you want to define several tests, you could create a separate <span class="darkred">TestCase</span>
+        subclass for each one, but it's much simpler to create a single subclass with several test
+        methods instead. So, why might you need more than one <span class="darkred">TestCase</span> subclass?
+        Well, one possibility is so that you can include <span class="darkgreen">setUp()</span> and
+        <span class="darkgreen">tearDown()</span> methods, which would be run before and after each test
+        method. In this case (as well as in others), grouping tests that require the same
+        set-up and tear-down processing, is a good way to go. </p>
+
+      <p>Suppose you want to run some tests of code you have written that creates files. Each test
+        needs to create files. And since the tests create random files (or at least since each test
+        creates different files), if you run the tests in any old
+        directory, clean-up could be difficult. To avoid creating such problems for ourselves,
+        we'll write our code so that each test method creates the directory itself and cleans up the files it
+        creates. To make our code even more efficient, we'll have it call a function to create the directory
+        which was called
+        by each test method. We could take it even further and create the directory within the
+        <span class="darkgreen">setUp()</span> method. This is called automatically before the framework
+        calls each test method, just as the <span class="darkgreen">tearDown()</span>method is called after
+        each one. So we could use <span class="darkgreen">tearDown()</span> to empty and delete the
+        directory. </p>
+
+      <p>If the <span class="darkgreen">setUp()</span> method raises an exception, the test framework will
+        declare this test to have errors, and the test method will not be run. If it succeeds, the
+        test is run, followed by the <span class="darkgreen">tearDown()</span> method.</p>
+
+      <p>Let's check this out. Create a new program named <b>setupDemo.py</b> and type in the following code: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstration of setUp and tearDown.
+The tests do not actually test anything - this is a demo.
+"""
+import unittest
+import tempfile
+import shutil
+import glob
+import os
+
+class FileTest(unittest.TestCase):
+
+    def setUp(self):
+        self.origdir = os.getcwd()
+        self.dirname = tempfile.mkdtemp("testdir")
+        print("Created", self.dirname)
+        os.chdir(self.dirname)
+
+    def test_1(self):
+        "Verify creation of files is possible"
+        for filename in ("this.txt", "that.txt", "the_other.txt"):
+            f = open(filename, "w")
+            f.write("Some text\n")
+            f.close()
+            self.assertTrue(f.closed)
+
+    def test_2(self):
+        "Verify that the current directory is empty"
+        self.assertEqual(glob.glob("*"), [], "Directory not empty")
+
+    def tearDown(self):
+        os.chdir(self.origdir)
+        shutil.rmtree(self.dirname)
+        print("Deleted", self.dirname)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Here, you have defined a test case with two test methods. In order to make the test runnable
+        anywhere, first the <span class="darkgreen">setUp()</span> method saves the process's current
+        directory (obtained with <span class="darkgreen">os.getcwd()</span> in an instance variable). Then it
+        uses <span class="darkgreen">tempfile.mkdtemp()</span> to create a new temporary directory—the
+        location it chooses will depend on your platform, so the method prints the directory path out
+        for your inspection. Having created the new directory, <span class="darkgreen">setUp()</span> then
+        makes it the current directory. </p>
+
+      <p>The <span class="darkgreen">tearDown()</span> method is called after each test. It makes the saved
+        directory the current directory again (thereby ensuring that the temporary directory is no
+        longer in use), and removes it (along with any content it may have) using
+        <span class="darkgreen">shutil.rmtree()</span>. </p>
+
+      <p>When you run the program, you might see something like this: </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from setupDemo.py</div><div class="observe"><pre>..
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+OK
+Created /tmp/tmpabc123testdir
+Deleted /tmp/tmpabc123testdir
+Created /tmp/tmpdef456testdir
+Deleted /tmp/tmpdef456testdir</pre></div></div>
+
+      <p>Here, the output from the test code itself is mixed with the <span class="red">..</span> output from the testing
+        framework, making it difficult to see exactly what's happening (though the absence of error
+        messages is reassuring). It isn't usually a good idea to produce output from test cases for a couple of reasons.
+        First, when the test succeeds there should be no output—this makes it much easier to
+        determine whether tests have passed or failed. Second, it's quite possible that nobody will
+        read that output anyway. </p>
+
+      <p>So instead, we'll remove the
+        <b>print</b> statements when we modify our
+        code. Let's do that now. Edit <b>setupDemo.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""
+Demonstration of setUp/tearDown.
+The tests do not actually test anything much - this is a demo.
+"""
+import unittest
+import tempfile
+import shutil
+import glob
+import os
+
+class FileTest(unittest.TestCase):
+
+    def setUp(self):
+        self.origdir = os.getcwd()
+        self.dirname = tempfile.mkdtemp("testdir")
+        <del>print("Created", self.dirname)</del>
+        os.chdir(self.dirname)
+
+    def test_1(self):
+        "Verify creation of files is possible"
+        for filename in ("this.txt", "that.txt", "the_other.txt"):
+            f = open(filename, "w")
+            f.write("Some text\n")
+            f.close()
+            self.assertTrue(f.closed)
+
+    def test_2(self):
+        "Verify that the current directory is empty"
+        self.assertEqual(glob.glob("*"), [], "Directory not empty")
+
+    def tearDown(self):
+        os.chdir(self.origdir)
+        shutil.rmtree(self.dirname)
+        <del>print("Deleted", self.dirname)</del>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Run this module; your output looks like this:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from setupDemo.py</div><div class="observe"><pre>..
+----------------------------------------------------------------------
+Ran 2 tests in 0.003s
+
+OK</pre></div></div>
+
+    </div></div>
+
+    <!-- TEST CASE ENUMERATION -->
+    <a name="s_04"></a>
+    <div id="s_04">
+    <div class="subheading">Test Case Enumeration</div>
+    <div class="subheadingText">
+
+      <p>When you run <span class="darkgreen">unittest.main()</span>, all subclasses of <span class="darkred">unittest.TestCase</span> are taken from the
+        <a href="http://docs.python.org/tutorial/modules.html" target="_blank">module</a>.
+        An instance of each subclass is created, and each method of the class with a name that begins with
+        "test" is called. (These calls are preceded by a call to the <span class="darkgreen">setUp()</span>
+        method if it exists, and followed by a call to the <span class="darkgreen">tearDown()</span> method
+        if it exists).</p>
+
+      <p>All of the above actions are taken when we call the TestCase's <span class="darkgreen">run()</span> method.
+        The <span class="darkred">TestCase</span> class records the results of the call in a special object, and they are
+        summarized in the output of the test framework, after all tests have been run. </p>
+
+    </div></div>
+
+    <!-- TESTCASE METHODS -->
+    <a name="s_05"></a>
+    <div id="s_05">
+    <div class="subheading">TestCase Methods</div>
+    <div class="subheadingText">
+
+      <p>There are a number of methods you can call to make assertions about your program's state. The most commonly used
+        TestCase Methods are:</p>
+
+      <table class="tbl">
+        <tr><th>TestCase Method</th><th>Description</th></tr>
+        <tr><td><code>assertTrue(expr[, msg])</code></td><td>Unless <b>expr</b> evaluates as true, the test fails.</td></tr>
+        <tr><td><code>assertFalse(expr[, msg])</code></td><td>If <b>expr</b> evaluates as true, the test fails.</td></tr>
+        <tr><td><code>assertEqual(first, second[, msg])</code></td><td>Unless <b>first</b> and <b>second</b> are equal, the test fails.</td></tr>
+        <tr><td><code>assertNotEqual(first, second[, msg])</code></td><td>If <b>first</b> and <b>second</b> are equal, the test fails.</td></tr>
+        <tr><td><code>assertAlmostEqual(first, second[, places[, msg]])</code></td><td>Computes the difference between <b>first</b> and <b>second</b> and rounds it to
+          <b>places</b> decimal places. If the rounded result is non-zero, the test fails.</td></tr>
+        <tr><td><code>assertNotAlmostEqual(first, second[, places[, msg]])</code></td><td>Computes the difference between <b>first</b> and <b>second</b> and rounds it to
+          <b>places</b> decimal places. If the rounded result is zero, the test fails.</td></tr>
+        <tr><td><code>assertRaises(exception, callable, ...)</code></td><td>Calls <b>callable</b>, passing it any positional and keyword arguments that follow.
+          If the call does not raise the given exception, the test fails.</td></tr>
+      </table>
+
+      <p>The methods above do have alternative names (<span class="darkgreen">assertTrue()</span>, for example, is
+        also known as <span class="darkgreen">assert_()</span>), but the names above are preferred.
+        Most of these methods take an optional message argument. If you don't provide a message,
+        unittest will try to formulate one that gives you as much information as possible. To test
+        this, create a new program named <b>messagetest.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate a message formulated by the unittest system.
+"""
+
+import unittest
+
+class DemoCase(unittest.TestCase):
+    def testMessage1(self):
+        self.assertEqual([1,2,3,4], [1, 2, [3, 4]])
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Run it; the output looks something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Output from messagetest.py</div><div class="observe"><pre>F
+======================================================================
+FAIL: testMessage1 (__main__.DemoCase.testMessage1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "messagetest.py", line 9, in testMessage1
+    self.assertEqual([1,2,3,4], [1, 2, [3, 4]])
+AssertionError: Lists differ: [1, 2, 3, 4] != [1, 2, [3, 4]]
+
+First differing element 2:
+3
+[3, 4]
+
+First list contains 1 additional elements.
+First extra element 3:
+4
+
+- [1, 2, 3, 4]
++ [1, 2, [3, 4]]
+?        +     +
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)
+</pre></div></div>
+
+      <p>The system has performed a fairly detailed analysis of the differences between
+        the two lists, and points out, in the lengthy message, that the lists differ at element 2, and
+        that the first list has an extra element. This informative message is the result of some recent clean-up work
+        that was done to Python's unittest module. With this tool available, now if you can't come up with a particularly
+        good error message yourself, you can try letting the system generate one for you. </p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><p>The source mentions that <code>assertTrue()</code> has an alias
+          <code>assert_()</code>. That alias was removed in Python 3.12. Similarly, the camelCase
+          aliases (<code>assertEquals</code>, <code>failUnless</code>, <code>failIf</code>, and
+          others) that appeared in older Python 2-era code were deprecated and have since been
+          removed. Always use the canonical names shown in the table above.</p>
+          <p>For larger projects, <a href="https://docs.pytest.org/" target="_blank">pytest</a>
+          is worth a look: it collects and runs <code>unittest.TestCase</code>-based tests
+          automatically, and lets you write plain <code>assert</code> statements rather than
+          <code>assertEqual</code> and friends, with similarly rich failure messages.</p></td>
+      </tr></table>
+
+    </div></div>
+
+    <!-- LAYING THE FOUNDATION -->
+    <a name="s_06"></a>
+    <div id="s_06">
+    <div class="subheading">Laying the Foundation</div>
+    <div class="subheadingText">
+
+      <p>In this lesson, you've learned about some basic functions of the unittest module. This
+        will serve you well during the course, but we've only scratched the surface of unittest!</p>
+      <p> You have also learned to engage test-driven development
+        practices.
+        For the rest of this course, and all following courses in the OST Python series, you'll be required to use this
+        methodology, in fact, your instructor
+        will verify that you've solved problems successfully by running tests against it. By the
+        end of this course, you'll be really comfortable with TDD and unittest, and
+        writing tests will become second nature to you!</p>
+
+    </div></div>
+
+  </div>
+
+  <p>In the next lesson, we'll learn about some of Python's file-handling abilities.
+    Keep up the excellent work and see you in a bit!</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="UnitTesting.html">Unit Testing</a>
+    <a class="next" href="FileHandling.html">File Handling</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

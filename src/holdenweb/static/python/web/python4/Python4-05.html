@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Optimizing Your Code</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Optimizing Your Code</div>
+
+  <p>Welcome back! In this lesson, we'll go over:</p>
+
+  <ul>
+    <li><a href="#start_with_correctness">Code Correctness</a></li>
+    <li><a href="#the_profile_module">The Profile Module</a></li>
+    <li><a href="#what_to_optimize">What to Optimize</a></li>
+    <li><a href="#how_to_optimize">How to Optimize</a></li>
+  </ul>
+
+  <!-- START WITH CORRECTNESS -->
+  <a name="start_with_correctness"></a>
+  <a name="h_01"></a>
+  <div class="heading">Start with Correctness</div>
+  <div class="headingText">
+
+    <p><div class="c">"Speed is fine, but accuracy is everything."<br>
+        -Wyatt Earp</div></p>
+
+    <p>Inexperienced programmers often devote the majority of their attention to speed and
+        performance. This is a common mistake that can often lead to additional mistakes made as a result of working with
+        accelerated program speeds too early on in the programming process. During development, your initial focus should be on producing programs
+        that work correctly and are supported by tests. When you do begin to
+        consider speed and performance, you're likely to alter your code; that's when tests will be indispensable. If
+        your changes break your tests, you'll need to fix your code before you address issues of speed and performance.
+        The prevailing programmer's wisdom applies, "First, make it work, then make it faster." </p>
+
+    <p>When you write a working program, it's generally fast enough already.
+        That isn't to say that your programs can't be made faster—most of them can—but a good programmer knows when to leave well
+        enough alone. </p>
+
+    <p>Usually we optimize for time (that is, we make the program run as quickly as possible), but sometimes
+        a program appears to use an excessive amount of memory. There
+        is generally a trade-off between memory and time. You can reduce memory usage by using a slower algorithm. </p>
+
+    <p>Guido van Rossum, Python's inventor, discussed optimizing one particular function. Take a look at that
+        <a href="http://www.python.org/doc/essays/list2str.html" target="_blank">here</a>. This algorithm
+        shows just how many different approaches there are to solve a single problem.</p>
+
+    <a name="s_01"></a>
+    <div class="subheading">Where to Optimize</div>
+    <div class="subheadingText">
+
+      <p>Faced with an under-performing program, you first need to determine which parts of the program are causing the issues.
+           In order to do that, you'll need to "profile"
+          your program, that is, to find out how much time is being spent in each part of the program. This will
+          allow you to see which pieces are
+          taking up the most CPU time. These pieces will then be the primary targets for optimization. The Python language includes a profile
+          module that enables you to gather detailed information about how much time is being spent in different parts of your
+          program.</p>
+
+      <p>You can determine which pieces of code run faster using the facilities
+          of the <b>timeit</b> module. For our purposes, you'll be using just a few features of the library, but I encourage you to investigate
+          the Python library documentation outside the labs to learn more about it. Also, try out your
+          own versions of code to learn more about different approaches to a given problem and how well they perform. </p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In an IPython or Jupyter session you can use the <code>%timeit</code>
+          magic command as a convenient alternative to calling <code>timeit.timeit()</code>
+          directly. It automatically chooses a sensible repeat count and shows mean ± std dev.
+          For profiling, <code>%prun</code> runs <code>cProfile</code> inline. For production
+          work, the standalone <b>cProfile</b> module (see the next section) or third-party
+          tools such as <b>py-spy</b> and <b>line_profiler</b> give more flexibility.</td>
+      </tr></table>
+
+    </div>
+
+  </div>
+
+  <!-- THE PROFILE MODULE -->
+  <a name="the_profile_module"></a>
+  <a name="h_02"></a>
+  <div class="heading">The Profile Module</div>
+  <div class="headingText">
+
+    <p>The profile module allows you to trace your program, by keeping information about the function call
+        and return events, as well as exceptions that are raised. It can provide detailed explanations of where your program
+        is spending its time. The module collects and summarizes data about the various function calls in a program.</p>
+
+    <a name="s_01"></a>
+    <div class="subheading">Two Different Modules</div>
+    <div class="subheadingText">
+
+      <p>The cProfile module (written in C) functions
+          just like the profile module, only faster. cProfile is not available in every computer's Python though. When that's the case,
+          use the profile module instead. You can allow your program to make use of cProfile
+          when it is available, and profile when it is not. A quick illustration will help you understand these tools.
+          Here's how to import one of two modules with the same name:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+try:
+    import cProfile as profile
+except ImportError:
+    import profile
+</pre></div></div>
+
+      <p>If cProfile is available, it is imported under the name profile. If it isn't available, the attempt to import it raises an
+          ImportError exception, and the profile module is imported instead. </p>
+
+    </div>
+
+    <a name="s_02"></a>
+    <div class="subheading">Using the Profile Module</div>
+    <div class="subheadingText">
+
+      <p>Create a new file named <b>prfl.py</b> as shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: prfl.py</div><div class="listing"><pre>
+def f1():
+    for i in range(300):
+        f2()
+
+def f2():
+    for i in range(300):
+        f3()
+
+def f3():
+    for i in range(300):
+        pass
+
+import cProfile as profile
+profile.run("f1()")
+</pre></div></div>
+
+      <p>The profile.run() function takes as its argument, a string containing the code to be run, and then runs it with profiling
+            active. If only one argument is given, the function produces output at the end of the run that summarizes the
+            operation of the code. </p>
+
+      <p>Save and run it and you should see something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+         90304 function calls in 1.110 seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    1.110    1.110 &lt;string&gt;:1(&lt;module&gt;)
+        1    0.000    0.000    1.110    1.110 prfl2.py:1(f1)
+      300    0.030    0.000    1.110    0.004 prfl2.py:5(f2)
+    90000    1.080    0.000    1.080    0.000 prfl2.py:9(f3)
+        1    0.000    0.000    1.110    1.110 {built-in method exec}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+</pre></div></div>
+
+      <p>A total of 90304 function calls are recorded during the execution of the code in a total of 1.110 seconds.
+          The rest of the output is sorted by function name by default. The columns are:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><th>Column Name</th><th>Meaning</th></tr>
+        <tr><td>ncalls</td><td>The total number of calls made to the listed function.</td></tr>
+        <tr><td>tottime</td><td>The total time spent in executing the listed function.</td></tr>
+        <tr><td>percall (1)</td><td>The average execution time for a single call of the function.</td></tr>
+        <tr><td>cumtime</td><td>The cumulative execution time of all calls of this function, including the time taken to execute all functions
+                called from this one.</td></tr>
+        <tr><td>percall (2)</td><td>The average cumulative execution time for a single call of the function.</td></tr>
+        <tr><td>filename:lineno(function)</td><td>The details of the source code defining the function.</td></tr>
+      </table></div>
+
+      <p>By looking at the "tottime" column, we can see that the majority of
+          the program's time is spent in the
+          f3() function. In fact, if you could eliminate the time taken by the rest of the program altogether,
+          the impact to the program's total execution time would be less than 5%. In other words,
+          the f3() function is taking up 95% of the program's execution time. As Guido van Rossum says: </p>
+
+      <p><i><a href="http://www.python.org/doc/essays/list2str.html" target="_blank">Rule number one:</a> only optimize when there is a proven speed bottleneck. Only optimize the innermost loop.
+          (This rule is independent of Python, but it doesn't hurt repeating it, since it can save a lot of work.) :-)</i></p>
+
+    </div>
+
+    <a name="s_03"></a>
+    <div class="subheading">More Complex Reporting</div>
+    <div class="subheadingText">
+
+      <p>Sometimes you'll want more specific information from a profiling run. When that's the case, you'll use the second argument to
+          profile.run—the name of a file to which your program will send the raw profiling data. Then you can process this data separately
+          using the pstats module. In order to give the module enough data to work with, we'll use another artificially constructed
+          program (there is no real computation taking place, but many function calls). Modify <b>prfl.py</b> to add more function calls:</p>
+
+<div class="listingBox"><div class="listingTitle">Code: prfl.py</div><div class="listing"><pre>
+def f1():
+    for i in range(300):
+        f2()<ins>; f3(); f5()</ins>
+
+def f2():
+    for i in range(300):
+        f3()
+
+def f3():
+    for i in range(300):
+        pass
+
+<ins>def f4():
+    for i in range(100):
+        f5()
+
+def f5():
+    i = 0
+    for j in range(100):
+        i += j
+    f6()
+
+def f6():
+    for i in range(100):
+        f3()</ins>
+
+import cProfile as profile
+profile.run("f1()"<ins>, "profiledata"</ins>)
+</pre></div></div>
+
+      <p>When you run this program, you won't see any output in the console window. The program
+          creates a file named <b>profiledata</b> in the folder where <b>prfl.py</b> is located. Now you can
+          work with that file using the pstats module, written precisely to allow analysis of the profile data.</p>
+
+      <p>The primary element in the pstats module is the Stats class. When you create an instance, you can give it the name(s) of one
+          or more files as positional arguments. These files will have been created by profiling. You can also provide a stream
+          keyword argument, which is an open file to which output will be sent (this defaults to standard
+          output, meaning you see the output straight away).</p>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The next series of operations should all be performed in the same console window, so do not close it down between
+          operations.</td></tr></table>
+
+      <p>Make sure to keep this window open after this interactive session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import pstats</ins>
+&gt;&gt;&gt; <ins>s = pstats.Stats("V:\\workspace\\Python4_Lesson05\\src\\profiledata")</ins>
+
+&gt;&gt;&gt; <ins>s.print_stats()</ins>
+Mon Jun 25 17:55:43 2012    profiledata
+
+         121204 function calls in 3.275 seconds
+
+   Random listing order was used
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    3.275    3.275 {built-in method exec}
+      300    0.770    0.003    2.458    0.008 prfl.py:5(f2)
+      300    0.259    0.001    0.795    0.003 prfl.py:23(f6)
+        1    0.007    0.007    3.275    3.275 prfl.py:1(f1)
+        1    0.000    0.000    3.275    3.275 &lt;string&gt;:1(&lt;module&gt;)
+   120300    2.229    0.000    2.229    0.000 prfl.py:9(f3)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+      300    0.010    0.000    0.804    0.003 prfl.py:17(f5)
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The times and paths in your output will vary from the values in the above console session.</td></tr></table>
+
+      <p>When you create a pstats.Stats instance, it loads the data, and you can manipulate it before
+          producing output (you'll
+          see how shortly). There are several refinements you can make to the output, by calling methods of your Stats
+          instance.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>s.strip_dirs()   # shorten function references</ins>
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt; <ins>s.print_stats()</ins>
+Mon Jun 25 17:55:43 2012    profiledata
+
+         121204 function calls in 3.275 seconds
+
+   Random listing order was used
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    3.275    3.275 {built-in method exec}
+        1    0.007    0.007    3.275    3.275 prfl.py:1(f1)
+   120300    2.229    0.000    2.229    0.000 prfl.py:9(f3)
+      300    0.259    0.001    0.795    0.003 prfl.py:23(f6)
+      300    0.770    0.003    2.458    0.008 prfl.py:5(f2)
+        1    0.000    0.000    3.275    3.275 &lt;string&gt;:1(&lt;module&gt;)
+      300    0.010    0.000    0.804    0.003 prfl.py:17(f5)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>The <b>strip_dirs()</b> method has removed all of the directory information from the last column. <b>strip_dirs()</b> is
+          applied to the default output; the path information isn't generally required. Next, you can sort the output to give you
+          the most significant items first by providing one or more keys to the <b>Stats.sort_stats()</b> method. The keys that are
+          acceptable currently are:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><th>Key</th><th>Sort by ...</th></tr>
+        <tr><td><b>'calls'</b></td><td>The total count of calls of the function (including "recursive calls" where a function calls itself, or calls
+                other functions which in turn call it).</td></tr>
+        <tr><td><b>'cumulative'</b></td><td>Cumulative execution time</td></tr>
+        <tr><td><b>'file'</b></td><td>File name from which the function was loaded</td></tr>
+        <tr><td><b>'module'</b></td><td>Same as <b>'file'</b></td></tr>
+        <tr><td><b>'pcalls'</b></td><td>Count of <i>primitive</i> calls (i.e. calls made to the function while it is not actually executing)</td></tr>
+        <tr><td><b>'line'</b></td><td>Line number</td></tr>
+        <tr><td><b>'name'</b></td><td>Function name</td></tr>
+        <tr><td><b>'nfl'</b></td><td>Name/file/line</td></tr>
+        <tr><td><b>'stdname'</b></td><td>Sorts by the function name as printed</td></tr>
+        <tr><td><b>'time'</b></td><td>Internal time</td></tr>
+      </table></div>
+
+      <p>You may have noticed that 3 of the 8 lines of the output aren't particularly useful for our requirements. Fortunately,
+          you can filter out the results you don't want by placing one or more restrictions on the output. Those restrictions
+          can take one
+          of three forms as additional arguments to <b>print_stats()</b>:</p>
+      <ul>
+        <li>An integer will limit the output to the given number of lines.</li>
+        <li>A floating-point number between 0 and 1 will restrict the output to the given proportion of entries.</li>
+        <li>A regular expression will limit the output to those entries whose filename:lineno(function) fields contain the given
+              regular expression.</li>
+      </ul>
+
+      <p>You can limit the output to omit the details of the "structural" entries (those that relate strictly to the
+          profiling framework) using the simple expression <b>r"\.py"</b>, or, once the entries are sorted in the right order, by using
+          the integer 5 in this case.</p>
+
+      <p>The restrictions are applied in order, so <b>print_stats(0.1, "test")</b> reports those lines out of the top
+          tenth that match "test", whereas <b>print_stats("test", 0.1)</b> reports a tenth of all those lines matching "test."
+          So, if there were a hundred lines in the source data, <b>print_stats(0.1, "test")</b> would
+          print any lines that contain "test" from the first ten.
+          <b>print_stats("test", 0.1)</b> would print one tenth of ALL the lines that contain "test." If every third line
+          contained "test", <b>print_stats(0.1, "test")</b> would
+          retrieve lines 3,6, and 9. <b>print_stats("test", 0.1)</b> would retrieve lines 3,6,9, and 11 -- four lines
+          (assuming there were about 40 containing "test").</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>s.sort_stats('calls', 'time')</ins>
+&lt;pstats.Stats object at 0x10057c510&gt;
+&gt;&gt;&gt; <ins>s.print_stats(r"\.py")</ins>
+Mon Jun 25 17:55:43 2012    profiledata
+
+         121204 function calls in 3.275 seconds
+
+   Ordered by: call count, internal time
+   List reduced from 8 to 5 due to restriction &lt;'\\.py'&gt;
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   120300    2.229    0.000    2.229    0.000 prfl.py:9(f3)
+      300    0.770    0.003    2.458    0.008 prfl.py:5(f2)
+      300    0.259    0.001    0.795    0.003 prfl.py:23(f6)
+      300    0.010    0.000    0.804    0.003 prfl.py:17(f5)
+        1    0.007    0.007    3.275    3.275 prfl.py:1(f1)
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt; <ins>s.print_stats(5)</ins>
+Mon Jun 25 17:55:43 2012    profiledata
+
+         121204 function calls in 3.275 seconds
+
+   Ordered by: call count, internal time
+   List reduced from 8 to 5 due to restriction &lt;5&gt;
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   120300    2.229    0.000    2.229    0.000 prfl.py:9(f3)
+      300    0.770    0.003    2.458    0.008 prfl.py:5(f2)
+      300    0.259    0.001    0.795    0.003 prfl.py:23(f6)
+      300    0.010    0.000    0.804    0.003 prfl.py:17(f5)
+        1    0.007    0.007    3.275    3.275 prfl.py:1(f1)
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">You may have wondered why all of the methods of the <b>pstats.Stats</b> object seem to return the same <b>pstats.Stats</b> instance.
+          It's to allow users to utilize a technique called <i>method chaining</i>. Since each method call returns the instance, you
+          can apply a method call directly to the result of a previous method call, as in<br><br>
+
+          <b>s.strip_dirs().sort_stats('calls', 'time').print_stats()</b></td></tr></table>
+
+      <p>You'll also want to know which functions call which other functions. The pstats.Stats object has the
+          print_callers() and print_callees() methods that show you the calling relationships between various functions:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>s.sort_stats('calls', 'time')</ins>
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+
+&gt;&gt;&gt; <ins>s.print_callers(r"\.py")</ins>
+   Ordered by: call count, internal time
+   List reduced from 8 to 5 due to restriction &lt;'\\.py'&gt;
+
+Function        was called by...
+                    ncalls  tottime  cumtime
+prfl.py:9(f3)   &lt;-     300    0.005    0.005  prfl.py:1(f1)
+                     90000    1.688    1.688  prfl.py:5(f2)
+                     30000    0.536    0.536  prfl.py:23(f6)
+prfl.py:5(f2)   &lt;-     300    0.770    2.458  prfl.py:1(f1)
+prfl.py:23(f6)  &lt;-     300    0.259    0.795  prfl.py:17(f5)
+prfl.py:17(f5)  &lt;-     300    0.010    0.804  prfl.py:1(f1)
+prfl.py:1(f1)   &lt;-       1    0.007    3.275  &lt;string&gt;:1(&lt;module&gt;)
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt; <ins>s.print_callees(r"\.py")</ins>
+   Ordered by: call count, internal time
+   List reduced from 8 to 5 due to restriction &lt;'\\.py'&gt;
+
+Function         called...
+                     ncalls  tottime  cumtime
+prfl2.py:9(f3)   -&gt;
+prfl2.py:5(f2)   -&gt;   90000    1.080    1.080  prfl2.py:9(f3)
+prfl2.py:23(f6)  -&gt;   30000    0.355    0.355  prfl2.py:9(f3)
+prfl2.py:17(f5)  -&gt;     300    0.010    0.365  prfl2.py:23(f6)
+prfl2.py:1(f1)   -&gt;     300    0.027    1.107  prfl2.py:5(f2)
+                        300    0.004    0.004  prfl2.py:9(f3)
+                        300    0.004    0.369  prfl2.py:17(f5)
+
+
+&lt;pstats.Stats object at 0x0000000002955198&gt;
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Being aware of which function calls which other functions can be useful when you are trying to locate specific
+          calls that take more time than others.</p>
+
+    </div>
+
+  </div>
+
+  <!-- WHAT TO OPTIMIZE -->
+  <a name="what_to_optimize"></a>
+  <a name="h_03"></a>
+  <div class="heading">What to Optimize</div>
+  <div class="headingText">
+
+    <p>You can use the profile module to hone in on the parts of your program that are using the most CPU time. Your next consideration
+        will be figuring out how to speed up the code in your "hot spots." To do this, we'll use the timeit module,
+        which allows you to measure the relative speeds of
+        different Python snippets. The timeit module contains more features than we need for our task,
+        but it's a good idea to familiarize yourself with its documentation for future tasks.</p>
+
+    <p>The timeit module defines a Timer class which allows you full control over the creation and execution of timed code, but
+        we'll just use the module's timeit() function; it allows you to specify a statement
+        to be timed and some initialization code to execute before timing starts. The function runs the initialization code and
+        then executes the code to be timed repeatedly, printing out the total execution time in seconds. Take a look:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from timeit import timeit</ins>
+&gt;&gt;&gt; <ins>timeit("i = i + 1", "i=0")</ins>
+0.11318016052246094
+&gt;&gt;&gt; <ins>timeit("i = i + 1", "i=0")</ins>
+0.11426806449890137
+&gt;&gt;&gt; <ins>timeit("i = i + 1", "i=0")</ins>
+0.1136329174041748
+&gt;&gt;&gt; <ins>timeit("i += 1", "i=0")</ins>
+0.11641097068786621
+&gt;&gt;&gt; <ins>timeit("i += 1", "i=0")</ins>
+0.11541509628295898
+&gt;&gt;&gt; <ins>timeit("i += 1", "i=0")</ins>
+0.11439919471740723
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <p>The example demonstrates that timings are not completely repeatable (and therefore shouldn't be relied upon for
+        absolute information). Secondly, it demonstrates that there isn't a big difference between the time it takes to execute regular addition and the
+        time required to execute the augmented addition operator.</p>
+
+    <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The timeit() function creates an entirely new namespace in which to run the code being timed, so the examples
+        use an initialization statement to set <b>i</b> to zero before the timed code is run; without that, you'd see an exception
+        indicating that the <b>i</b> had not been defined.</td></tr></table>
+
+    <p>Now that you know how modules work, we can concentrate on getting your code to run faster.
+        To help facilitate writing your timing tests, you'll usually define functions containing the code that are
+        called by the timing routine. </p>
+
+    <a name="s_01"></a>
+    <div class="subheading">Loop Optimizations</div>
+    <div class="subheadingText">
+
+      <p>Sometimes you write code and put a computation inside of the loop when it doesn't need to be. Under those circumstances there
+          are gains to be made by moving the computation out of the loop, a technique usually referred to as "loop hoisting."
+          Here is an example of loop hoisting:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def loop1():</ins>
+...     <ins>lst = range(10)</ins>
+...     <ins>for i in lst:</ins>
+...         <ins>x = float(i)/len(lst)</ins>
+...
+&gt;&gt;&gt; <ins>def loop2():</ins>
+...     <ins>lst = range(10)</ins>
+...     <ins>ln = len(lst)</ins>
+...     <ins>for i in lst:</ins>
+...         <ins>x = float(i)/ln</ins>
+...
+&gt;&gt;&gt; <ins>timeit("loop1()", "from __main__ import loop1")</ins>
+7.349833011627197
+&gt;&gt;&gt; <ins>timeit("loop2()", "from __main__ import loop2")</ins>
+4.197483062744141
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>What seems like a small change to the code makes a substantial difference!</p>
+
+      <p>Actually, the best way to optimize a loop is to remove it altogether. Sometimes you can do that using Python's
+          built-in functions. Let's time four different ways to build the upper-case version of a list:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>oldlist = "the quick brown fox jumps over the lazy dog".split()</ins>
+&gt;&gt;&gt; <ins>def lf1(lst):</ins>
+...     <ins>newlist = []</ins>
+...     <ins>for w in lst:</ins>
+...         <ins>newlist.append(w.upper())</ins>
+...     <ins>return newlist</ins>
+...
+&gt;&gt;&gt; <ins>def lf2(lst):</ins>
+...     <ins>return [w.upper() for w in lst]</ins>
+...
+&gt;&gt;&gt; <ins>def lf3(lst):</ins>
+...     <ins>return list(w.upper() for w in lst)</ins>
+...
+&gt;&gt;&gt; <ins>def lf4(lst):</ins>
+...     <ins>return map(str.upper, lst)</ins>
+...
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>timeit("lf1(oldlist)", "from __main__ import lf1, oldlist")</ins>
+4.409790992736816
+&gt;&gt;&gt; <ins>timeit("lf2(oldlist)", "from __main__ import lf2, oldlist")</ins>
+3.492004156112671
+&gt;&gt;&gt; <ins>timeit("lf3(oldlist)", "from __main__ import lf3, oldlist")</ins>
+4.758850812911987
+&gt;&gt;&gt; <ins>timeit("lf4(oldlist)", "from __main__ import lf4, oldlist")</ins>
+0.5220911502838135
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>You haven't run into the map() built-in before, but it has some good things going for it. Its first argument is a
+          function (in this case, the unbound upper() method of the built-in str type), and any remaining arguments are
+          iterables. There are as many iterables as the function takes arguments, and the result is a list containing the
+          return values of the function when called with corresponding elements of each iterable (if the iterables are not all the
+          same length, map stops as soon as the first one is exhausted). </p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In Python 3, <code>map()</code> returns a lazy <i>iterator</i>, not a
+          list. The description above ("the result is a list") reflects the Python 2 behaviour.
+          In Python 3, <code>lf4</code> as written returns a <code>map</code> object rather than
+          a materialised list, so its <code>timeit</code> score benefits from not actually
+          constructing the output sequence — it is not a perfectly like-for-like comparison with
+          <code>lf1</code>–<code>lf3</code>. To produce a list you would write
+          <code>return list(map(str.upper, lst))</code>; in that case <code>map</code>-based
+          iteration is still typically the fastest option because the loop runs in C, but the
+          margin narrows.</td>
+      </tr></table>
+
+      <p>So, why is the map()-based solution so much faster? There are two reasons. First, it is the only solution that does not need
+          to look up the upper() method in the str type each time around the loop. Second, the looping is done inside map(), which
+          is written in the C language, which saves a lot of time. </p>
+
+      <p>Another way to remove a loop is to write the loop contents out as literal code. This is really only practical for
+          short loops with a known number of iterations, but it can be a very effective technique, as the next example of
+          "inlining loop code" shows:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>def f1():</ins>
+...     <ins>pass</ins>
+...
+&gt;&gt;&gt; <ins>def loopfunc():</ins>
+...     <ins>for i in range(8):</ins>
+...         <ins>f1()</ins>
+...
+&gt;&gt;&gt; <ins>def inline():</ins>
+...     <ins>f1(); f1(); f1(); f1(); f1(); f1(); f1(); f1()</ins>
+...
+&gt;&gt;&gt; <ins>timeit("loopfunc()", "from __main__ import loopfunc")</ins>
+1.9027259349822998
+&gt;&gt;&gt; <ins>timeit("inline()", "from __main__ import inline")</ins>
+1.2639250755310059
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>There can be a substantial amount of overhead in looping. When function calls are written out
+          explicitly, the execution time is 30% faster—a worthwhile gain. Of course, in this example the loop overhead does
+          tend to dominate because there is so little actual computation happening.  </p>
+
+    </div>
+
+    <a name="s_02"></a>
+    <div class="subheading">Pre-computing Attribute References</div>
+    <div class="subheadingText">
+
+      <p>Due to Python's dynamic nature, when the interpreter comes across an expression like <b>a.b.c</b>, it looks up <i>a</i>
+          (trying first the local namespace, then the global namespace, and finally the built-in namespace), then it looks in
+          <i>that</i> object's namespace to resolve the name <i>b</i>, and finally it looks in <i>that</i> object's namespace to
+          resolve the name <i>c</i>. These lookups are reasonably fast; for local variables, lookups are extremely fast, since the
+          interpreter knows which variables are local and can assign them a known position in memory. There are definitely gains to be had
+          by storing references in local variables. Let's try removing Attribute Resolution from loops:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class Small:</ins>
+...    <ins>class Smaller:</ins>
+...       <ins>x = 20</ins>
+...    <ins>smaller = Smaller</ins>
+...
+&gt;&gt;&gt; <ins>small = Small()</ins>
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>def attr1():</ins>
+...     <ins>ttl = 0</ins>
+...     <ins>for i in range(50):</ins>
+...         <ins>ttl += small.smaller.x</ins>
+...     <ins>return ttl</ins>
+...
+&gt;&gt;&gt; <ins>def attr2():</ins>
+...     <ins>ttl = 0</ins>
+...     <ins>x = small.smaller.x</ins>
+...     <ins>for i in range(50):</ins>
+...         <ins>ttl += x</ins>
+...     <ins>return ttl</ins>
+...
+&gt;&gt;&gt; <ins>timeit("attr1()", "from __main__ import small, attr1")</ins>
+11.901235103607178
+&gt;&gt;&gt; <ins>timeit("attr2()", "from __main__ import small, attr2")</ins>
+6.448068141937256
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Here, the function doesn't actually execute a huge amount of computation, but we gain a lot in speed.</p>
+
+    </div>
+
+    <a name="s_03"></a>
+    <div class="subheading">Local Variables are Faster than Global Variables</div>
+    <div class="subheadingText">
+
+      <p>As we mentioned before, the interpreter knows which names inside your functions are local and it assigns them specific
+          (known) locations inside the function call's memory. This makes references to locals much faster than to globals and
+          (most especially) to built-ins. Let's test name reference speed from various spaces:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE CONSOLE SESSION</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>glen = len # provides a global reference to a built-in</ins>
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>def flocal():</ins>
+...     <ins>name = len</ins>
+...     <ins>for i in range(25):</ins>
+...         <ins>x = name</ins>
+...
+&gt;&gt;&gt; <ins>def fglobal():</ins>
+...     <ins>for i in range(25):</ins>
+...         <ins>x = glen</ins>
+...
+&gt;&gt;&gt; <ins>def fbuiltin():</ins>
+...     <ins>for i in range(25): </ins>
+...         <ins>x = len</ins>
+...
+&gt;&gt;&gt; <ins>timeit("flocal()", "from __main__ import flocal")</ins>
+1.743438959121704
+&gt;&gt;&gt; <ins>timeit("fglobal()", "from __main__ import fglobal")</ins>
+2.192162036895752
+&gt;&gt;&gt; <ins>timeit("fbuiltin()", "from __main__ import fbuiltin")</ins>
+2.259413003921509
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>This difference in speed isn't huge here, but it definitely shows that accessing a local variable is faster than accessing a global or
+          a built-in. If many globals or built-ins are used inside a function, it makes sense to store a local reference to them.
+          By contrast, if they are used only once, then you'd only be adding overhead to your function!</p>
+
+    </div>
+
+  </div>
+
+  <!-- HOW TO OPTIMIZE -->
+  <a name="how_to_optimize"></a>
+  <a name="h_04"></a>
+  <div class="heading">How to Optimize</div>
+  <div class="headingText">
+
+    <p>Optimizing code isn't easy, and it would be impossible to show you all the gotchas you can
+        introduce into your code here. For now, here are a few guidelines that can help you avoid common pitfalls.</p>
+
+    <a name="s_01"></a>
+    <div class="subheading">Don't Optimize Prematurely</div>
+    <div class="subheadingText">
+
+      <p>Don't consider performance while you're writing the code (although it's difficult for even experienced
+          programmers to ignore). The primary goal of the initial programming process is a correct, functioning algorithm that is
+          relatively easy to understand. Only after your tests demonstrate correct operation should you address
+          performance.</p>
+
+    </div>
+
+    <a name="s_02"></a>
+    <div class="subheading">Use Timings, Not Intuition</div>
+    <div class="subheadingText">
+
+      <p>Our intuition is not always the best gauge of what will run fast. You're much better off using
+          timings to determine how well your program is running.</p>
+
+    </div>
+
+    <a name="s_03"></a>
+    <div class="subheading">Make One Change at a Time</div>
+    <div class="subheadingText">
+
+      <p>If you make two changes to a program, and the first makes a 10% improvement, that's great, right? But if the second takes
+          performance <i>down</i> by 25%, the overall result will be worse than those of the unchanged program.
+          Make your changes individually and methodically.</p>
+
+    </div>
+
+    <a name="s_04"></a>
+    <div class="subheading">The Best Way is Not Always Obvious</div>
+    <div class="subheadingText">
+
+      <p>Guido van Rossum has yet more wisdom to share with us (I am a fan). In the article we mentioned above he presents us with a problem:
+          given a list of integers in the range
+          0-127 (these are ASCII values; Python 2 was current when Guido wrote this), how does one create a string in which the
+             characters have
+          the ordinal values held in the corresponding positions in the list of integers?
+          Guido (I think we have spent enough quality time with Guido to be on a first name basis now)
+          realized that the fastest way to create such a string was to take advantage of the array module's
+          ability to create one-byte integers; he came up with this code: </p>
+      <span class="code">
+    import array
+    def f7(list):
+        return array.array('B', list).tostring()
+      </span>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><code>array.array.tostring()</code> was deprecated in Python 3.2 and
+          removed in Python 3.14. The replacement is <code>.tobytes()</code>, which has been
+          available since Python 3.2. To decode the resulting bytes back to a string you would
+          also need <code>.decode('ascii')</code> or similar. In modern Python the idiomatic
+          one-liner for this particular conversion is
+          <code>bytes(list).decode('ascii')</code>.</td>
+      </tr></table>
+
+      <p>
+          When you are writing code, the obvious way is the best. To extract maximum performance the
+          best way is not always obvious! Did I really say this was a short lesson? Time flies when we're deep into the Python!
+          You're doing really well so far.
+      </p>
+
+    </div>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-04.html">Publish and Subscribe</a>
+    <a class="next" href="Python4-06.html">Using Exceptions Wisely</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

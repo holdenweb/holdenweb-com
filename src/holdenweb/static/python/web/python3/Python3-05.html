@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>More On Regular Expressions</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">More On Regular Expressions</div>
+
+  <p>This lesson includes these sections:</p>
+  <ul>
+    <li><a href="#fundamentals_of_regular_expressions">Fundamentals of Regular Expressions</a></li>
+    <li><a href="#use_regular_expressions_with_care">Use Regular Expressions With Care</a></li>
+  </ul>
+
+  <a name="fundamentals_of_regular_expressions"></a>
+  <a name="h_01"></a>
+  <div class="heading">Fundamentals of Regular Expressions</div>
+  <div class="headingText">
+
+    <p>Now that we've learned the basics of regular expressions, we can look at some more advanced aspects.
+        Remember at the start of the last lesson, we introduced regular expressions by wondering how we
+        might search for US telephone numbers in a specific text. You are now in a position to solve that
+        problem.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">The Telephone Number Search</div>
+    <div class="subheadingText">
+
+      <p>We want to search a block of text for phone numbers in Python using Regular Expressions. As
+          usual, first, we'll write a test to confirm that we're getting the behavior we want, and then
+          we'll write the code. Create <b>test_phone.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+from phone import get_phone, text
+
+class TestRegex(unittest.TestCase):
+
+    def test_phone(self):
+        numbers = get_phone(text)
+        self.assertEqual(len(numbers), 5)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Our first code finds only the
+          phone numbers whose area code is not surrounded by parentheses, and the test is satisfied as long as
+          the function detects five phone numbers in the text—without verifying that it has the exact
+          numbers right. It is, however, <i>much</i> better than not having any tests!</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate use of re.findall().
+"""
+import re
+
+text = """While I was at the store I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555) 123-4567 again now.
+"""
+
+def get_phone(text):
+    "Scan a text, locating telephone numbers."
+    # Note the use of a "raw" string constant
+    return re.findall(r"\d\d\d-\d\d\d-\d\d\d\d", text)
+
+if __name__ == '__main__':
+    print(get_phone(text))</ins>
+</pre></div></div>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The output of phone.py</div><div class="observe"><pre>
+['555-123-4567', '555-754-4321', '999-999-9999', '000-000-0000', '555-555-0000']
+</pre></div></div>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The output of the test</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+</pre></div></div>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">In this lesson we'll use tests very heavily, because in regular expressions it
+          can be easy to generate false positives: answers that return positive values but fail in some
+          way.</td>
+      </tr></table>
+
+<div class="observeBox"><div class="observeTitle">phone.py</div><div class="observe"><pre>
+Demonstrate use of re.findall().
+"""
+<span class="darkred">import re</span>
+
+text = """While I was at the store I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555) 123-4567 again now.
+"""
+
+def <span class="darkgreen">get_phone(text)</span>:
+    "Scan a text, locating telephone numbers."
+    # Note the use of a "raw" string constant
+    return <span class="green">re.findall(</span>r"<span class="darkblue">\d\d\d-\d\d\d-\d\d\d\d</span>", <span class="orange">text</span><span class="green">)</span>
+
+if __name__ == '__main__':
+    print(get_phone(text))
+</pre></div></div>
+
+      <p>The first thing this program does is <span class="darkred">import</span> the Python regular expression library,
+          <span class="darkred">re</span>. The <span class="darkgreen">get_phone()</span> function uses a regular expression as
+          the first argument to the <span class="green">findall()</span> function from that library. The pattern
+          <span class="darkblue">\d\d\d-\d\d\d-\d\d\d\d</span> is applied to the <span class="orange">text</span>, and the result
+          is a list of strings matched by the pattern. </p>
+
+      <p>The regex pattern <span class="darkblue">"\d\d\d-\d\d\d-\d\d\d\d"</span> is the central component of the code
+          above. If you replace each "<span class="darkblue">\d</span>" with an "X," you get
+          <b>XXX-XXX-XXXX</b>—the template for matching the phone numbers.</p>
+
+      <p>You probably noticed that your code does not find the phone number with the prefix in parentheses.
+          We'll cover that later in this lesson. </p>
+
+    </div></div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Regular Expressions and Raw Strings</div>
+    <div class="subheadingText">
+
+      <p>Regular expressions often use the backslash (\) character. Mostly it indicates special meanings for
+          the characters immediately following, but it can also be used to "escape" the standard meanings of
+          certain characters in pattern strings, so that you can recognize these special characters too. You
+          probably remember that the backslash also has a special meaning in string literals ("\n" means
+          newline, "\t" means tab, and so on). </p>
+
+      <p>You probably remember that to represent a single backslash in a string, you normally need to use two
+          backslashes—"\\." This would make regular expressions very difficult to read. Consequently,
+          we have "raw" string constants (whose representations are preceded by the letter "r") to represent
+          regex patterns. These let you represent the backslashes without escaping, which makes them much more
+          readable. </p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">All the regex patterns in this lesson already use raw strings, which is the
+          recommended practice. Beyond raw strings, modern Python regex also supports
+          <i>named groups</i>: <code>(?P&lt;name&gt;...)</code> lets you label a capturing group, and
+          <code>match.groupdict()</code> returns all named groups as a dictionary. Named groups make
+          complex patterns far easier to read and maintain than positional group numbers.</td>
+      </tr></table>
+
+    </div></div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">match() vs search()</div>
+    <div class="subheadingText">
+
+      <p>The basic use case for regular expressions is finding occurrences of strings that conform to a
+          pattern. The Python regular expression library gives you two ways to perform this action,
+          <span class="darkgreen">re.match()</span> and <span class="darkgreen">re.search()</span>. The difference between
+          them is as follows:</p>
+
+      <ul>
+        <li><b>match()</b> checks at the start of a string and returns None if nothing is found.</li>
+        <li><b>search()</b> moves up the string, looking for the first occurrence of the given pattern, and
+              returns None only if the pattern occurs nowhere in the string. </li>
+      </ul>
+
+      <p>For example, suppose we have several paragraphs and want to see if they start with or contain a phone
+          number. If a paragraph starts with a phone number, we'll assume that the paragraph is just a phone
+          number and we want to return it. Otherwise, if a paragraph contains a phone number, we want to
+          return the length of the paragraph. If a paragraph has no telephone numbers, we'll return
+          <b>None</b>. Create <b>test_match_vs_search.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+from match_vs_search import check_number
+
+p1 = """While I was at the store in Washington, DC 20001 I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555) 123-4567 again now."""
+
+p2 = "555-555-5555"
+
+p3 = "What is the author's phone number?"
+
+class TestRegex(unittest.TestCase):
+
+    def test_match(self):
+        result = check_number(p2)
+        self.assertEqual("555-555-5555", result)
+
+    def test_search(self):
+        result = check_number(p1)
+        self.assertEqual(305, result)
+
+    def test_none(self):
+        result = check_number(p3)
+        self.assertIsNone(result)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Save it and create <b>match_vs_search.py</b> in the same folder:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate the difference between match() and search().
+"""
+
+import re
+
+def check_number(text):
+    regex = r"\d\d\d-\d\d\d-\d\d\d\d"
+    match = re.match(regex, text)
+    if match:
+        return match.group()
+    match = re.search(regex, text)
+    if match:
+        return len(text)</ins>
+</pre></div></div>
+
+      <p>Save it and run the test program:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running test_match_vs_search.py</div><div class="observe"><pre>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>Now, let's try our match_vs_search program.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from match_vs_search import *</ins>
+&gt;&gt;&gt; <ins>check_number("707-867-5309")</ins>
+'707-867-5309'
+&gt;&gt;&gt; <ins>check_number("Jenny's number is 707-867-5309")</ins>
+30
+</pre></div></div>
+
+      <p>Let's look at how it works.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The check_number() Function</div><div class="observe"><pre>
+def <span class="darkgreen">check_number(</span><span class="darkred">text</span><span class="darkgreen">)</span>:
+    regex = r"\d\d\d-\d\d\d-\d\d\d\d"
+    <span class="purple">match</span> = <span class="darkblue">re.match(</span>regex, <span class="darkred">text</span><span class="darkblue">)</span>
+    if match:
+        return match.group()
+    match = <span class="orange">re.search(</span>regex, text<span class="orange">)</span>
+    if match:
+        return len(text)
+</pre></div></div>
+
+      <p>The <span class="darkgreen">check_number()</span> function first attempts to match a telephone number at
+          the beginning of the <span class="darkred">text</span>. If that succeeds, it returns a <i>match object</i>
+          <span class="purple">match</span>, described below. </p>
+
+      <p>If the <span class="darkblue">re.match()</span> call fails to find the pattern, it returns <b>None</b>, and the
+          function then calls the <span class="orange">re.search()</span> function to try and find a number somewhere in
+          the interior of the <span class="darkred">text</span>. If the search succeeds, then the function returns the
+          length of the paragraph. Otherwise it "falls off the bottom" and returns None (as is standard in
+          Python).</p>
+
+      <p>Let's continue our session to explore the difference between match() and search():</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import re</ins>
+&gt;&gt;&gt; <ins>target = "This is a string"</ins>
+&gt;&gt;&gt; <ins>def t(p, t):</ins>
+...     <ins>if re.match(p, t):</ins>
+...         <ins>print("match")</ins>
+...     <ins>if re.search(p, t):</ins>
+...         <ins>print("search")</ins>
+...
+&gt;&gt;&gt; <ins>t("is", target)</ins>
+search
+&gt;&gt;&gt; <ins>t("This", target)</ins>
+match
+search
+&gt;&gt;&gt; <ins>t("Th", target)</ins>
+match
+search
+&gt;&gt;&gt; <ins>t("ing", target)</ins>
+search
+&gt;&gt;&gt; <ins>t("^ing", target)</ins>
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>The last two examples show that a pattern for which search() is successful becomes unsuccessful if
+          changed to require with <b>^</b> that the match occurs at the start of the string. </p>
+
+      <p>Any successful application of matching or searching returns a <i>match object</i>. This match object
+          includes a number of useful methods, the most important of which are:</p>
+
+      <table class="tbl"><tr><th>Method</th><th>Description</th><th>Value Returned for p2 ("555-555-5555")</th></tr>
+        <tr><td>group()</td><td>Returns the entire matched string.</td><td>555-555-5555</td></tr>
+        <tr><td>start()</td><td>Returns the start index of the match.</td><td>0</td></tr>
+        <tr><td>end()</td><td>Returns the end index of the match.</td><td>12</td></tr>
+        <tr><td>span()</td><td>Returns a tuple with the start and end indexes of the match.</td><td>(0, 12)</td></tr>
+      </table>
+
+      <p>The match object returned from an <b>re.match()</b> call always has a start() value of 0 and the
+          span() method also always returns 0 as the first element of the tuple. This is because, as noted
+          earlier, the <span class="darkgreen">match()</span> function only returns patterns found at the start of a
+          string. </p>
+
+      <p>On the other hand, the <span class="darkgreen">search()</span> function finds strings anywhere. The
+          test_search() function in the tests calls check_number(p1), which calls
+          <span class="darkgreen">search()</span>. This also returns a match object, although it isn't returned to the
+          caller. If we apply search() to paragraph 1, we see: </p>
+
+      <table class="tbl"><tr><th>Method</th><th>Description</th><th>Value Returned for p1</th></tr>
+        <tr><td>group()</td><td>Returns the string matched.</td><td>"555-123-4567"</td></tr>
+        <tr><td>start()</td><td>Returns the start index of the match.</td><td>65</td></tr>
+        <tr><td>end()</td><td>Returns the end index of the match.</td><td>77</td></tr>
+        <tr><td>span()</td><td>Returns a tuple with the start and end indexes of the match.</td><td>(65, 77)</td></tr>
+      </table>
+
+      <p>As you can see, <b>match()</b> and <b>search()</b> are two very similar functions with a single
+          important difference. </p>
+
+    </div></div>
+
+    <a name="s_04"></a>
+    <div id="s_04">
+    <div class="subheading">More Regular Expression Features</div>
+    <div class="subheadingText">
+
+      <p>The code you wrote found numbers of the form XXX-XXX-XXXX, because the <b>re</b> module's functions
+          recognize "\d" as requiring a digit in the scanned string. (The backslash tells the functions that
+          the "d" is to be specially interpreted—without it, they would only match the literal character
+          "d"). But what about (555)-123-4567? That is a phone number, but it doesn't follow the same pattern. </p>
+
+      <p>You could write a second regular expression for this, and then try matching the first and only try the
+          second if the first one did not match. This could become clumsy quite rapidly in the case of complex
+          patterns. Fortunately, regular expressions can model complex patterns to handle this sort of problem.
+          Regular expressions can specify using alternate patterns using the "<span class="darkblue">|</span>" special
+          character, which means a pattern like the one below will find phone numbers following either the
+          XXX-XXX-XXXX or (XXX)-XXX-XXXX patterns.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Syntax for Regex With | (or) Matching</div><div class="observe"><pre>
+r"\d\d\d-\d\d\d-\d\d\d\d<span class="darkblue">|</span>\(\d\d\d\)(-| )\d\d\d-\d\d\d\d"
+</pre></div></div>
+
+      <p>By now you are probably thinking that every character in a regular expression must be preceded by a
+          backslash! This is not the case, but as we've learned, the parentheses have a specific meaning to
+          the regular expression matching routines, so they need to be escaped to tell the routines to look
+          for them just as regular characters.</p>
+
+      <p>One of the difficulties of the pattern above is that both alternate patterns have the same ending but
+          different beginnings. We can overcome this by using parentheses to group portions of our pattern.
+          So an equivalent pattern (ignoring complexities we haven't yet covered) would be </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Alternative Syntax for Regex With | (or) Matching</div><div class="observe"><pre>
+r"<span class="darkred">(</span>\d\d\d<span class="darkblue">|</span>\(\d\d\d\)<span class="darkred">)</span><span class="darkred">(</span>-<span class="darkblue">|</span> <span class="darkred">)</span>\d\d\d-\d\d\d\d"
+</pre></div></div>
+
+      <p>In this pattern the alternation is restricted to the portions inside the
+          <span class="darkred">parentheses</span>—that is, the parentheses that are not preceded by backslashes.
+          So the part of the pattern in parentheses will match either three digits or three digits surrounded
+          by parentheses. Then it will match either a dash (-) or a space. In either case the rest of the pattern is the same. Now modify match_vs_search.py to
+          use this extended pattern.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+Demonstrate the difference between match() and search().
+"""
+
+import re
+
+def check_number(text):
+    <del>regex = r"\d\d\d-\d\d\d-\d\d\d\d"</del>
+    <ins>regex = r"(\d\d\d|\(\d\d\d\))(-| )\d\d\d-\d\d\d\d"</ins>
+    match = re.match(regex, text)
+    if match:
+        return match.group()
+
+    match = re.search(regex, text)
+    if match:
+        return len(text)
+</pre></div></div>
+
+      <p>To correctly test this update,
+          we also need to modify the test routine by adding tests that require correct matching of numbers
+          whose area codes are in parentheses and followed by a dash or a space. You will see there is also some simplification of the test code,
+          since there is no need to store the result in a variable before testing it.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import unittest
+from match_vs_search import check_number
+
+p1 = """While I was at the store in Washington, DC 20001 I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555) 123-4567 again now."""
+
+<ins>p1a = """While I was at the store in Washington, DC 20001 I tried to call (555) 123-4567 on my mobile
+but accidentally called (555)-754-4321.  The person on the line redirected me to
+(999)-999-9999 which I don't think is a real number. Neither is (000)-000-0000 or (555) 555-0000.
+Well, I will try (555) 123-4567 again now."""</ins>
+
+p2 = "555-555-5555"
+<ins>p2a = "(555)-555-5555"</ins>
+
+p3 = "What is the author's phone number?"
+
+class TestRegex(unittest.TestCase):
+    def test_match(self):
+        <del>result = check_number(p2)
+        self.assertEqual("555-555-5555", result)</del>
+        <ins>self.assertEqual("555-555-5555", check_number(p2))
+        self.assertEqual("(555)-555-5555", check_number(p2a))</ins>
+
+    def test_search(self):
+        <del>result = check_number(p1)
+        self.assertEqual(305, result)</del>
+        <ins>self.assertEqual(305, check_number(p1))
+        self.assertEqual(315, check_number(p1a))</ins>
+
+    def test_none(self):
+        result = check_number(p3)
+        self.assertIsNone(result)
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>If you have correctly modified your code, all tests should pass. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Tests all pass.</div><div class="observe"><pre>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK
+</pre></div></div>
+
+    </div></div>
+
+    <a name="s_05"></a>
+    <div id="s_05">
+    <div class="subheading">More Complex Matching</div>
+    <div class="subheadingText">
+
+      <p>So far, we've only seen a little of what regular expressions can do. It is quite easy to extend the
+          searching facilities to alphanumeric patterns. Suppose we need to find a city, state, and zip code
+          in a paragraph—the text would follow this rough pattern: <i>City Name, State Abbreviation Zip
+              Code</i>. How do you express a pattern to match such strings?</p>
+
+      <p>The first thing we want to do is get the capital letter that starts each city name. In regular
+          expressions, we can match a single occurrence from a set of characters by putting the characters
+          in square brackets—to match any upper-case letter, we can use
+          <b>[ABCDEFGHIJKLMNOPQRSTUVWXYZ]</b>. This is rather tedious to type, so we can use a range,
+          <b>[A-Z]</b>, instead. </p>
+
+      <p>Next we need to match the other letters of the city name (we assume there will be one or more further
+          characters). For that we'll use the brackets and range again, but add a little more: <b>[a-z]+</b>.
+          The plus sign allows for any number of lower-case letters to match. So the pattern to match a
+          capitalized word is <b>[A-Z][a-z]+</b>.</p>
+
+      <p>Some cities have multiple words in their name (Falls Church and San Francisco come to mind). Thus,
+          the first word can optionally be followed by one or more further words, each separated from its
+          predecessor by white space. So we need to follow the original pattern with zero or more repeats to
+          the same pattern, with the repeats preceded by a whitespace. The pattern for that is
+          <b>(\s[A-Z][a-z]+)*</b>.</p>
+
+      <p>Note that, in order to apply the * character to the whole grouping, parentheses are required.</p>
+
+      <p>Now, we need to account for the state abbreviations. The easiest way to do it in regular expressions
+          is via <b>[A-Z]{2}</b>, which only allows two uppercase letters, matching the US postal designation
+          for American states. Add that to our regular expression, include a comma, and allow for a little
+          white space: <b>,\s[A-Z]{2}</b>.</p>
+
+      <p>Finally, we handle zip code handling portion of the pattern. We won't check for nine-digit or foreign
+          postal codes right now, so for our purposes, <b>\d{5}</b> will suffice. This makes the final
+          pattern <b>[A-Z][a-z]+(\s[A-Z][a-z]+)*,\s[A-Z]{2}\s\d{5}</b>.</p>
+
+      <p>Now we'll try incorporating that into a function that finds the required addresses. Naturally, we
+          need to write some tests first. Create <b>test_city_search.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+
+from city_search import city_search
+
+p1 = """While I was at the store I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555) 123-4567 again now."""
+
+p2 = "I live in Washington, DC 20002. Where do you live?"
+p3 = "I live in Falls Church, VA 20188. And you?"
+
+class TestRegex(unittest.TestCase):
+
+    def test_city_search(self):
+        self.assertEqual("Washington, DC 20002", city_search(p2))
+        self.assertEqual("Falls Church, VA 20188", city_search(p3))
+
+    def test_city_search_failure(self):
+        self.assertIsNone(city_search(p1))
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Save it. Most of the work has already been done with the design of the regular expression, and the function
+          now simply needs to use it to locate addresses. Create <b>city_search.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+String regular expressions
+"""
+
+import re
+
+def city_search(text):
+
+    regex = r"[A-Z][a-z]+(\s[A-Z][a-z]+)*,\s[A-Z]{2}\s\d{5}"
+
+    search = re.search(regex, text)
+    if search:
+        return search.group()</ins>
+</pre></div></div>
+
+      <p>Save it, and then run <b>test_city_search.py</b>. The tests should pass. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Results of Running test_city_search.py</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.001s
+
+OK
+</pre></div></div>
+
+      <p>Regular expressions have a power which their apparent simplicity belies, as you can now start to
+          appreciate.</p>
+
+    </div></div>
+
+    <a name="s_06"></a>
+    <div id="s_06">
+    <div class="subheading">Finding all with findall() and finditer()</div>
+    <div class="subheadingText">
+
+      <p>The first programming example in this lesson used a regular expression function named
+          <span class="darkgreen">findall()</span>. In that code, it returned a list of non-overlapping matching phone
+          numbers from the paragraph. This is useful for providing a list of strings, but what if you need to
+          know the start and end index of each of those phone numbers, in other words familiar data shown
+          below, but for each found part of the string? While findall returns a list of the matching strings,
+          finditer returns a list of the matching objects, and each match object has these methods:</p>
+
+      <table class="tbl"><tr><th>Method</th><th>Description</th></tr>
+        <tr><td>group()</td><td>Returns the string matched.</td></tr>
+        <tr><td>group(n)</td><td>Returns the string matched by the <i>n</i>th
+                  parenthesised group in the pattern.</td></tr>
+        <tr><td>group(m, n, ...)</td><td>Returns a tuple of the strings matched by the <i>m</i>th, <i>n</i>th, and so on
+                  parenthesized groups in the pattern.</td></tr>
+        <tr><td>start()</td><td>Returns the start index of the match in the target string (always 0 for
+                  <b>re.match()</b>).</td></tr>
+        <tr><td>end()</td><td>Returns the end index of the match.</td></tr>
+        <tr><td>span()</td><td>Returns a tuple with the start and end indexes of the match.</td></tr>
+      </table>
+
+    </div></div>
+
+    <a name="s_07"></a>
+    <div id="s_07">
+    <div class="subheading">More on Modifying Strings With sub() and subn()</div>
+    <div class="subheadingText">
+
+      <p>Suppose you don't want to publish all the phone numbers in this lesson, but you do want to show
+          area codes. Regular expressions let you find patterns, and they also provide tools to allow you to
+          modify them. The regular expression <span class="darkgreen">sub()</span> method can make this sort of
+          substitution. Pass in your pattern, what you want it replaced with, and the string to modify:
+          <b>re.sub("\d\d\d-\d\d\d\d", "XXX-XXXX", text)</b>. </p>
+
+      <p>Let's make a program to show this in action. Create <b>test_phone_hide.py</b>:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+
+from phone_hide import phone_hide
+
+text = """While I was at the store I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555)-123-4567 again now.
+"""
+
+class TestRegex(unittest.TestCase):
+
+    def test_phone(self):
+        response = phone_hide(text)
+        self.assertFalse("555-123-4567" in response)
+        self.assertTrue("555-XXX-XXXX" in response)
+        self.assertTrue("(555)-XXX-XXXX" in response)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Then, create <b>phone_hide.py</b> in the same folder:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import re
+
+def phone_hide(text):
+
+    # Don't forget to use a raw string constant!
+    return re.sub(r"\d{3}-\d{4}", "XXX-XXXX", text)</ins>
+</pre></div></div>
+
+      <p>Save both programs and run the test:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running test_phone_hide.py</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.022s
+
+OK
+</pre></div></div>
+
+      <p>What if we want to know how many substitutions occurred? Then we can use the
+          <span class="darkgreen">subn()</span> function, which returns a two-element tuple containing the result
+          string and the number of substitutions. Modify <b>test_phone_hide.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import unittest
+
+from phone_hide import phone_hide
+
+text = """While I was at the store I tried to call 555-123-4567 on my mobile
+but accidentally called 555-754-4321.  The person on the line redirected me to
+999-999-9999 which I don't think is a real number. Neither is 000-000-0000 or 555-555-0000.
+Well, I will try (555)-123-4567 again now.
+"""
+
+class TestRegex(unittest.TestCase):
+
+    def test_phone(self):
+
+        response<ins>, count</ins> = phone_hide(text)
+        self.assertFalse("555-123-4567" in response)
+        self.assertTrue("555-XXX-XXXX" in response)
+        self.assertTrue("(555)-XXX-XXXX" in response)
+        <ins>self.assertEqual(6, count)</ins>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Save and run it:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running test_phone_hide.py</div><div class="observe"><pre>
+E
+======================================================================
+ERROR: test_phone (__main__.TestRegex)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\sholden\workspace\Python3_Lesson4\src\test_phone_hide2.py", line 14, in test_phone
+    response, count = phone_hide(text)
+ValueError: too many values to unpack
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)
+</pre></div></div>
+
+      <p>It fails because the current <span class="darkgreen">phone_hide()</span> function still returns a single
+          value. We need to modify it to call <span class="darkgreen">subn()</span> instead of
+          <span class="darkgreen">sub()</span>.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import re
+
+def phone_hide(text):
+
+    # Don't forget the 'r' at the start of the string!
+    return re.sub<ins>n</ins>(r"\d{3}-\d{4}", "XXX-XXXX", text)
+</pre></div></div>
+
+      <p>Inserting that single letter "n" should be enough to restore everything to a fully functional state.</p>
+
+      <p>Save it, and run the test again:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: test_phone_hide.py now passes again</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+</pre></div></div>
+
+    </div></div>
+
+    <a name="s_08"></a>
+    <div id="s_08">
+    <div class="subheading">Breaking Strings Apart with split()</div>
+    <div class="subheadingText">
+
+      <p>Now suppose we want to split up a paragraph into a list of sentences. Python's
+          <span class="darkgreen">split()</span> function makes this problem trivial to solve. The regular expression
+          pattern to find a sentence end (assuming some simplifications) is <b>r"[?.!]\s+"</b>.</p>
+
+      <p>The bracketed set contains the punctuation characters <b>?</b>, <b>.</b>, and <b>!</b>, which
+          represents the ending of each sentence. Although these characters all have special meanings in
+          regular expressions, remember that within a character set specification, they are treated as
+          literal.</p>
+
+      <p>The '\s+' portion of the pattern requires a space or spaces after the ending punctuation of a
+          sentence. The more precise you make a pattern the better your results will be. Without the spaces,
+          a period used as a decimal point inside a number would be treated as ending a sentence.</p>
+
+      <p>Let's give it a try! As usual we'll begin by writing the tests. Create <b>test_sentence_split.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import unittest
+
+from sentence_split import sentence_split
+
+text = "Hello! My name is Steve. What is yours? I hope you enjoyed this class!"
+
+class TestRegex(unittest.TestCase):
+
+    def test_split_sentence(self):
+        numbers = sentence_split(text)
+        self.assertEqual(len(numbers), 4)
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>Then, in the same folder, create <b>sentence_split.py</b>: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import re
+
+def sentence_split(text):
+    return re.split(r"[?.!]\s+", text)</ins>
+</pre></div></div>
+
+      <p>Save both files, and run the test:</p>
+
+<div class="observeBox"><div class="observeTitle">results of test_sentence_split.py</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+</pre></div></div>
+
+    </div></div>
+
+  </div>
+
+  <a name="use_regular_expressions_with_care"></a>
+  <a name="h_02"></a>
+  <div class="heading">Use Regular Expressions With Care</div>
+  <div class="headingText">
+
+    <p>Regular expressions are extremely powerful. As you expand your knowledge, you'll be amazed by what
+        they can do. However, with great power comes great responsibility! So here are a couple of warnings
+        about the use of regular expressions in programming. </p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Cn U Rd Ths?</div>
+    <div class="subheadingText">
+
+      <p>Regular expressions can get extremely complex. For example, let's say you want to pull all of the
+          email addresses from a paragraph. This sounds like a simple enough task, right? Something like
+          <b>r"[a-zA-Z.-]+\@[a-zA-Z.-]+"</b> should work, right?</p>
+
+      <p>Unfortunately, if you apply that pattern to "<span class="purple">So... um...@oreilly we found his email was
+          steve@oreilly.com.</span>" you will get <span class="purple">steve@oreilly.com</span> out, but it will also
+          give you <span class="purple">um...@oreilly</span>!</p>
+
+      <p>So your pattern should be able to handle only proper email prefixes and should not allow repetition
+          of dots. There are other specifications for allowed domain suffixes such as nations, .info, .com,
+          and others. You should really research RFC 2822, which is the official email specification, with all
+          its special cases and rules. And that sort of complexity generates regular expressions that look
+          like this: </p>
+
+      <p><b>"[a-z0-9!#$%&amp;'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&amp;'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:[A-Z]{2}|com|org|net|edu|gov|mil|biz|info|mobi|name|aero|asia|jobs|museum)\b"</b></p>
+
+      <p>As you can see, regular expressions can get out of hand—and this is just for emails! Regular
+          expression syntax is arguably not very clear compared to the elegance of Python, and it is not
+          uncommon for authors of regular expressions to lose track of what their effort is supposed to do.</p>
+
+      <p>There are ways to make regular expressions more legible, but be aware of the code clarity issues
+          that regular expressions can cause.</p>
+
+    </div></div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">String Methods Versus Regular Expressions</div>
+    <div class="subheadingText">
+
+      <p>"When the only tool you own is a hammer, every problem begins
+          to resemble a nail."<br>
+              -Abraham Maslow, American educator</p>
+
+      <p>You've just been introduced to the world of regular expressions, an amazingly powerful toolbox that can
+          do incredible things. You've also been warned about the dangers of regular expressions. There is
+          still much more to learn, and the Python documentation describes regular expressions in rather more
+          detail (a confusing amount of detail for beginners, we suspect).</p>
+
+      <p>For over two courses and about thirty lessons, we've been able to rely on string methods. And that
+          is because Python's string methods are fast and powerful, and yet easy to use. By all means,
+          continue to use them when it is easy and faster to do so. </p>
+
+      <p>Sometimes regular expressions aren't the right tool for the job. Sometimes it pays to write a dozen
+          lines of Python code instead of a single regular expression. There are no hard and fast rules to
+          follow; it is just something that you learn over time. </p>
+
+      <p>For some reason, we find that regexes enthuse people to the point that they become the hammer with
+          which they try to solve all string-processing problems. Don't let this happen to you.</p>
+
+    </div></div>
+
+    <p>In the next lesson, you'll learn that Python allows you to build regular expression pattern objects,
+        which can make your code more compact and readable as well as more efficient.</p>
+
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-04.html">Basic Regular Expressions</a>
+    <a class="next" href="Python3-06.html">Compiling and Flagging Regular Expressions</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

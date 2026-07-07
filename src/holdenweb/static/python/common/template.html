@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Template &amp; Component Showcase</title>
+  <link rel="stylesheet" href="course.css">
+</head>
+<body>
+
+<main class="lesson">
+
+  <!-- ===== Lesson title ===== -->
+  <div class="title">Template &amp; Component Showcase</div>
+
+  <p>This page is not a lesson. It exercises every piece of markup the converted
+    lessons use, so the stylesheet can be reviewed in one place. Each section
+    below shows one component as it will appear on your site.</p>
+
+  <!-- ===== Heading + body ===== -->
+  <a name="h_01"></a>
+  <div class="heading">Headings and prose</div>
+  <div class="headingText">
+    <p>Body text sits in a single comfortable reading column. Links look
+      <a href="#h_01">like this</a>, and inline code such as <code>len(seq)</code>
+      is set in a monospace face with a soft tint.</p>
+
+    <a name="s_01"></a>
+    <div class="subheading">A subheading</div>
+    <div class="subheadingText">
+      <p>Subheadings introduce a finer level of structure within a section.</p>
+      <ul class="itemList">
+        <li>Lists keep their bullets and comfortable spacing.</li>
+        <li>Nesting and ordering both behave as you would expect.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== CODE TO TYPE ===== -->
+  <a name="h_02"></a>
+  <div class="heading">Code</div>
+  <div class="headingText">
+    <p>The white box holds a block of code. The <ins>inserted</ins> parts show
+      new code to add; the <del>struck-through</del> parts show code to remove.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+<span class="darkgreen">def</span> <span class="darkblue">greet</span>(name):
+    <span class="darkred">"""Return a friendly greeting."""</span>
+    <del>print("Hello, " + name)</del>
+    <ins>return f"Hello, {name}!"</ins>
+
+print(greet("Guido"))
+</pre></div></div>
+  </div>
+
+  <!-- ===== CODE + OUTPUT (REPL transcript) =====
+       Maps to a notebook cell + its output. Run-the-code mechanics (shell
+       launch lines, "type this vs run that" framing) are deliberately dropped. -->
+  <a name="h_03"></a>
+  <div class="heading">Code and output</div>
+  <div class="headingText">
+    <p>The dark box shows code together with the result it produces. On a
+      notebook platform this is simply a code cell and its output.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; invites = ["Steve", "Danny", "Larry", "Guido"]
+&gt;&gt;&gt; attendees = [3, 2, 0, 5]
+&gt;&gt;&gt; sum(attendees)
+10
+&gt;&gt;&gt; party = list(zip(attendees, invites))
+&gt;&gt;&gt; party
+[(3, 'Steve'), (2, 'Danny'), (0, 'Larry'), (5, 'Guido')]
+</pre></div></div>
+  </div>
+
+  <!-- ===== OBSERVE ===== -->
+  <a name="h_04"></a>
+  <div class="heading">Observe</div>
+  <div class="headingText">
+    <p>The grey box is for reading and absorbing — often colour-annotated code
+      that the following prose explains.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+<span class="purple">for</span> i, name <span class="purple">in</span> <span class="darkblue">enumerate</span>(invites):
+    print(f"{<span class="orange">i</span>}: {<span class="orange">name</span>}")
+</pre></div></div>
+  </div>
+
+  <!-- ===== Callouts ===== -->
+  <a name="h_05"></a>
+  <div class="heading">Notes, tips, and warnings</div>
+  <div class="headingText">
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">A note draws attention to something worth remembering
+        without interrupting the flow.</td>
+    </tr></table>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Tip</td>
+      <td class="note">A tip offers a shortcut or a better way to do something.</td>
+    </tr></table>
+
+    <table class="noteBox is-warning"><tr>
+      <td class="noteTitle">Warning</td>
+      <td class="note">A warning flags a common mistake or a sharp edge.</td>
+    </tr></table>
+  </div>
+
+  <!-- ===== Modernization note (NEW: my editorial flag style) ===== -->
+  <a name="h_06"></a>
+  <div class="heading">Modernization note (new)</div>
+  <div class="headingText">
+    <p>Where the original code predates current idiom, I will flag it inline in a
+      callout like this one, so it is visibly distinct from your lesson text and
+      easy to accept or reject:</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The original concatenates with <code>"Hello, " + name</code>.
+        Today an f-string — <code>f"Hello, {name}!"</code> — reads better and
+        handles non-string values. (Python&nbsp;3.6+.)</td>
+    </tr></table>
+  </div>
+
+  <!-- ===== Data table ===== -->
+  <a name="h_07"></a>
+  <div class="heading">Tables</div>
+  <div class="headingText">
+    <div class="c">
+      <table class="tbl">
+        <tr><th>Operator</th><th>True when</th></tr>
+        <tr><td><code>a == b</code></td><td>a equals b</td></tr>
+        <tr><td><code>a != b</code></td><td>a does not equal b</td></tr>
+        <tr><td><code>a &lt; b</code></td><td>a is less than b</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Inter-lesson navigation ===== -->
+  <nav class="lesson-nav">
+    <a class="prev" href="#">Previous lesson</a>
+    <a class="next" href="#">Next lesson</a>
+  </nav>
+
+</main>
+
+<!-- ===== Footer / licence (kept verbatim from source, analytics stripped) ===== -->
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

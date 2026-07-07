@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting Started</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Getting Started</div>
+
+  <!-- COURSE OBJECTIVES -->
+  <div class="outcomesTitle">Course Objectives</div>
+  <div class="outcomes">
+
+    <p>Welcome to the O'Reilly School of Technology's (OST) <b>Introduction to Python</b> course! We're happy you've chosen to learn
+      Python programming with us.</p>
+
+    <p>In this course, you will learn the basics of programming with Python.
+      You'll learn about expressions, variables, conditionals, loops, lists, sets, dicts, functions, objects and exceptions.</p>
+
+    <p>By the end of the course, you will be able to:</p>
+
+    <ul>
+      <li>Store and manipulate user-input data using Python</li>
+      <li>Implement basic Python decisions, iteration, sequence containers, sets and dicts</li>
+      <li>Read and write files using Python</li>
+      <li>Define custom functions and call built-in Python functions</li>
+      <li>Import modules and namespaces from the Python Standard Library</li>
+      <li>Define classes and instantiate objects using Python's Class mechanism</li>
+      <li>Handle exceptions and document code</li>
+      <li>Build and debug an entire program written in Python</li>
+    </ul>
+
+  </div>
+
+  <!-- A BIT OF PYTHON HISTORY -->
+  <a name="h_01"></a>
+  <div class="heading">A Bit of Python History</div>
+  <div class="headingText">
+
+    <p>First, here's a little background information to introduce you to Python. No cringing please—this will be the most textbookish
+      part of the course. We like to provide a little history for our students with a more philosophical and academic bent. Plus you'll
+      have a better understanding of your programming tasks if you have a better idea about what makes Python tick.</p>
+
+    <p>The Python language was created by Guido van Rossum in the late 1980s. It was intended to be simple to use and easy to understand.
+      The most interesting new feature of the language was its use of indentation to illustrate structure, similar to the way we use
+      indentation in our everyday prose and written language.</p>
+
+    <p>Python was built to have a small "core," to keep it accessible, and a large library to make it versatile. Van Rossum was interested
+      in networking. That interest prompted quick development of a useful set of network libraries for the language; many more libraries
+      have been added since then.</p>
+
+    <p>Today, Python is used just about everywhere. Major users include YouTube, Google, Yahoo!, CERN, and NASA, and ITA—the company
+      that produces the route search engine used by Orbitz, CheapTickets, travel agents—as well as many domestic and international
+      airlines.</p>
+
+    <p>Python is an <i>interpreted</i> language, which means Python code isn't translated into the binary instructions that computers
+      actually run. Instead, <i>bytecode</i> is created, and the interpreter uses that bytecode to tell it what to do. Python is also a
+      <i>dynamic</i> language. This means that aspects of your program which become fixed early on in some languages remain available for
+      you to change in Python, even while your program is running.</p>
+
+    <p>In this course, we'll be using the latest current  version of Python (3.14 at the time of writing).
+      You may find that other people are using older versions.
+      Fortunately, the differences between versions are minor.
+      We'll go over the changes you'll need to be aware of in order to work with
+      older versions as well.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">This course was originally written for Python 3.1. It runs without modification on current Python 3.x (the outputs
+        in this lesson were regenerated on Python 3.14). The language fundamentals taught here are exactly the same in all
+        Python 3 versions.
+        Though certain details (such as messages) might be different, the Python developers regard
+        backwards compatibility as very important, so it should matter what version you are using
+        (though we'll indicate when certain language features might change your decision about\
+        how to code a particular problem).</td>
+    </tr></table>
+
+  </div>
+
+  <!-- PROGRAMMING IN PYTHON -->
+  <a name="h_02"></a>
+  <div class="heading">Programming in Python</div>
+  <div class="headingText">
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">A First Program</div>
+    <div class="subheadingText">
+
+      <p>It is a tradition when learning a new language in computer programming to print the words "hello world" as a first example.
+        Python can print "hello world" in a single line of code, so that doesn't make for a great example here. Instead, we'll
+        look at a slightly more complicated example that not only prints "hello" and "goodbye," but also does a little calculation along
+        the way.</p>
+
+      <p>Usually you'll enter a Python program in your favorite text editor and then run it by typing a command in a command <i>shell</i>
+        (that's the term for one of those special programs whose job in life is to display a prompt and then let you type in a command
+        that executes when you press Enter). On a Unix or Linux type of system (that includes OS X), the shell is bash, or tcsh, or
+        some other -sh, and the editor is vim or Emacs or one of many other possibilities. On Windows, the shell is the DOS window
+        (what you get by running "cmd") and the editor is Notepad or Wordpad or vim or, again, any of many other possibilities. (You
+        can also run programs on Windows by double-clicking their icons, but then the usual input and output streams are not
+        available.)</p>
+
+      <p>Put this in a file called <b>hello_world.py</b>:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>print("Hello World")
+print("I have", 3 + 4, "bananas")
+print("Goodbye, World")
+</pre></div></div>
+
+      <p>Run it with <code>python3 hello_world.py</code>. You should see:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>Hello World
+I have 7 bananas
+Goodbye, World
+</pre></div></div>
+
+      <p>Congratulations! You're officially a Python programmer! Of course this program isn't very complex, but the interpreter has done
+        the calculation you asked it to do. Pat yourself on the back! You're off to a strong start. Experiment with other
+        calculations.</p>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">The Interactive Interpreter</div>
+    <div class="subheadingText">
+
+      <p>In Python, you can run the interpreter in interactive mode when you want to try things out and see results printed right away.
+        That instant feedback is really handy when you're learning a new language.</p>
+
+      <p>The prompt <b>&gt;&gt;&gt;</b> indicates that the interpreter is ready for your input.</p>
+
+      <p>If you enter one of the lines from the program you just ran, the output will appear. This interactive interpreter window allows
+        you to enter both statements and expressions (we'll cover those in detail later). Statements are executed pretty much as if they
+        were part of a program; the expressions are evaluated and the resulting value is printed (as long as you're in interactive
+        mode).</p>
+
+      <p>Type the <ins>commands</ins> below in the interpreter window <i>(Remember: when we say TYPE the code, do it. It's good for
+        you!</i>). The interpreter prints a result for each expression. (You'll see a different prompt after the fourth line. We'll talk
+        about that in a minute):</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>"hello" + " world"</ins>
+'hello world'
+&gt;&gt;&gt; <ins>'hello' + ' world'</ins>
+'hello world'
+&gt;&gt;&gt; <ins>"""hello""" + ''' world'''</ins>
+'hello world'
+&gt;&gt;&gt; <ins>"""hello </ins>
+... <ins>world"""</ins>
+'hello\nworld'
+&gt;&gt;&gt;</pre></div></div>
+
+      <p>So, what happened here? The first three lines are all examples of <i>string concatenation</i>—a second string is appended
+        to the first, giving a longer string as a result. Strings can have either single (') or double (") quotation marks around them,
+        and either one quotation mark or three at the beginning and end of the string. Use exactly the same combination at both
+        ends.</p>
+
+      <p>The last expression shows an important difference between the one-quotation mark and the three-quotation mark forms. A string
+        given in one-quotation mark form <i>must</i> begin and end on the same line. Three-quotation mark strings can spread across
+        more than one line.</p>
+
+      <p>The fourth example actually does extend across two lines, so the interpreter changed its prompt from <b>&gt;&gt;&gt;</b> to
+        <b>...</b> (an ellipsis) after you entered the first line. The ellipsis lets you know that you've got an incomplete statement
+        or expression, and the interpreter is waiting for you to finish it. When you completed the string with the second line of
+        input, the interpreter then printed the value of the two-line expression, and returned the normal <b>&gt;&gt;&gt;</b> prompt.
+        You can see that the line feed between <b>hello</b> and <b>world</b> is represented by <b>\n</b>, which is known in Python as
+        a string <i>escape sequence</i>.</p>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- DATA IN PYTHON -->
+  <a name="h_03"></a>
+  <div class="heading">Data in Python</div>
+  <div class="headingText">
+
+    <p>In Python there are various types of data you can manipulate. The simplest are strings. There are also various numeric data
+      types: integers, floats, and complex numbers. Let's see how to write those values in your programs.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">String Representations</div>
+    <div class="subheadingText">
+
+      <p>We've seen that Python has several ways of representing strings. For regular strings, we use either of the one-quotation mark
+        forms. Use three-quotation mark strings if, for example, the value you need to represent contains newlines, or contains
+        quotation marks itself. The interpreter represents certain characters using escape sequences. You can put escape sequences into
+        your strings to insert certain literal or non-printing characters. Here's a list of the most common sequences:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><td><b>Escape Sequence</b></td><td><b>Is translated into</b></td></tr>
+        <tr><td>\"</td><td>Double quote</td></tr>
+        <tr><td>\'</td><td>Single quote (apostrophe)</td></tr>
+        <tr><td>\\</td><td>Backslash</td></tr>
+        <tr><td>\r</td><td>Carriage return</td></tr>
+        <tr><td>\n</td><td>Line feed (newline)</td></tr>
+        <tr><td>\{newline}</td><td>Ignores the newline, allowing you to run a string across multiple program lines</td></tr>
+        <tr><td>\0<i>nn</i></td><td>Character whose value in octal is <i>nn</i></td></tr>
+        <tr><td>\x<i>nn</i></td><td>Character whose value in hexadecimal is <i>nn</i></td></tr>
+      </table></div>
+
+      <p>You can build a really long string using triple-quotation mark strings and escaping the newlines, or by placing several
+        different strings one after the other in your source code. Usually you'll extend those types of statements across multiple
+        lines using parentheses; the interpreter will assume a statement or expression is incomplete if it runs into unmatched
+        parentheses. Continue the interpreter session or start a new one and try these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>"""One\</ins>
+... <ins>Two\</ins>
+... <ins>Three"""</ins>
+'OneTwoThree'
+&gt;&gt;&gt; <ins>("One" "Two" "Three")</ins>
+'OneTwoThree'
+&gt;&gt;&gt; <ins>'OneTwoThree'</ins>
+'OneTwoThree'
+</pre></div></div>
+
+      <p>The interpreter should print the same value back after you enter each of the three strings. The first string you entered spans
+        three lines, but only printed out one.</p>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Numbers in Python</div>
+    <div class="subheadingText">
+
+      <p>In Python, numbers are represented as you might expect. Integers are strings of digits. The digits can be preceded by a minus
+        sign (-) for negative numbers. There is no limit on integer values in Python, although the larger they get, the longer it
+        takes you to do anything with them!</p>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">In Python, you <i>cannot</i> use commas to separate groups of digits like you sometimes do in text
+          documents.</td>
+      </tr></table>
+
+      <p>A floating-point number is made up of an integer followed by a decimal point and a fractional part. You may also use
+        <i>exponential notation</i> if you like, by placing the letter <b>E</b> after the integer.</p>
+
+      <p>Complex numbers generally consist of a real part and an imaginary part that's followed by a <b>J</b>; the real part is
+        separated from the imaginary part by a plus or minus sign. The imaginary number followed by the <b>J</b> can comprise a
+        complex number in Python as well. (For you mathematicians wondering why <b>i</b> wasn't used, this is standard engineering
+        notation. The rest of us can just carry on.)</p>
+
+      <p>Let's try some of this stuff out. Try these numbers in the interactive interpreter:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>1</ins>
+1
+&gt;&gt;&gt; <ins>-1000</ins>
+-1000
+&gt;&gt;&gt; <ins>12.34</ins>
+12.34
+&gt;&gt;&gt; <ins>1.234E2</ins>
+123.4
+&gt;&gt;&gt; <ins>1+2j</ins>
+(1+2j)
+&gt;&gt;&gt; <ins>1j</ins>
+1j
+</pre></div></div>
+
+      <p>Huh. it seems the interpreter doesn't always print a value the way you enter it. Floating point numbers aren't always exact,
+        though the interpreter gets as close as possible. Although the errors are relatively small, you want to keep them from
+        accumulating too much in long strings of calculations. (More on that later.) If some of this isn't quite clear to you yet,
+        don't worry. We're just getting started. We'll be talking about it all lots more and you'll have many chances to try things
+        out and ask questions.</p>
+
+    </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">Program 2: Printing Simple Python Expressions</div>
+    <div class="subheadingText">
+
+      <p>You've seen that you can concatenate strings by adding them together. There are many more operations you can perform on your
+        numbers in Python:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><td><b>Symbol</b></td><td><b>Operation</b></td></tr>
+        <tr><td>+</td><td>Addition</td></tr>
+        <tr><td>-</td><td>Subtraction</td></tr>
+        <tr><td>*</td><td>Multiplication</td></tr>
+        <tr><td>/</td><td>Division</td></tr>
+        <tr><td>**</td><td>Exponentiation</td></tr>
+      </table></div>
+
+    </div>
+    </div>
+
+    <a name="s_04"></a>
+    <div id="s_04">
+    <div class="subheading">A Few Sample Expressions</div>
+    <div class="subheadingText">
+
+      <p>Put this in a file called <b>calculations.py</b>:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>print("""--------------------
+Some Calculations
+--------------------""")
+print(314159E-5)
+print(10**6, 1j**2)
+print(3 + 2 * 4, 1 / 3)
+print("-" * 20)
+print((3.14159 * 16) ** 2)
+print(3.14159 * 16 ** 2)
+print(20 * "-")
+print("--------------------\nEnd of Calculations\n--------------------")
+</pre></div></div>
+
+      <p>Run it with <code>python3 calculations.py</code>:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>--------------------
+Some Calculations
+--------------------
+3.14159
+1000000 (-1+0j)
+11 0.3333333333333333
+--------------------
+2526.6144583935998
+804.24704
+--------------------
+--------------------
+End of Calculations
+--------------------
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The original course output showed <code>0.333333333333</code> for <code>1/3</code> and
+          <code>2526.61445839</code> for <code>(3.14159&nbsp;*&nbsp;16)**2</code>. Python 3 now prints floats using
+          the shortest representation that round-trips back to the same value, so you will see more digits in some
+          cases. The values are correct either way.</td>
+      </tr></table>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">Python 3 also supports <i>f-strings</i> as a concise alternative to multi-argument
+          <span class="darkgreen">print()</span> calls. For example, <code>print(f"I have {3 + 4} bananas")</code>
+          does exactly the same job as <code>print("I have", 3 + 4, "bananas")</code> and scales more cleanly when
+          you have several values to interpolate.</td>
+      </tr></table>
+
+      <p>Take a minute to ponder. Think deeply and make sure you understand all of your results before going further. For example,
+        you might wonder, <i>why does <b>3 + 2 * 4</b> give 11, and not 20?</i> Hmm... something to think about! Feel free to
+        talk with your instructor if you are in any way befuddled.</p>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- FIRST HURDLE CLEARED -->
+  <a name="h_04"></a>
+  <div class="heading">First Hurdle Cleared</div>
+  <div class="headingText">
+
+    <p>Phew! That was a whole lot of introduction there. Thanks for sticking with me. Keep it up, you're doing great so far. See you at
+      the next lesson!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="next" href="enteringData.html">Entering and Storing Data</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &copy; 1998&ndash;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

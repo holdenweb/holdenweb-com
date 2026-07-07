@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uses of Introspection</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Uses of Introspection</div>
+
+  <p>This lesson includes the following topics:</p>
+  <ul>
+    <li><a href="#the_meaning_of_introspection">The Meaning of 'Introspection'</a></li>
+    <li><a href="#attribute_handling_functions">Attribute Handling Functions</a></li>
+    <li><a href="#what_use_is_introspection">What Use is Introspection?</a></li>
+    <li><a href="#the_inspect_module">The Inspect Module</a></li>
+  </ul>
+
+  <!-- THE MEANING OF INTROSPECTION -->
+  <a name="the_meaning_of_introspection"></a>
+  <a name="h_01"></a>
+  <div class="heading">The Meaning of 'Introspection'</div>
+  <div class="headingText">
+
+    <p>The word "introspection" means "looking inside." Introspective people are ones who think about
+        themselves, usually to increase self-understanding. In Python, introspection is a way that your
+        programs can learn about the environment in which they operate and the properties of the modules
+        they import.</p>
+
+    <p>You have already learned about several of Python's introspection mechanisms. The built-in
+        <code>dir()</code> function, for example, attempts to return (to quote from the documentation)
+        "an interesting set of names"—meaning the names of attributes accessible from the object passed
+        as an argument. If no argument is passed, it returns the attributes found in the current local
+        namespace.</p>
+
+    <p><code>dir()</code> in Python 3.x has a hook that looks for a <code>__dir__()</code> method on its
+        argument. If such a method is present, it is called and <code>dir()</code> returns what the method
+        returns. This allows you to determine what users see about your object, and this can be useful if
+        you are using "virtual" attributes (that is, if your objects handle access to methods that do not
+        appear in the class's <code>__dict__</code>). If no <code>__dir__()</code> method is found,
+        <code>dir()</code> uses a standard mechanism to compose its result after examining its argument.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">Some Simple Introspection Examples</div><div class="subheadingText">
+
+      <p><b>x.__class__.__name__</b> will tell you the name of an object's class (and is much more
+          reliable than trying to analyze a <code>repr()</code> string):</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">The Right and Wrong Way to Extract a Class Name</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class Something:</ins>
+...     <ins>pass</ins>
+...
+&gt;&gt;&gt; <ins>s = Something()</ins>
+&gt;&gt;&gt; <ins>s</ins>
+&lt;__main__.Something object at 0x...&gt;
+&gt;&gt;&gt; <ins>repr(s)[1:-1].split()[0].split(".")[1]</ins> # WRONG!
+'Something'
+&gt;&gt;&gt; <ins>s.__class__.__name__</ins> # RIGHT (AND SO MUCH EASIER)
+'Something'
+&gt;&gt;&gt; <ins>repr(4)[1:-1].split()[0].split(".")[1] # Fail</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+IndexError: list index out of range
+&gt;&gt;&gt; <ins>4.__class__.__name__</ins>
+  File "&lt;string&gt;", line 1
+SyntaxError: invalid decimal literal
+&gt;&gt;&gt; <ins>(4).__class__.__name__ # SUCCEED</ins>
+'int'
+&gt;&gt;&gt; <ins>str(type(4))[1:-1].split()[1][1:-1]</ins> # Way too complex
+'int'
+&gt;&gt;&gt; <ins>str(type(s))[1:-1].split()[1][1:-1]</ins> # And only give same result for built-ins (see s above)
+'__main__.Something'
+</pre></div></div>
+
+      <p>The failed attempt to extract the class name from the integer 4's <code>repr()</code> string
+          shows just how fragile the "wrong" method is: it applies only to objects with a very specific
+          representation. When handed an <code>int</code> instance it explodes, raising an exception. The
+          syntax error occurred because the interpreter took the period (".") to be part of a number, and
+          then could not understand why it was followed by an identifier. Putting the <code>(4)</code> in
+          parentheses allows the lexical analysis routines to parse things correctly, and we see that the
+          class name is available from built-in classes just as it is on self-declared ones. If you find
+          yourself writing code like the first and last examples, you should question whether there isn't a
+          better way: Python is designed to avoid the need for such contortions.</p>
+
+      <p><b>some_object.__doc__</b> can be useful, but if things are properly written, you'll get better
+          presentation from <b>help(some_object)</b>, which is designed to print necessary documentation
+          in a legible way.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In Python 3.14 the SyntaxError message for <code>4.__class__.__name__</code>
+          reads <em>invalid decimal literal</em> rather than the original <em>invalid syntax</em>. The
+          reason is the same: the lexer takes the <code>.</code> as part of a numeric literal. The
+          fix—wrapping the integer in parentheses as <code>(4).__class__.__name__</code>—is
+          unchanged. Object repr addresses vary with every run; they are shown here as <code>0x...</code>.</td>
+      </tr></table>
+
+    </div></div>
+
+  </div>
+
+  <!-- ATTRIBUTE HANDLING FUNCTIONS -->
+  <a name="attribute_handling_functions"></a>
+  <a name="h_02"></a>
+  <div class="heading">Attribute Handling Functions</div>
+  <div class="headingText">
+
+    <p>If you took earlier courses in this Certificate Series (or otherwise possibly from private study)
+        you've encountered the <code>getattr(<b>obj</b>)</code>, <code>setattr(<b>obj</b>)</code>, and
+        <code>delattr(<b>obj</b>)</code> functions, and learned that they result in a call to their
+        argument <b>obj</b>'s <code>__getattr__()</code>, <code>__setattr__()</code>, and
+        <code>__delattr__()</code> methods. There is also the <code>hasattr()</code> predicate, which can
+        be used to determine whether or not a given attribute is present in an object. There is, however,
+        no corresponding <code>__hasattr__()</code> method. You might wonder what <code>hasattr()</code>
+        does to find out what value to return, and the answer to that question is complex enough to have
+        received the attention of some of the best minds in Python.</p>
+
+    <p>Without going too deeply into the internals, it is fairly easy for you to determine whether or not
+        <code>__getattr__()</code> gets called by <code>hasattr()</code> under at least some circumstances.
+        You simply write a class whose instances report calls of their <code>__getattr__()</code> method,
+        and then call <code>hasattr()</code> on an instance:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">INTERACTIVE SESSION:</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>class X:</ins>
+...     <ins>def __getattr__(self, name):</ins>
+...         <ins>print("getattr", name)</ins>
+...         <ins>return 0</ins>
+...
+&gt;&gt;&gt; <ins>x = X()</ins>
+&gt;&gt;&gt; <ins>hasattr(x, "thing")</ins>
+getattr thing
+True
+&gt;&gt;&gt;</pre></div></div>
+
+    <p><b>hasattr(obj, "__call__")</b> can be used to tell you whether or not <b>obj</b> can be called
+        like a function. Older versions of Python provide a <code>callable()</code> built-in function,
+        which should have been removed in Python 3.0 because the given test is now all that is required—
+        everything callable has a <code>__call__</code> attribute. Its deletion was omitted in error for
+        the 3.0 release, with the result that <code>callable</code> <i>is</i> available for that release.
+        It was then removed from 3.1 (the version in use when this course was being written), but has
+        returned in 3.2 because the above test turns out not to be quite as specific as the version that
+        can be written in C with full access to the object structures. Being able to determine the presence
+        or absence of a particular attribute is occasionally useful in other contexts.</p>
+
+    <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">You should avoid writing code where "too much" (a judgment call) of the logic depends on the
+        presence or absence of specific attributes, unless you are writing deliberately introspective code
+        as part of a framework or library. </td></tr></table>
+
+    <p>Of course you can implement whole "virtual namespaces" within your own objects by using
+        <code>getattr()</code> and <code>setattr()</code>, but remember that these functions can also be
+        used (assuming you can gain access to the required namespaces) to modify your current environment.
+        Understand that doing so in this way is not recommended except in rather extreme cases, because it
+        results in "magical" changes—changes whose origin is difficult or impossible to discern by reading
+        the program code:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">'Magical' changes to the module's namespace</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import sys</ins>
+&gt;&gt;&gt; <ins>__name__</ins>
+'__main__'
+&gt;&gt;&gt; <ins>module = sys.modules[__name__]</ins>
+&gt;&gt;&gt; <ins>a</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+NameError: name 'a' is not defined
+&gt;&gt;&gt; <ins>setattr(module, "a", 42)</ins>
+&gt;&gt;&gt; <ins>a</ins>
+42
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <p>Before the <code>setattr()</code> call, there was no "a" defined in the module's namespace. Since
+        all imported modules are available under their natural names from <b>sys.modules</b>, you can
+        access the current module's namespace by looking it up.</p>
+
+    <p>If it were possible to subclass the module object to change its attribute access methods, we could
+        be faced with some extremely hard-to-understand code! Fortunately this is not something you need
+        to worry about in practice. Most of the code you will encounter does not use such tricks (indeed,
+        the Django framework mentioned earlier had a period in its development devoted to "magic removal"
+        to make the code easier for Python programmers and beginners to understand, and provide a
+        framework that was less brittle).</p>
+
+  </div>
+
+  <!-- WHAT USE IS INTROSPECTION -->
+  <a name="what_use_is_introspection"></a>
+  <a name="h_03"></a>
+  <div class="heading">What Use is Introspection?</div>
+  <div class="headingText">
+
+    <p>Frameworks use introspection frequently, to discover the capabilities of objects the user has
+        passed; for example, "does this object's class have a <b>something()</b> method? If so, call the
+        object's <b>do_something()</b>; otherwise call the <b>do_something_similar()</b> framework
+        function with the object as an argument." Some built-in functions also do this kind of
+        introspection. The <code>dir()</code> built-in mentioned above returns the result of the argument
+        object's <code>__dir__()</code> method if it has one; otherwise it uses built-in functionality to
+        provide an "interesting" set of names (the result is not defined more clearly than that anywhere
+        in the code).</p>
+
+    <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">A <i>framework</i> is an environment that provides a wealth of facilities to programmers. You
+        can think of it as being like an "operating system for a particular type of programming task."
+        The users of frameworks are generally application programmers, using the framework (for example,
+        Django or Tkinter) to build a particular type of application (in Django's case, they would be
+        web applications; in Tkinter's case, they would be windowed applications). </td></tr></table>
+
+  </div>
+
+  <!-- THE INSPECT MODULE -->
+  <a name="the_inspect_module"></a>
+  <a name="h_04"></a>
+  <div class="heading">The Inspect module</div>
+  <div class="headingText">
+
+    <p>This module allows you to dig as deep as you ever need to in terms of introspection. It provides
+        many functions by which you can determine the properties of objects, including sixteen predicates
+        that allow you to easily determine whether an object is of a particular type.</p>
+
+    <a name="s_01"></a><div id="s_01"><div class="subheading">The getmembers() Function</div><div class="subheadingText">
+
+      <p><b>inspect.getmembers(obj[, predicate])</b> returns a list of two-element (name, value) tuples.
+          If you provide a second argument, it is called with the value as its only argument and the item
+          only appears in the resulting list if the result is True. This makes the predicates mentioned in
+          the last paragraph very useful if you are only interested in objects of a particular type.
+          Following are some special attributes especially worth knowing about (columns to the right
+          explain which attributes you can expect to see on five given types of object).</p>
+
+      <table class="tbl" border=""><tr><th>Attribute</th><th>Purpose</th><th>Module</th><th>Class</th><th>Method</th><th>Function</th><th>Built-in</th></tr>
+        <tr><td>__doc__</td><td>Documentation string</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>__file__</td><td>Path to the file from which the object was loaded</td><td>&#10003;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>__module__</td><td>Name of module in which the object was imported</td><td>&nbsp;</td><td>&#10003;</td><td>&nbsp;</td><td>&#10003;</td><td>&nbsp;</td></tr>
+        <tr><td>__name__</td><td>Name of object</td><td>&nbsp;</td><td>&nbsp;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+        <tr><td>__func__</td><td>The implementation of the method</td><td>&nbsp;</td><td>&nbsp;</td><td>&#10003;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>__self__</td><td>Instance to which this method is bound (or <b>None</b>)</td><td>&nbsp;</td><td>&nbsp;</td><td>&#10003;</td><td>&nbsp;</td><td>&#10003;</td></tr>
+        <tr><td>__code__</td><td>Code object containing function's bytecode</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&#10003;</td><td>&nbsp;</td></tr>
+        <tr><td>__defaults__</td><td>Documentation string</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&nbsp;</td></tr>
+        <tr><td>__globals__</td><td>Documentation string</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&nbsp;</td></tr>
+      </table>
+
+      <p>The predicates that you can use with <b>getmembers()</b> are:</p>
+
+      <table class="tbl"><tr><th>Predicate name</th><th>Purpose</th></tr>
+        <tr><td>ismodule(x)</td><td>Returns True if x is a module.</td></tr>
+        <tr><td>isclass(x)</td><td>Returns True if x is a class, whether built-in or user-defined.</td></tr>
+        <tr><td>ismethod(x)</td><td>Returns True if x is a bound method written in Python.</td></tr>
+        <tr><td>isfunction(x)</td><td>Returns True if x is a function (including functions created by lambda expressions).</td></tr>
+        <tr><td>isgeneratorfunction(x)</td><td>Returns True if x is a Python generator function.</td></tr>
+        <tr><td>isgenerator(x)</td><td>Returns True if x is a generator.</td></tr>
+        <tr><td>istraceback(x)</td><td>Returns True if x is a <i>traceback object</i> (created when an exception is handled).</td></tr>
+        <tr><td>isframe(x)</td><td>Returns True if x is a <i>stack frame</i> (can be used to debug code interactively).</td></tr>
+        <tr><td>iscode(x)</td><td>Returns True if x is a <i>code object</i>.</td></tr>
+        <tr><td>isbuiltin(x)</td><td>Returns True if x is a built-in function or a bound built-in method.</td></tr>
+        <tr><td>isroutine(x)</td><td>Returns True if x is a user-defined or built-in function or method.</td></tr>
+        <tr><td>isabstract(x)</td><td>Returns True if x is an <i>abstract base class</i> (one meant to be inherited from rather than instantiated).</td></tr>
+        <tr><td>ismethoddescriptor(x)</td><td>Returns True if x is a method descriptor <i>unless</i> ismethod(x), isclass(x), isfunction(x) or isbuiltin(x) is True.</td></tr>
+        <tr><td>isdatadescriptor(x)</td><td>Returns True if x is a <i>data descriptor</i> (has both a <b>__get__()</b> and a <b>__set__()</b> method).</td></tr>
+        <tr><td>isgetsetdescriptor(x)</td><td>Returns True if x is a getsetdescriptor—these are used in extension modules.</td></tr>
+        <tr><td>ismemberdescriptor(x)</td><td>Returns True if x is a member descriptor—these are used in extension modules.</td></tr>
+      </table>
+
+      <p>The second argument to <code>inspect.getmembers()</code> allows you to access members of a
+          particular type easily:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Experimenting with getmembers()</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import inspect</ins>
+&gt;&gt;&gt; <ins>from smtplib import SMTP</ins>
+&gt;&gt;&gt; <ins>from pprint import pprint</ins>
+&gt;&gt;&gt; <ins>pprint(inspect.getmembers(SMTP))</ins>
+[('__class__', &lt;class 'type'&gt;),
+ ('__delattr__', &lt;slot wrapper '__delattr__' of 'object' objects&gt;),
+ ('__dict__', mappingproxy({...})),
+ ('__doc__',
+  "This class manages a connection to an SMTP or ESMTP server.\n
+    SMTP Objects:\n
+        SMTP objects have the following attributes:\n
+            helo_resp\n
+                This is the message given by the server in response to the\n
+                most recent HELO command.\n\n
+            ehlo_resp\n
+                This is the message given by the server in response to the\n
+                most recent EHLO command. This is usually multiline.\n\n
+            does_esmtp\n
+                This is a True value _after you do an EHLO command_, if the\n
+                server supports ESMTP.\n\n
+            esmtp_features\n
+                This is a dictionary, which, if the server supports ESMTP,\n
+                will _after you do an EHLO command_, contain the names of the\n
+                SMTP service extensions this server supports, and their\n
+                parameters (if any).\n\n
+                Note, all extension names are mapped to lower case in the\n
+                dictionary.\n\n
+        See each method's docstrings for details.  In general, there is a\n
+        method of the same name to perform each SMTP command.  There is also a\n
+        method called 'sendmail' that will do an entire mail transaction.\n        "),
+ ('__eq__', &lt;slot wrapper '__eq__' of 'object' objects&gt;),
+    ...
+ ('__weakref__', &lt;attribute '__weakref__' of 'SMTP' objects&gt;),
+ ('_get_socket', &lt;function SMTP._get_socket at 0x...&gt;),
+ ('close', &lt;function SMTP.close at 0x...&gt;),
+    ...
+ ('verify', &lt;function SMTP.verify at 0x...&gt;),
+ ('vrfy', &lt;function SMTP.verify at 0x...&gt;)]
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>pprint(inspect.getmembers(SMTP, inspect.ismethod))</ins>
+[]
+&gt;&gt;&gt; <ins>pprint(inspect.getmembers(SMTP, inspect.isfunction))</ins>
+[('__enter__', &lt;function SMTP.__enter__ at 0x...&gt;),
+ ('__exit__', &lt;function SMTP.__exit__ at 0x...&gt;),
+ ('__init__', &lt;function SMTP.__init__ at 0x...&gt;),
+    ...
+ ('verify', &lt;function SMTP.verify at 0x...&gt;),
+ ('vrfy', &lt;function SMTP.verify at 0x...&gt;)]
+&gt;&gt;&gt; <ins>smtp = SMTP()</ins>
+&gt;&gt;&gt; <ins>pprint(inspect.getmembers(smtp, inspect.ismethod))</ins>
+[('__enter__',
+  &lt;bound method SMTP.__enter__ of &lt;smtplib.SMTP object at 0x...&gt;&gt;),
+ ('__exit__',
+  &lt;bound method SMTP.__exit__ of &lt;smtplib.SMTP object at 0x...&gt;&gt;),
+ ('__init__',
+  &lt;bound method SMTP.__init__ of &lt;smtplib.SMTP object at 0x...&gt;&gt;),
+    ...
+ ('verify',
+  &lt;bound method SMTP.verify of &lt;smtplib.SMTP object at 0x...&gt;&gt;),
+ ('vrfy', &lt;bound method SMTP.verify of &lt;smtplib.SMTP object at 0x...&gt;&gt;)]
+&gt;&gt;&gt;</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">This output has been regenerated on Python 3.14 and differs from the original in two
+          visible ways. First, <code>__dict__</code> is now shown as a <code>mappingproxy</code> rather than
+          the old <code>dict_proxy</code> type name. Second,
+          <code>inspect.getmembers(SMTP, inspect.isfunction)</code> returns more entries than the original
+          showed—Python 3 exposes <code>__enter__</code>, <code>__exit__</code>, <code>_print_debug</code>,
+          <code>set_debuglevel</code>, and others alongside <code>__init__</code>. The key behaviours—
+          <code>ismethod</code> returning an empty list for the class, and a full list of bound methods for
+          an instance—are unchanged. All memory addresses vary with every run and are shown as
+          <code>0x...</code>.</td>
+      </tr></table>
+
+      <p>You will get rather more output than we showed here, and the docstring has been reformatted to
+          make it easier to read in the listing, but there is no reason to list everything that is output.
+          The detail presented is sufficient to demonstrate that the SMTP class has many member attributes,
+          including the standard "dunder" names, many of them inherited from the <b>object</b> type.</p>
+
+      <p>Asking for the methods of the class (using the <b>ismethod()</b> predicate as a second argument
+          to <b>getmembers()</b>) changes it to return the empty list. This is not too surprising, as the
+          predicate is documented as returning True only for <i>bound</i> methods—methods associated with
+          a particular instance. The <b>isfunction()</b> predicate used in the third example returns the
+          methods that are specifically defined on the class, but not those inherited from superclasses
+          (which in practice means the <b>object</b> type). Creating an instance of the SMTP class and
+          querying that for methods gives a much more interesting result.</p>
+
+    </div></div>
+
+    <a name="s_02"></a><div id="s_02"><div class="subheading">Introspecting Functions</div><div class="subheadingText">
+
+      <p>There are various attributes of a code object that can be used to discover information about the
+          function to which it belongs. The <b>inspect</b> module provides some convenience functions to
+          avoid the need to use them under most circumstances, however.</p>
+
+      <p><b>inspect.getfullargspec(f)</b> returns a named tuple <b>FullArgSpec(args, varargs, varkw,
+          defaults, kwonlyargs, kwonlydefaults, annotations)</b> containing information pertaining to the
+          function argument f:</p>
+      <ul>
+        <li><b>args</b> is a list of the names of the standard (positional <i>and</i> keyword)
+            arguments.</li>
+        <li>The <b>defaults</b> member contains the default values for the arguments specified by keyword
+            (which always follow the positionals).</li>
+        <li><b>varargs</b> and <b>varkw</b> are the names of the <code>*</code> and <code>**</code>
+            arguments, if present. The value <b>None</b> is used when there are no such arguments.</li>
+        <li><b>kwonlyargs</b> is a list of the arguments that <i>must</i> be provided as keyword
+            arguments</li>
+        <li><b>kwonlydefaults</b> is the list of default values of those arguments.</li>
+        <li><b>annotations</b> is a dict that maps argument names to annotations (which will usually be
+            empty, because we will not cover function annotations in this course)</li>
+      </ul>
+
+      <p><b>inspect.formatargspec(args[, varargs, varkw, defaults, kwonlyargs, kwonlydefaults,
+          annotations])</b> takes the output from <b>getfullargspec()</b> and re-creates the arguments
+          part of the function signature.</p>
+
+      <p>Here is a little example to show you how they work.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Function introspection</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import inspect</ins>
+&gt;&gt;&gt; <ins>def f(a, b, c=1, d="one", *args, **kw):</ins>
+...     <ins>print('a', a, 'b', b, 'c', c, 'd', d, 'args', args, 'kw', kw)</ins>
+...
+&gt;&gt;&gt; <ins>inspect.getfullargspec(f)</ins>
+FullArgSpec(args=['a', 'b', 'c', 'd'], varargs='args', varkw='kw', defaults=(1, 'one'), kwonlyargs=[], kwonlydefaults=None, annotations={})
+&gt;&gt;&gt; <ins>inspect.formatargspec(*inspect.getfullargspec(f))</ins>
+"(a, b, c=1, d='one', *args, **kw)"
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-warning"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><code>inspect.formatargspec()</code> was removed in Python 3.11. Use
+          <code>str(inspect.signature(f))</code> instead, which produces identical output and works in all
+          current Python versions:
+          <pre>&gt;&gt;&gt; str(inspect.signature(f))
+"(a, b, c=1, d='one', *args, **kw)"</pre>
+          The higher-level <code>inspect.signature()</code> (available since Python 3.3) is now the
+          preferred API for callable introspection—it handles decorated functions, <code>__wrapped__</code>
+          chains, and <code>__signature__</code> overrides that <code>getfullargspec()</code> does not.</td>
+      </tr></table>
+
+      <p>As you can see, <b>formatargspec()</b> produces a parenthesized list of argument specifications
+          that can easily be translated back into the original format (or something equivalent to it) using
+          the <b>formatargspec()</b> function.</p>
+
+    </div></div>
+
+  </div>
+
+  <p>There are other facilities that come as part of the <b>inspect</b> module, and you can read the
+      documentation for that module when you feel the need to learn more. Using the features you have
+      learned about in this lesson, however, you should be able to discover what your program needs to
+      know about the code that surrounds it.</p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-08.html">Advanced Generators</a>
+    <a class="next" href="Python4-10.html">Multi-Threading</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

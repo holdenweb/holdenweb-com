@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sequence Containers: Lists and Tuples</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Sequence Containers: Lists and Tuples</div>
+
+  <p>So far we've covered basic object types in Python, such as strings and
+    numbers. Now we're ready to look at Python's "container" objects, starting
+    with lists and tuples. Both lists and tuples are <i>sequence</i> types.
+    Because strings are sequence types as well, much of what we learn here
+    applies to strings too.</p>
+
+  <p>Sequence types have a specific <i>order</i>, so it's easy to identify a
+    string's first and last characters. Similarly, lists and tuples present
+    elements in a particular order. Each <i>element</i> of a sequence is
+    numbered, always starting at zero. You refer to an individual element by
+    following the sequence name with a number in square brackets.</p>
+
+  <!-- LISTS AND TUPLES -->
+  <a name="h_01"></a>
+  <div class="heading">Lists and Tuples</div>
+  <div class="headingText">
+    <p>Python uses both lists <i>and</i> tuples. In general, tuples are used
+      when the position of an element says something about what it represents,
+      and lists are used to hold elements that will be treated in the same
+      manner. Python doesn't enforce these conventions, though; the only hard
+      rule is <i>don't use tuples if you want to change the sequence</i>.
+      Tuples are for non-modifiable sequences.</p>
+  </div>
+
+  <!-- WRITING LISTS AND TUPLES -->
+  <a name="h_02"></a>
+  <div class="heading">Writing Lists and Tuples</div>
+  <div class="headingText">
+    <p>Sometimes you'll want to write the contents of a list right inside your
+      code. To do so, write a comma-separated list of element values surrounded
+      by square brackets.</p>
+
+    <p>Tuples are usually written as a comma-separated list of values surrounded
+      by parentheses rather than brackets, though in many cases the parentheses
+      are optional. The interactive interpreter always displays a tuple with
+      parentheses, and we recommend you write them the same way to make your
+      code easier to read.</p>
+
+    <p>Let's look at some sequences in action:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; lst1 = [1, 3, 5]
+&gt;&gt;&gt; lst2 = [2, 4, 6]
+&gt;&gt;&gt; tup1 = (9, 7, 5)
+&gt;&gt;&gt; tup2 = (8, 6, 4)
+&gt;&gt;&gt; dir(lst1)
+['__add__', '__class__', '__class_getitem__', '__contains__', '__delattr__',
+'__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__',
+'__getattribute__', '__getitem__', '__getstate__', '__gt__', '__hash__',
+'__iadd__', '__imul__', '__init__', '__init_subclass__', '__iter__', '__le__',
+'__len__', '__lt__', '__mul__', '__ne__', '__new__', '__reduce__',
+'__reduce_ex__', '__repr__', '__reversed__', '__rmul__', '__setattr__',
+'__setitem__', '__sizeof__', '__str__', '__subclasshook__',
+'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 'pop',
+'remove', 'reverse', 'sort']
+&gt;&gt;&gt; dir(tup1)
+['__add__', '__class__', '__class_getitem__', '__contains__', '__delattr__',
+'__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__',
+'__getitem__', '__getnewargs__', '__getstate__', '__gt__', '__hash__',
+'__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__',
+'__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
+'__rmul__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',
+'count', 'index']
+&gt;&gt;&gt; lst1+lst2
+[1, 3, 5, 2, 4, 6]
+&gt;&gt;&gt; tup1+tup2
+(9, 7, 5, 8, 6, 4)
+&gt;&gt;&gt; lst1+tup1
+<span class="red">Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+TypeError: can only concatenate list (not "tuple") to list</span>
+&gt;&gt;&gt; clist = [lst1, lst2, tup1, tup2]
+&gt;&gt;&gt; print(clist)
+[[1, 3, 5], [2, 4, 6], (9, 7, 5), (8, 6, 4)]
+</pre></div></div>
+
+    <p>The <code>dir()</code> calls show that a list has methods a tuple
+      doesn't. The public (non-dunder) methods of a list are
+      <code>append</code>, <code>clear</code>, <code>copy</code>,
+      <code>count</code>, <code>extend</code>, <code>index</code>,
+      <code>insert</code>, <code>pop</code>, <code>remove</code>,
+      <code>reverse</code>, and <code>sort</code>. A tuple has only
+      <code>count</code> and <code>index</code>. We'll look at those methods
+      later, but for now we'll focus on the general behaviour of sequences.</p>
+
+    <p>You can put whatever you like in a list—usually simple values like
+      strings and numbers. The <code>clist</code> list above contains two other
+      lists and two tuples.</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">The full output of <code>dir()</code> varies with the
+        Python version. Current Python reports more dunder methods than the
+        original 3.1 interpreter did, because the language has grown. The
+        public methods shown above are what matters for everyday use.</td>
+    </tr></table>
+  </div>
+
+  <!-- ACCESSING SEQUENCE VALUES -->
+  <a name="h_03"></a>
+  <div class="heading">Accessing Sequence Values</div>
+  <div class="headingText">
+    <p>Once you have created a sequence you can access its individual elements
+      using <i>indexing</i>. To index a single element, follow the sequence
+      with a numeric value in square brackets—remember, the first element is
+      numbered zero. You can also take <i>slices</i>, creating a new and
+      usually smaller sequence. To slice a sequence, write two numeric values
+      separated by a colon inside the square brackets. If you omit the first
+      value the new sequence starts with the first element; if you omit the
+      last value it ends with the last element. Try these:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; clist = [1, (2, 3, 4), "a", "Bright", "c"]
+&gt;&gt;&gt; clist[1]
+(2, 3, 4)
+&gt;&gt;&gt; clist[1][1]
+3
+&gt;&gt;&gt; clist[3][1:3]
+'ri'
+&gt;&gt;&gt; stuff = clist[2:4]
+&gt;&gt;&gt; stuff
+['a', 'Bright']
+&gt;&gt;&gt; stuff2 = clist[2:5]
+&gt;&gt;&gt; stuff2
+['a', 'Bright', 'c']
+&gt;&gt;&gt; stuff[0]
+'a'
+&gt;&gt;&gt; "Strings are sequences too"[:7]
+'Strings'
+</pre></div></div>
+
+    <p>Indexing and slicing are fundamental operations in Python, so make sure
+      you understand why each expression evaluates as it does. Bear in mind
+      that when you slice a sequence the second index is not the index of the
+      last element in the slice—it's the index of the first element
+      <i>excluded</i>. This is actually very useful: <code>clist[2:4]</code>
+      always gives you a two-element list. To include element four we had to
+      reference the nonexistent element five. Because strings are sequences
+      too, you can chop them up in exactly the same way.</p>
+  </div>
+
+  <!-- MODIFYING LISTS -->
+  <a name="h_04"></a>
+  <div class="heading">Modifying Lists</div>
+  <div class="headingText">
+    <p>Although strings and tuples are sequences, they are <i>immutable</i>.
+      Once created they can't be changed—though you can still index and slice
+      them to extract elements or sub-sequences. Lists, however, can be
+      changed. In the same way that you can bind a new value to a name with an
+      assignment, you can bind a new value to an element of a list:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; stuff = [1, (2, 3, 4), "a", "Bright", "c"]
+&gt;&gt;&gt; stuff[1] = "Not a tuple"
+&gt;&gt;&gt; stuff
+[1, 'Not a tuple', 'a', 'Bright', 'c']
+&gt;&gt;&gt; stuff[0] = 0
+&gt;&gt;&gt; stuff[3] = 'b'
+&gt;&gt;&gt; stuff
+[0, 'Not a tuple', 'a', 'b', 'c']
+&gt;&gt;&gt; stuff[2:4]
+['a', 'b']
+&gt;&gt;&gt; stuff[2:4] = [1, 2, 3]
+&gt;&gt;&gt; stuff
+[0, 'Not a tuple', 1, 2, 3, 'c']
+</pre></div></div>
+
+    <p>So far we've just been replacing single elements of the list. It's also
+      possible to replace a slice, as the last few lines show. When you do
+      that, the right-hand side must be a sequence—any sequence will do: a
+      list, tuple, or string. If you assign a string to a slice, each
+      character in the string becomes a new element of the list. Try
+      experimenting with these possibilities.</p>
+
+    <p>Because you can replace any slice of a list, you can delete a slice by
+      assigning an empty sequence to it. Python's <b>del</b> statement does
+      the same job more directly. You can use it on a single element or on a
+      slice. If you know a list contains a certain value but don't know its
+      index, the list's <span class="darkgreen">remove()</span> method will
+      delete the first occurrence for you. If the same value occurs more than
+      once, only the first is removed. Type the commands below:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; dlist = ['a', 'b', 'c', '1', '2', 1, 2, 3]
+&gt;&gt;&gt; dlist[6]
+2
+&gt;&gt;&gt; del dlist[6]
+&gt;&gt;&gt; dlist
+['a', 'b', 'c', '1', '2', 1, 3]
+&gt;&gt;&gt; dlist[:3]
+['a', 'b', 'c']
+&gt;&gt;&gt; del dlist[:3]
+&gt;&gt;&gt; dlist
+['1', '2', 1, 3]
+&gt;&gt;&gt; dlist.remove(1)
+&gt;&gt;&gt; dlist
+['1', '2', 3]
+</pre></div></div>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">In the last example, element 2 (the integer
+        <code>1</code>) was removed, not element 0 (the string
+        <code>'1'</code>). Python doesn't convert between strings and numbers
+        unless you explicitly ask it to.<br><br>
+        Also, remember that deletion only works for lists. Deleting an element
+        from a string or tuple would amount to modifying an immutable sequence,
+        which Python won't allow.</td>
+    </tr></table>
+
+    <p>We can add elements to a list using the list's
+      <span class="darkgreen">append()</span> method: call it with the new
+      element and it's appended at the end. To insert at a specific position
+      there are two approaches: the list's
+      <span class="darkgreen">insert()</span> method, which takes an index and
+      a value; or assigning a value to an empty slice (any slice where the
+      lower and upper indices are equal). Try these:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; elist = [] # The empty list
+&gt;&gt;&gt; elist.append('a')
+&gt;&gt;&gt; elist
+['a']
+&gt;&gt;&gt; elist.append('b')
+&gt;&gt;&gt; elist
+['a', 'b']
+&gt;&gt;&gt; elist.append((1, 2, 3))
+&gt;&gt;&gt; elist
+['a', 'b', (1, 2, 3)]
+&gt;&gt;&gt; len(elist)
+3
+&gt;&gt;&gt; elist[1:1]
+[]
+&gt;&gt;&gt; elist[1:1] = ["new second element"]
+&gt;&gt;&gt; elist
+['a', 'new second element', 'b', (1, 2, 3)]
+&gt;&gt;&gt; elist.insert(3, "4th")
+&gt;&gt;&gt; elist
+['a', 'new second element', 'b', '4th', (1, 2, 3)]
+&gt;&gt;&gt; len(elist)
+5
+</pre></div></div>
+
+    <p>One limitation of slice assignment is that the replacement must be a
+      sequence, which is why we usually reach for <code>append()</code> or
+      <code>insert()</code>. If you have a whole sequence of elements to
+      insert, though, slice assignment can be more concise than any
+      alternative.</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">When you call <code>append()</code> with a sequence
+        argument—as in <code>elist.append((1, 2, 3))</code> above—the entire
+        sequence becomes a single new element at the end of the list. If you
+        want to add each element of a sequence individually, use
+        <code>extend()</code> instead.</td>
+    </tr></table>
+  </div>
+
+  <!-- SLICES WITH A STRIDE -->
+  <a name="h_05"></a>
+  <div class="heading">Slices with a Stride: Skipping Elements</div>
+  <div class="headingText">
+    <p>A slice specifies a subsequence. Suppose you don't want every element,
+      but rather every second or third one. The easiest way is to use a third
+      component of the slice specification: the <i>stride</i>. The stride says
+      how many positions to advance between each extracted element, and is
+      separated from the other two components with a colon:
+      <code>[first:last:stride]</code>.</p>
+
+    <p>When you omit the stride it defaults to 1, which takes every element.
+      A stride of 2 takes every second element, and so on. Stride values can
+      be negative as well as positive. Slicing starts at the first component,
+      advances by the stride, and stops when the index reaches or passes the
+      second component. When the stride is negative, the first component must
+      be higher than the second. Try these:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; alf = "abcdefghijklmnopqrstuvwxyz"
+&gt;&gt;&gt; alf[2:13]
+'cdefghijklm'
+&gt;&gt;&gt; alf[2:13:2]
+'cegikm'
+&gt;&gt;&gt; alf[2:13:-2]
+''
+&gt;&gt;&gt; alf[13:2:-2]
+'nljhfd'
+&gt;&gt;&gt; alf[13:2]
+''
+&gt;&gt;&gt; alf[::-1]
+'zyxwvutsrqponmlkjihgfedcba'
+</pre></div></div>
+
+    <p>One way to reverse a sequence is to slice the whole thing with a stride
+      of -1. So to replace a list with its reverse you can write
+      <code>lst = lst[::-1]</code> rather than calling
+      <code>lst.reverse()</code>. Python sequences are nothing if not
+      versatile.</p>
+  </div>
+
+  <!-- OTHER FUNCTIONS AND METHODS -->
+  <a name="h_06"></a>
+  <div class="heading">Other Functions and Methods to Use with Sequences</div>
+  <div class="headingText">
+    <p>Sometimes you'll have a string that you want to break up into a list of
+      words. The <span class="darkgreen">split()</span> method does exactly
+      that. Called without arguments it splits on any whitespace; called with
+      a string argument that string is used as the separator, and the pieces
+      between its occurrences are returned as a list.</p>
+
+    <p>If you supply a second argument it should be an integer specifying the
+      maximum number of splits, which limits the number of elements in the
+      returned list.</p>
+
+    <p>To get the sum of the numbers in a sequence, pass the sequence to the
+      <span class="darkgreen">sum()</span> function. An exception is raised if
+      any non-numeric element is present. To get the length of any sequence,
+      use <span class="darkgreen">len()</span>.</p>
+
+    <p>To count how many times a particular element appears in a list or
+      tuple, use the <span class="darkgreen">count()</span> method with the
+      element value as the argument.</p>
+  </div>
+
+  <!-- TESTING FOR PRESENCE -->
+  <a name="h_07"></a>
+  <div class="heading">Testing for Presence in a Sequence</div>
+  <div class="headingText">
+    <p>To determine whether a sequence contains a specific value, use the
+      <b>in</b> keyword, which returns either <b>True</b> or <b>False</b>.
+      Sequences also have an <span class="darkgreen">index()</span> method
+      that returns the lowest index at which a given element occurs. Be
+      careful, though: <span class="darkgreen">index()</span> raises an
+      exception if the element isn't present. You can guard against that with
+      an <b>if</b> test first, but it's usually cleaner to handle the
+      exception directly and avoid searching twice. We'll cover the <b>if</b>
+      statement and exception handling in detail later.</p>
+  </div>
+
+  <!-- MANIPULATING LISTS AND TUPLES -->
+  <a name="h_08"></a>
+  <div class="heading">Manipulating Lists and Tuples</div>
+  <div class="headingText">
+    <p>Here is a concise program that splits a string into words using the
+      built-in string methods:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Simpler program to list the words of a string."""
+
+s = input("Enter your string: ")
+words = s.strip().split()
+for word in words:
+    print(word)
+</pre></div></div>
+
+    <p>Save it as <b>better_sentence_splitter.py</b>. Type in a string that
+      contains some whitespace, press <b>Enter</b>, and you'll see the words
+      printed one per line.</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+<span class="purple">s</span> = input("Enter your string: ")
+words = <span class="purple">s</span>.<span class="darkgreen">strip()</span>.<span class="darkred">split()</span>
+<span class="darkblue">for</span> word in words:
+    print(word)
+</pre></div></div>
+
+    <p>The <span class="darkgreen">strip()</span> method is applied to string
+      <span class="purple">s</span>, returning a version with no leading or
+      trailing whitespace. The <span class="darkred">split()</span> method is
+      then applied to the stripped string, returning a list of words. The
+      <span class="darkblue">for</span> loop iterates over that list,
+      printing each word on a separate line.</p>
+
+    <p>Now let's do something more substantial with lists: count the lines,
+      words, and characters in a chunk of text. We measure characters with
+      <span class="darkgreen">len()</span>, count lines by splitting on
+      newlines, and accumulate a word total by splitting each line and summing
+      the lengths. Save this as <b>paragraph_stats.py</b>:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Count the words, lines and characters in a chunk of text."""
+
+gettysburg = """\
+Four score and seven years ago our
+fathers brought forth on this continent,
+a new nation, conceived in Liberty, and
+dedicated to the proposition that
+all men are created equal.
+
+Now we are engaged in a great civil war,
+testing whether that nation, or
+any nation so conceived and so dedicated,
+can long endure. We are met on
+a great battle-field of that war. We have
+come to dedicate a portion of that
+field, as a final resting place for those
+who here gave their lives that that
+nation might live. It is altogether
+fitting and proper that we should do this."""
+
+charct = len(gettysburg)
+
+lines = gettysburg.split("\n")
+linect = len(lines)
+
+wordct = 0
+for line in lines:
+    words = line.split()
+    wordct += len(words)
+
+print("The text contains", linect, "lines,", wordct, "words, and", charct, "characters.")
+</pre></div></div>
+
+    <p>Run it, and you should see:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>The text contains 16 lines, 102 words, and 557 characters.
+</pre></div></div>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">Some operating systems may give different results: Unix
+        records a newline as one character, while Windows records it as
+        two.</td>
+    </tr></table>
+
+    <p>Now let's extend the program to keep a count of word lengths, so we
+      know how many one-letter, two-letter, three-letter words there are, and
+      so on. Modify <b>paragraph_stats.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Count the words, lines and characters in a chunk of text."""
+
+gettysburg = """\
+Four score and seven years ago our
+fathers brought forth on this continent,
+a new nation, conceived in Liberty, and
+dedicated to the proposition that
+all men are created equal.
+
+Now we are engaged in a great civil war,
+testing whether that nation, or
+any nation so conceived and so dedicated,
+can long endure. We are met on
+a great battle-field of that war. We have
+come to dedicate a portion of that
+field, as a final resting place for those
+who here gave their lives that that
+nation might live. It is altogether
+fitting and proper that we should do this."""
+
+<ins>lengthct = [0]*20 # a list of 20 zeroes</ins>
+charct = len(gettysburg)
+
+lines = gettysburg.split("\n")
+linect = len(lines)
+
+wordct = 0
+for line in lines:
+    words = line.split()
+    wordct += len(words)
+    <ins>for word in words:
+        lengthct[len(word)] += 1</ins>
+
+print("The text contains", linect, "lines,", wordct, "words, and", charct, "characters.")
+<ins>for i, ct in enumerate(lengthct):
+    if ct:
+        print("Length", i, ":", ct)</ins>
+</pre></div></div>
+
+    <p>We begin by creating a list of twenty counts, all initialised to zero.
+      The count of <i>n</i>-letter words will be stored in
+      <code>lengthct[<i>n</i>]</code>; we assume no word will be longer than
+      nineteen characters. Within the line-processing loop we've added an
+      inner loop that iterates over the words: the length of each word is used
+      as an index into <code>lengthct</code>, and that element is incremented
+      by one. After processing the text, we print the word-length counts,
+      omitting any lengths with a zero count.</p>
+
+    <p>With the same Gettysburg text, the output should look like this:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Output</div><div class="interactive"><pre>The text contains 16 lines, 102 words, and 557 characters.
+Length 1 : 5
+Length 2 : 19
+Length 3 : 19
+Length 4 : 16
+Length 5 : 15
+Length 6 : 6
+Length 7 : 12
+Length 8 : 2
+Length 9 : 3
+Length 10 : 3
+Length 11 : 1
+Length 12 : 1
+</pre></div></div>
+
+    <p>Experiment further. Modify the text so it contains a word of twenty
+      characters or more (like "deinstitutionalizing"). What happens when you
+      run the program? How could you fix it? Can you think of a way to count
+      individual words, to see how many times each one is used? With sequences
+      alone this is possible, though not particularly easy.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The <code>enumerate(lengthct)</code> call in the final
+        loop is the idiomatic way to iterate over a sequence while also
+        tracking the index. It's cleaner than a manual counter like
+        <code>i = 0; i += 1</code> or an index-based
+        <code>range(len(...))</code> loop.</td>
+    </tr></table>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Counting word frequencies—the problem posed at the end
+        of the section—becomes straightforward with a <code>dict</code> (or
+        <code>collections.Counter</code>). We'll get to those in the next
+        lesson.</td>
+    </tr></table>
+  </div>
+
+  <!-- CLOSING -->
+  <a name="h_09"></a>
+  <div class="heading">It Slices, It Dices&hellip;</div>
+  <div class="headingText">
+    <p>You've learned quite a bit about Python's sequence types and just how
+      useful they can be. Next, we'll check out Python's <i>mapping</i> types.</p>
+
+    <p>Phew. This isn't easy, but you're doing really well. Keep it up, and I'll
+      see you in the next lesson!</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="iteration.html">Iteration: For and While Loops</a>
+    <a class="next" href="setsAndDicts.html">Sets and Dicts</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &copy; 1998&ndash;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

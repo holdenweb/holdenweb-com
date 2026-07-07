@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unit Testing</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Unit Testing</div>
+
+  <!-- UNITTEST -->
+  <a name="h_01"></a>
+  <div class="heading">unittest</div>
+  <div class="headingText">
+
+    <p>Your first lesson in Python 2 picks up where we left off in the Python 1 course, focused on debugging
+        programs. Here you'll learn about the second, and more widely used, built-in Python testing
+        framework, <i>unittest</i>. Unittest is a more formal testing framework, which can be integrated with
+        existing uses of <i>doctest</i>, if necessary.</p>
+
+    <!-- ASSERTIONS -->
+    <a name="s_01"></a>
+    <div class="subheading">Assertions</div>
+    <div class="subheadingText">
+
+      <p>An important statement contained within Python that you haven't come across before is the <i>assert</i> statement.
+          The syntax for this statement is:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: assert statement syntax</div><div class="observe"><pre>
+assert <span class="darkred">condition</span>[, <span class="darkblue">message</span>]
+</pre></div></div>
+
+      <p>In the assert statement, the <span class="darkred">condition</span> is tested, and if it evaluates false, an AssertionError exception
+          is raised. If there's a <span class="darkblue">message</span>, it is printed with the AssertionError. Let's
+          try using the assert statement right now in an interactive console window.</p>
+
+      <p>Type this code into the interactive interpreter console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>assert 1 == 1</ins>
+&gt;&gt;&gt; <ins>assert 1 == 2</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AssertionError
+&gt;&gt;&gt; <ins>assert 1 == 2, "One isn't two and the universe is still rational"</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AssertionError: One isn't two and the universe is still rational
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>We use assert statements in our programs, to assert conditions that we believe
+          must always be true. If we are correct, the program runs as expected. But, if
+          a programming error or mistaken assumption invalidates the condition, Python will let us know,
+          usually early in the life of the program. </p>
+
+      <p>AssertionError exceptions are handled using the
+          unittest module. To write tests, we create <i>test cases</i> that are subclasses of the
+          <span class="darkred">unittest.TestCase</span> class. Our subclasses can use the methods defined by the superclass.
+          Many of those methods' names begin with the prefix "assert." By calling these methods, you have the test
+          case make assertions about your program in a controlled environment. Any
+          AssertionErrors that arise are handled by the framework and reported as a failure of the associated test.
+          Other exceptions are regarded as errors. </p>
+
+    </div>
+
+    <!-- A BASIC UNITTEST EXAMPLE -->
+    <a name="s_02"></a>
+    <div class="subheading">A Basic unittest Example</div>
+    <div class="subheadingText">
+
+      <p>For our first example, we'll use the <span class="darkgreen">square()</span> method from our <b>testable.py</b> code
+          that we created in the "Introduction to Python" course.
+          Our goal now is to write code that will cube the values passed. This will allow
+          us to compare the two testing modules.</p>
+
+      <p>Create a new file called <b>testable.py</b> and type the <ins>blue code</ins> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""Demonstrates the unittest module in action."""
+import unittest
+
+def cube(x):
+    '''Returns the cube of a passed value'''
+    return x*3
+
+class TestCube(unittest.TestCase):
+
+    def test_small_number(self):
+        self.assertEqual(cube(3), 27, "Cube of 3 is not 27")
+
+    def test_large_number(self):
+        self.assertEqual(cube(1000), 1000000000, "Cube of 1000 should be 1000000000")
+
+    def test_bad_input(self):
+        self.assertRaises(TypeError, cube, 'x')
+
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+      <p>This program contains a bug: instead of returning its argument raised to the third power (cubed),
+          the <span class="darkgreen">cube()</span> function returns its argument multiplied by three. This is an easy
+          mistake to make—we just omitted a single asterisk (*)—but it renders the function incorrect.
+          When you run the program, you see output that looks something like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Output from testable.py with an error in the cube() function</div><div class="observe"><pre>FFF
+======================================================================
+FAIL: test_bad_input (__main__.TestCube.test_bad_input)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/testable.py", line 17, in test_bad_input
+    self.assertRaises(TypeError, cube, 'x')
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: TypeError not raised by cube
+
+======================================================================
+FAIL: test_large_number (__main__.TestCube.test_large_number)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/testable.py", line 14, in test_large_number
+    self.assertEqual(cube(1000), 1000000000, "Cube of 1000 should be 1000000000")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 3000 != 1000000000 : Cube of 1000 should be 1000000000
+
+======================================================================
+FAIL: test_small_number (__main__.TestCube.test_small_number)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/testable.py", line 11, in test_small_number
+    self.assertEqual(cube(3), 27, "Cube of 3 is not 27")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 9 != 27 : Cube of 3 is not 27
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=3)
+</pre></div></div>
+
+      <p>Failures. Bummer. And not only do we have failures, our program gives us even more data than doctest did.
+          For example, our program
+         gives the number of tests, followed by the length of time it took to run the tests, and the tests themselves can be
+          set up to pass messages to the person running the tests.</p>
+
+      <p>When you run the program, it calls the <span class="darkgreen">unittest.main()</span> method, which
+          runs the <i>unittest Test Runner</i>. The Test Runner looks in your code for test suites, which
+          are identified as Classes that inherit from the <span class="darkred">unittest.TestCase</span> class. These
+          test suites contain a number of tests, which are class methods that begin with the word "test."</p>
+
+      <p>Because the assertions within your unittest methods raise AssertionErrors, the package reports
+          them as test failures, and the output makes it clear that something is wrong with the program.
+          In fact, because of the message arguments passed to the methods, you get a pretty good idea of
+          what is going wrong. Now, fix the error by changing the operation in the
+          <span class="darkgreen">cube()</span> function to an exponentiation. Modify <b>testable.py</b> by adding
+          the <ins>blue code</ins> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>"""Demonstrates the unittest module in action."""
+import unittest
+
+def cube(x):
+    '''Returns the cube of a passed value'''
+    <ins>return x**3</ins>
+
+class TestCube(unittest.TestCase):
+
+    def test_small_number(self):
+
+        self.assertEqual(cube(3), 27, "Cube of 3 should be 27")
+
+    def test_large_number(self):
+        self.assertEqual(cube(1000), 1000000000, "Cube of 1000 should be 1000000000")
+
+    def test_bad_input(self):
+        self.assertRaises(TypeError, cube, 'x')
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>With the error now corrected, your output from <b>testable.py</b> looks like this:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe: Output from running testable.py</div><div class="observe"><pre>...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>The three dots at the top represent the three tests. If they had failed, you would have seen an
+          "F" replacing each failure. If there were significant errors, you would have seen an "E." Such
+          error indications usually mean that something is wrong with your logic. You see the
+          test count and the time for the duration of the tests' run. Chances are that for this basic test,
+          you'll get a value of 0.000, but keep in mind that unittests are not performance tests. You'll
+          cover performance tests in a later course.</p>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">We also corrected the failure on test_bad_input. Why? Because the string <b>x</b> can be "multiplied" to
+          give <b>xxx</b>, so no TypeError is raised. Because exponentiation does not work with strings,
+          the cube function must be fixed before the test passes.</td>
+      </tr></table>
+
+    </div>
+
+    <!-- BREAKING DOWN TESTS -->
+    <a name="s_03"></a>
+    <div class="subheading">Breaking Down Tests</div>
+    <div class="subheadingText">
+
+      <p>Now that you have the tests working, consider how they work. Look over this color-coded test code:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+"""Demonstrates the unittest module in action."""
+import <span class="purple">unittest</span>
+
+def cube(x):
+    '''Returns the cube of a passed value'''
+    return x**3
+
+class <span class="darkred">TestCube(<span class="purple">unittest</span>.TestCase)</span>:
+    def <span class="darkgreen">test_small_number(self)</span>:
+        self.<span class="darkblue">assertEqual(<span class="blue">cube(3)</span>, <span class="red">27</span>, <span class="orange">"Cube of 3 should be 27"</span>)</span>
+
+    def test_large_number(self):
+        self.assertEqual(cube(1000), 1000000000, "Cube of 1000 should be 1000000000")
+
+    def <span class="darkgreen">test_bad_input(self)</span>:
+        self.assertRaises(<span class="darkred">TypeError</span>, <span class="green">cube</span>, <span class="purple">'x'</span>)
+if __name__ == "__main__":
+    unittest.main()</pre></div></div>
+
+      <p>The <span class="darkgreen">test_small_number()</span> method in the <span class="darkred">TestCube</span> class
+          has a single statement: a call to the <span class="darkblue">assertEqual()</span> method
+          inherited from <span class="purple">unittest</span><span class="darkred">.testCase</span>. That statement contains an
+          assertion that its first two arguments are equal—that <span class="blue">cube(3)</span> is equal to
+          <span class="red">27</span>. If the values do not match, then the assertion fails and the message
+          <span class="orange">"Cube of 3 should be 27"</span> is returned during the test and reported by the
+          framework.</p>
+
+      <p>If you include useful assertion error messages, they will help you remember what your tests are
+          supposed to be doing. They will also help other programmers understand your tests. It's easier
+          to figure out what to fix when error messages are meaningful (fortunately,
+          the default messages produced by unittest have improved recently, as well).</p>
+
+      <p>In the third test, <span class="darkgreen">test_bad_input()</span> checks to see if the
+          <span class="green">cube()</span> function throws a <span class="darkred">TypeError</span> exception. The first
+          argument provided is the expected exception; the second argument is the function to test; the
+          remaining arguments will be passed to the function in question— the <span class="green">cube()</span> function (a one-argument
+          function, so you see a single additional argument <span class="purple">'x'</span>); it is possible to use
+          both positional and keyword arguments (but the function you are testing doesn't take any keyword arguments). Using
+          this method lets you verify that certain inputs raise specific exceptions.</p>
+
+    </div>
+
+    <!-- TEST-DRIVEN DEVELOPMENT: TESTS AS SPECIFICATIONS -->
+    <a name="s_04"></a>
+    <div class="subheading">Test-Driven Development: Tests As Specifications</div>
+    <div class="subheadingText">
+
+      <p>Now that you've begun to appreciate the value of testing, follow the basic rule of test-driven
+          development (TDD): only write code to make a failing test pass. This means that you
+          begin your development projects by creating tests, which then act as a
+          specification for the behavior of the program. By developing software this way,
+          the programmer is forced to develop only the necessary functionality, and resists including extraneous elements.
+          As the agile programming community says,
+          "YAGNI"—You Ain't Gonna Need It. If it doesn't help you pass a test, it really isn't
+          necessary. </p>
+
+    </div>
+
+    <!-- BACKGROUND OF UNITTEST -->
+    <a name="s_05"></a>
+    <div class="subheading">Background of unittest</div>
+    <div class="subheadingText">
+
+      <p>Kent Beck, the creator of <i>Extreme Programming</i> and <i>Test Driven
+          Development</i>, wrote a testing framework for agile programming in the
+          Smalltalk programming language. Later, along with Erich Gamma, he wrote a Java-based
+          implementation of this test framework called JUnit. This test framework has since been ported
+          to many other languages, including Python, where it is sometimes called "PyUnit."</p>
+
+      <p>The advantage of unittest is that the core concepts are tried and tested. This is important in
+          a test framework because that means you can rely on it. As we learned in the previous course,
+          if we refactor our code and it still passes the tests, we can be reasonably sure that we haven't
+          introduced an error.</p>
+
+      <p>unittest uses these important concepts:</p>
+
+      <ul>
+        <li><b>Test Fixtures:</b> The setup for your tests. Fixtures include creation of temporary
+              databases, servers, and anything else needed to run the test. The fixtures frequently need
+              to be cleaned up after a test. To use a spelling test analogy, think of a Test Fixture as a
+              combination pencil, eraser, test sheet, and word list.</li>
+        <li><b>Test Cases:</b> Each test case is an individual test. It checks for a specific response
+              to an assertion, and then is distilled to a boolean statement. Using the spelling test analogy
+              again, think of a Test Case as a single question on the test.</li>
+        <li><b>Test Suite:</b> A test suite is a collection of Test Cases (or even other <b>Test
+              Suites</b>). Returning to our spelling test again, think of a Test Suite as the set of all
+              questions on the test sheet.</li>
+        <li><b>Test Runner:</b> The software that actually runs the tests. The runner can be launched
+               from the command line, graphical interface, web interface, or any other input method. It
+               returns special values to indicate the success of the tests, and these values can be
+               evaluated by you or by various automated tools. In the spelling test analogy, the test
+               runner would be you, the reader, going through the list of questions.</li>
+      </ul>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">Several older <code>unittest.TestCase</code> method aliases have been removed in
+          current Python: <code>assertEquals</code> is gone — use <code>assertEqual</code>;
+          <code>failUnless</code>/<code>assert_</code> are gone — use <code>assertTrue</code>;
+          <code>failIf</code> is gone — use <code>assertFalse</code>;
+          <code>failUnlessEqual</code>/<code>failIfEqual</code> are gone — use <code>assertEqual</code>/<code>assertNotEqual</code>.
+          The lesson code already uses the current names throughout, so no changes are needed here.</td>
+      </tr></table>
+
+    </div>
+
+    <!-- COMPARING DOCTEST AND UNITTEST -->
+    <a name="s_06"></a>
+    <div class="subheading">Comparing doctest and unittest</div>
+    <div class="subheadingText">
+
+      <p>So, which should you use, doctest or unittest? To a certain extent, this is a matter of individual preference.
+          Let's compare the two:</p>
+
+      <table class="tbl">
+        <tr><th>doctest</th><th>unittest</th></tr>
+        <tr><td>More readily accessible</td><td>More challenging to learn</td></tr>
+        <tr><td>Documents your code to some degree</td><td>Maintains a clean separation between tests and documentation</td></tr>
+        <tr><td>Harder to maintain as features change</td><td>Easier to maintain as features change</td></tr>
+        <tr><td>Assertions are more difficult to incorporate</td><td>Assertions are the primary tools for verifying correct performance</td></tr>
+        <tr><td>Verbose</td><td>Concise</td></tr>
+      </table>
+
+      <p>The Python community generally agrees that while doctests have their place, unittests are
+          usually more useful. doctests are easier to learn, but in the
+          long run, unittests are the more streamlined choice.
+          It is possible to integrate doctests in a unittest environment, though not quite as
+          straightforward as you might like.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note"><code>pytest</code> has become a popular third-party alternative to both doctest
+          and unittest. It lets you write plain <code>assert</code> statements in test functions (no
+          subclassing required) and produces rich, readable failure output. It is worth knowing about,
+          though unittest remains entirely standard and widely used.</td>
+      </tr></table>
+
+    </div>
+
+    <!-- ONE DOWN -->
+    <a name="s_07"></a>
+    <div class="subheading">One Down</div>
+    <div class="subheadingText">
+
+      <p>Congratulations! Just like that, you are now equipped with a second Python test framework.
+          In the lessons to come, we'll use
+          both test frameworks to check our work and build good programming habits.
+          According to the tenets of agile programming, test-driven
+          development is the way to go. TDD lets you
+          continue to refactor your code without introducing errors, and it encourages other programmers to love you for your
+          devotion to best practices. In the
+          next lesson, we'll explore test-driven development even further. See you there!</p>
+
+    </div>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="next" href="TestDrivenDevelopment.html">Test-Driven Development</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

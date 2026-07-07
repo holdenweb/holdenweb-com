@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Graphical User Interface Layout</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Graphical User Interface Layout</div>
+
+  <!-- HANDLING WINDOW LAYOUT -->
+  <a name="h_01"></a>
+  <div class="heading">Handling Window Layout</div>
+  <div class="headingText">
+
+    <p>All managers are called as a method call on a widget, with keyword arguments to specify how the widget
+      (which may itself be a container) will be positioned inside of its container.</p>
+
+    <p>Managing the way widgets are laid out within their containers (typically frames, although there
+      are other containers) is referred to as "geometry management." The
+      <span class="darkblue">Tkinter</span> module has three different ways of packing widgets into their containers.
+      You've already seen the <b>pack()</b> method in action. Packing is useful for less complex window
+      layouts, and <b>pack()</b> has many options you can use to control how the components are laid out inside
+      their parent frames.</p>
+
+    <p>If components are laid out in a regular grid, you can use a widget's
+      <span class="darkgreen">grid()</span> method instead. If you want to place widgets at specific locations,
+      use the widget's <span class="darkgreen">place()</span> method. Just make sure you <i>never</i> mix
+      calls on <span class="darkgreen">pack()</span>, <span class="darkgreen">place()</span>, and <span class="darkgreen">grid()</span>
+      methods on the same window. This could throw your program
+      into an infinite loop as it tries to satisfy the needs of the more than one different layout scheme.</p>
+
+    <!-- THE PACK GEOMETRY MANAGER -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">The Pack Geometry Manager</div>
+    <div class="subheadingText">
+
+      <p>The table below shows <b>pack()</b> method's principal keyword arguments. Most of the values are symbols
+        defined by the tkinter module itself:</p>
+
+      <table class="tbl">
+        <tr><th>Keyword</th><th>Values</th></tr>
+        <tr><td>fill</td><td>X: fill the container in the horizontal dimension.<br>
+          Y: fill the container in the vertical dimension.<br>
+          BOTH: fill the container in both dimensions.</td></tr>
+        <tr><td>expand</td><td>False: the widget is never resized.<br>
+          True: the widget is resized when the container is resized.</td></tr>
+        <tr><td>side</td><td>Specifies which side of the container the widget will be packed against (TOP (the default),
+          LEFT, RIGHT, or BOTTOM).</td></tr>
+      </table>
+
+      <p>Let's create a program that demonstrates some of these features. Create a file named <b>sidebyside.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from tkinter import *
+
+root = Tk()
+
+w = Label(root, text="Red Label", bg="red", fg="white")
+w.pack(side=LEFT)
+w = Label(root, text="Green Label", bg="green", fg="black")
+w.pack(side=LEFT)
+w = Label(root, text="Blue Label", bg="blue", fg="white")
+w.pack(side=LEFT)
+
+mainloop()</ins>
+</pre></div></div>
+
+      <p>When you run the program, you should see a window like this:</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebysideNormal.png" alt="Three side-by-side coloured labels (red, green, blue) in a Tkinter window at its default size"></div></p>
+
+      <p>Enlarge the window by dragging a corner of it. The labels remain at the left of the window, and are
+        vertically centered in it, like this:</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebysideExpanded.png" alt="The same three labels after the window has been enlarged, still left-aligned and vertically centred"></div></p>
+
+      <p>Now, close the window, and change the packing side to TOP as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from tkinter import *
+
+root = Tk()
+
+w = Label(root, text="Red Label", bg="red", fg="white")
+w.pack(side=<ins>TOP</ins>)
+w = Label(root, text="Green Label", bg="green", fg="black")
+w.pack(side=<ins>TOP</ins>)
+w = Label(root, text="Blue Label", bg="blue", fg="white")
+w.pack(side=<ins>TOP</ins>)
+
+mainloop()
+</pre></div></div>
+
+      <p>Now the program's window shows the labels on top of each other, like this:</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebyside1Normal.png" alt="Three stacked coloured labels (red, green, blue) in a Tkinter window at its default size"></div></p>
+
+      <p>Expand the window; the buttons stick to the top and are centered horizontally, like this:</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebyside1Expanded.png" alt="The three stacked labels after the window has been enlarged, remaining at the top and horizontally centred"></div></p>
+
+      <p>Close the window, and add a <b>fill=BOTH</b> argument to each pack call:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from tkinter import *
+
+root = Tk()
+
+w = Label(root, text="Red Label", bg="red", fg="white")
+w.pack(side=TOP<ins>, fill=BOTH</ins>)
+w = Label(root, text="Green Label", bg="green", fg="black")
+w.pack(side=TOP<ins>, fill=BOTH</ins>)
+w = Label(root, text="Blue Label", bg="blue", fg="white")
+w.pack(side=TOP<ins>, fill=BOTH</ins>)
+
+mainloop()
+</pre></div></div>
+
+      <p>Now the labels fill the frame. But when you expand the
+        window, the labels only expand horizontally. What's up?</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebyside2Normal.png" alt="Three stacked labels filling the full width of the window at its default size">
+        <img src="images/lessonImages/sidebyside2Expanded.png" alt="The three labels after the window is widened, expanding horizontally but not vertically"></div></p>
+
+      <p>Well, the widgets are not being told to expand, so they only get larger in the dimension
+        where they aren't stacked. So the final change we'll make will be to add an <b>expand</b> option to the
+        <b>pack()</b> calls (just for fun, we'll omit one to see what happens). Close the window and modify
+        <b>sidebyside.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from tkinter import *
+
+root = Tk()
+
+w = Label(root, text="Red Label", bg="red", fg="white")
+w.pack(side=TOP, fill=BOTH)
+w = Label(root, text="Green Label", bg="green", fg="black")
+w.pack(side=TOP, fill=BOTH<ins>, expand=True</ins>)
+w = Label(root, text="Blue Label", bg="blue", fg="white")
+w.pack(side=TOP, fill=BOTH<ins>, expand=True</ins>)
+
+mainloop()
+</pre></div></div>
+
+      <p>When you resize the window, the green and blue
+        labels expand to continue to fill the frame while the red label (which does not have
+        <b>expand=True</b>) remains at its original height.</p>
+
+      <p><div class="c"><img src="images/lessonImages/sidebyside3Expanded.png" alt="Expanded window showing the red label unchanged in height while the green and blue labels have grown to fill the remaining space"></div></p>
+
+    </div></div>
+
+    <!-- THE GRID GEOMETRY MANAGER -->
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">The Grid Geometry Manager</div>
+    <div class="subheadingText">
+
+      <p>The grid manager is, as its name suggests, most useful when you want components to be laid out on a
+        regular grid. It's probably the most flexible of the managers, and unlike the pack manager, the grid manager does not
+        require you to create a large number of frames to make sure that all of your widgets line up properly as
+        the window is resized.</p>
+
+      <p>Once you have created a widget, you can place it in its container in a notional grid, where rows and
+        columns are sized automatically to accommodate the widgets each cell contains, by calling the widget's
+        <span class="darkgreen">grid()</span> method. An
+        empty row or column will never be displayed or take up any space within the window, which
+        gives you some flexibility about row and column numbering. The table below explains the possible arguments:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><th>Keyword</th><th>Values</th></tr>
+        <tr><td>row</td><td>Specifies the row in which this widget should appear.</td></tr>
+        <tr><td>column</td><td>Specifies the column in which this widget should appear.</td></tr>
+        <tr><td>sticky</td><td>Normally a widget appears centered within its cell. The <b>sticky</b> attribute can be set to one
+          of four special values, N, S, E, or W, to specify with which side of the cell the widget should be
+          aligned. You can add these values together to cause the widget to expand into its cell. For example,
+          E+W would make expand to occupy the full width of its cell, while N+S+E+W would cause the widget to spread
+          out to fill the whole cell.</td></tr>
+        <tr><td>rowspan, columnspan</td><td>If you want a widget to occupy more than one row and/or column, set <b>rowspan</b> and/or
+          <b>columnspan</b> to the number of rows and/or columns you want it to occupy. The row and column
+          number associated with the widget identify the top-left corner of the spanned block.</td></tr>
+      </table></div>
+
+      <p>Let's play with the grid manager. Create a program named <b>tkgrid.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from tkinter import *
+
+def colorgen():
+    while True:
+        yield "red"
+        yield "blue"
+
+class Application(Frame):
+
+    def __init__(self, master=None):
+        colors = colorgen()
+        Frame.__init__(self, master)
+        self.grid()
+        for r in (1, 22, 333):
+            for c in (1, 22, 333):
+                txt = "Item {0}, {1}".format(r, c)
+                l = Label(self, text=txt, bg=next(colors))
+                l.grid(row=r, column=c)
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()</ins>
+</pre></div></div>
+
+      <p>Run the program. It makes the frame rows and columns
+        just big enough for the tallest and widest widgets they contain. Because we chose row and column
+        numbers with different widths, some of the cells have space around them, and you can see
+        the white background of the frame.</p>
+
+      <p>Resizing the window demonstrates that only the frame resizes. The cells stay at the top-left corner
+        within the frame.</p>
+
+      <p><div class="c"><img src="images/lessonImages/tkgridNormal.png" alt="A 3x3 grid of alternating red and blue labels at the window's default size, with white space visible around the cells">
+        <img src="images/lessonImages/tkgridExpanded.png" alt="The same grid after the window is enlarged, with the grid remaining anchored to the top-left corner"></div></p>
+
+<div class="observeBox"><div class="observeTitle">Observe: tkgrid.py</div><div class="observe"><pre>from tkinter import *
+
+<span class="darkblue">def colorgen():
+    while True:
+        yield "red"
+        yield "blue"</span>
+
+class Application(Frame):
+
+    def __init__(self, master=None):
+        <span class="darkblue">colors = colorgen()</span>
+        Frame.__init__(self, master)
+        self.grid()
+        <span class="purple">for <span class="red">r</span> in (1, 22, 333):</span>
+            <span class="purple">for <span class="blue">c</span> in (1, 22, 333):</span>
+                txt = "Item {0}, {1}".format(<span class="red">r</span>, <span class="blue">c</span>)
+                l = Label(self, text=txt, bg=<span class="darkgreen">next(colors)</span>)
+                l.grid(row=<span class="red">r</span>, column=<span class="blue">c</span>)
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+      <p>We used an <span class="darkblue">infinite generator</span> to create as many alternating colors as the
+        application requires. Calling the <span class="darkgreen">next()</span> function on a generator is the most convenient
+        way to retrieve the next value in the sequence when you can't iterate over it.</p>
+
+      <p>The nested <span class="purple">for</span> loops create a two-dimensional array where <span class="red">r</span> is the row and
+        <span class="blue">c</span> is the column; the array provides the numbers to display in each grid position AND the display
+        positions themselves (we used multiple-digit numbers to make the text wider for some cells than
+        others; we'd get the same positioning with (1,2,3)).</p>
+
+      <p>Close the window. The white space issue can be addressed by making the cells sticky on the East and
+        West sides:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>from tkinter import *
+
+def colorgen():
+    while True:
+        yield "red"
+        yield "blue"
+
+class Application(Frame):
+
+    def __init__(self, master=None):
+        colors = colorgen()
+        Frame.__init__(self, master)
+        self.grid()
+        for r in (1, 22, 333):
+            for c in (1, 22, 333):
+                txt = "Item {0}, {1}".format(r, c)
+                l = Label(self, text=txt, bg=next(colors))
+                l.grid(row=r, column=c<ins>, sticky=E+W</ins>)
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+      <p>Save and run it. This fixes the white space problem by
+        making all cells in each column the same width. When the window is expanded, however, the rows and
+        columns remain at the top-left of the frame and unchanged in size.</p>
+
+      <p><div class="c"><img src="images/lessonImages/tkgrid1Normal.png" alt="The 3x3 grid with E+W sticky, all cells now filling the full column width">
+        <img src="images/lessonImages/tkgrid1Expanded.png" alt="The grid with E+W sticky after enlarging the window; the cells stay at the top-left and do not grow vertically"></div></p>
+
+      <p>In order to have the columns and rows expand to fill the frame, we actually need to reconfigure the
+        frame itself. A frame with widgets that are configured using the grid manager has
+        <span class="darkgreen">rowconfigure()</span> and <span class="darkgreen">columnconfigure()</span> methods, which you
+        can call to apply specific configurations. The first argument is always the row or column index; this
+        can be followed by a number of keyword arguments:</p>
+
+      <table class="tbl">
+        <tr><th>Keyword</th><th>Meaning</th></tr>
+        <tr><td>minsize</td><td>Defines the row's or column's minimum size. (Note that the row or column still will not be
+          displayed if there are no widgets present within it.)</td></tr>
+        <tr><td>pad</td><td>Sets the size of the row or column by adding the specified amount of padding to the height of the row or the
+          width of the column.</td></tr>
+        <tr><td>weight</td><td>Determines how additional space is distributed between the rows and columns as the frame
+          expands. The higher the weight, the more of the additional space is distributed between the
+          rows or columns. A row with weight 2 will expand twice as fast as a row with weight 1;
+          it works the same way for columns.</td></tr>
+      </table>
+
+      <p>So by calling <span class="darkgreen">rowconfigure()</span> and <span class="darkgreen">columnconfigure()</span>
+        methods on the frame, we can fix the second problem. Close the window and modify <b>tkgrid.py</b>
+        as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>from tkinter import *
+
+def colorgen():
+    while True:
+        yield "red"
+        yield "blue"
+
+class Application(Frame):
+
+    def __init__(self, master=None):
+        colors = colorgen()
+        Frame.__init__(self, master)
+        <ins>self.master.rowconfigure(0, weight=1)
+        self.master.columnconfigure(0, weight=1)</ins>
+        self.grid(<ins>sticky=W+E+N+S</ins>)
+        <ins>rcount = 0</ins>
+        for r in (1, 22, 333):
+            <ins>self.rowconfigure(r, weight=rcount)
+            rcount += 1
+            ccount = 0</ins>
+            for c in (1, 22, 333):
+                <ins>self.columnconfigure(c, weight=ccount)
+                ccount += 1</ins>
+                txt = "Item {0}, {1}".format(r, c)
+                l = Label(self, text=txt, bg=next(colors))
+                l.grid(row=r, column=c, sticky=W+E<ins>+N+S)</ins>
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+      <p>Save and run it. The master frame is configured to
+        expand as the program window (a grid of one row and one column) expands. Each row and column is given
+        a weight one higher than the preceding one, starting with zero. This means that as the window expands,
+        the top left cell always stays the same size, and the third row and column expand more than the
+        second.</p>
+
+      <p><div class="c"><img src="images/lessonImages/tkgrid2Normal.png" alt="The 3x3 grid configured to expand, shown at its default size">
+        <img src="images/lessonImages/tkgrid2Expanded.png" alt="The grid after enlarging the window: the top-left cell stays fixed while the second and third rows and columns grow proportionally to their weights"></div></p>
+
+      <p>Close the window.</p>
+
+      <p>Finally, we're going to see how the <b>rowspan</b> and <b>columnspan</b> keyword arguments allow us
+        to build flexible layouts. In this case, we'll have a column of buttons on the left, a row of
+        buttons along the bottom, and a frame occupying the remainder of the window. Create <b>grdspan.py</b>
+        as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from tkinter import *
+
+ALL = N+S+W+E
+
+class Application(Frame):
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.master.rowconfigure(0, weight=1)
+        self.master.columnconfigure(0, weight=1)
+        self.grid(sticky=ALL)
+        for r in range(5):
+            self.rowconfigure(r, weight=1)
+            Button(self, text="Row {0}".format(r)).grid(row=r, column=0, sticky=ALL)
+        self.rowconfigure(5, weight=1)
+        for c in range(5):
+            self.columnconfigure(c, weight=1)
+            Button(self, text="Col {0}".format(c)).grid(row=5, column=c, sticky=ALL)
+        f = Frame(self, bg="red")
+        f.grid(row=0, column=1, rowspan=5, columnspan=4, sticky=ALL)
+root = Tk()
+app = Application(master=root)
+app.mainloop()</ins>
+</pre></div></div>
+
+      <p>This application again starts out by configuring the frame as a single-row, single-column, expanding
+        grid. Then it configures five buttons in column zero, and adds a sixth row (numbered 5—remember
+        the numbering starts from zero here) containing five buttons. The window has six
+        rows and five columns.</p>
+
+      <p>The remainder of the window is occupied by a red Frame; its top-left corner is next to the top
+        button. So it has to span five rows and four columns. When you run your program, the frame
+        should occupy the whole window, even after the program window is resized. Because the buttons are
+        sticky on all four edges, they expand to fill the space the grid manager allocates to them.</p>
+
+      <p><div class="c"><img src="images/lessonImages/gridspanNormal.png" alt="A window with a column of five row-buttons on the left, a row of five column-buttons along the bottom, and a red frame filling the remaining area, at default size">
+        <img src="images/lessonImages/gridspanExpanded.png" alt="The same layout after the window is resized; all buttons and the red frame expand proportionally to fill the window"></div></p>
+
+    </div></div>
+
+    <!-- THE PLACE GEOMETRY MANAGER -->
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">The Place Geometry Manager—Don't Use It</div>
+    <div class="subheadingText">
+
+      <p>We mention this manager only because you might encounter code that uses it. Frankly, the available
+        documentation is insufficient to explain how it works, but you can place a widget either
+        "relatively" (by specifying a <b>relx</b> and <b>rely</b> argument between 0 and 1 that says how far
+        along the container's width and height the widget should be placed) or "absolutely", specifying an
+        <b>x</b> and a <b>y</b> position in absolute screen coordinates.</p>
+
+      <p>While the place manager allows most flexibility, it is also the most difficult to use, and
+        is outside the scope of this course.</p>
+
+    </div></div>
+
+    <p>So now you can achieve a required window layout, using either the pack or
+      the grid geometry managers. Excellent! In the next lesson, we'll focus on event handling, and introduce you to a
+      number of tkinter's built-in dialogs. See you there...</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="IntroductionToGraphicalUserInterfaces.html">Introduction to Graphical User Interfaces</a>
+    <a class="next" href="MoreAboutGraphicalUserInterfaces.html">More About Graphical User Interfaces</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

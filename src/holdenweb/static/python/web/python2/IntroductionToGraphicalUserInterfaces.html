@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Introduction to Graphical User Interfaces</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Introduction to Graphical User Interfaces</div>
+
+  <p>In this lesson, we'll learn the basics of programming graphical user interfaces (GUIs). GUI-based
+    programs are somewhat different from those you have written so far. You're earlier programs have driven
+    the process of user interaction. When the programs wanted data they prompted the user, and waited for
+    the user to complete their entry by pressing <b>Enter</b>.</p>
+
+  <p>Consider a program with an interface that has buttons, checkboxes, text entry items, and so on. The user can
+    interact with these elements however they like.
+    But how do we write programs that are ready to respond to whatever the user presents?</p>
+
+  <!-- THE WINDOW MANAGER -->
+  <a name="h_01"></a>
+  <div class="heading">The Window Manager</div>
+  <div class="headingText">
+
+    <p>Take a look at the diagram below. The user sees some sort of desktop wallpaper (in this case, an image of
+      the moon) covered with icons, application windows, and (since the desktop is that of a Windows XP
+      machine) the <i>taskbar</i> that holds icons representing each running application, a whole load of
+      <i>quick-launch</i> icons, and a Start icon that can be used to bring up a menu allowing access to most
+      of the facilities of the computer.</p>
+
+    <p><div class="c"><img src="images/lessonImages/WindowEnvironment.png" alt="Diagram of a Windows XP desktop showing taskbar, application windows, and desktop wallpaper"></div></p>
+
+    <p>The desktop is called a "two-and-a-half dimensional surface" because, although it does not actually have
+      a third dimension (depth), one window can cover another, just as though it were a piece of paper covering
+      another piece, on a real, physical desktop. (Sadly, my own physical and
+      virtual desktops are rarely tidy!) When you click on something, the <i>window manager</i> must
+      know which window is on top where you have clicked, so it can channel the <i>event</i> to that window.</p>
+
+    <p>In a GUI environment, you write programs that present a description of the desired window structures to
+      the window manager, which is the system component that handles (among other things) tracking mouse
+      movements and distributing keystrokes and mouse clicks to the right programs. Which programs receive
+      these events depends on a number of factors, including the current cursor position and which window has
+      the <i>focus</i>.</p>
+
+    <p>Each window is composed of widgets, some of which contain other widgets, and so on. One widget
+      can be positioned on top of another. The window manager has to make the determination about
+      which widget is uppermost at the particular position of the cursor when the click occurs.
+      (We'll go over widgets a bit more later in the lesson.)</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">How Programs Interact with the Window Manager</div>
+    <div class="subheadingText">
+
+      <p>All this information is created in a form that the window manager can understand by making calls to
+        a <i>window library</i>. The main libraries in Python are <i>PyQT</i>,
+        <i>wxPython</i>, and <i>tkinter</i>. We'll use <i>tkinter</i> to explain
+        the principles of working with GUIs. The descriptions of the window structures
+        include references to the specific pieces of code (<i>event handlers</i>) that must be run in response
+        to specific events.</p>
+
+      <p>The structures can be modified while the program runs. For example, you can arrange for
+        a dialog box to appear when a particular button is clicked. While a program's main window is usually
+        created at the start of the program and continues to exist for the duration of the program, it is not
+        at all uncommon for programs to create and delete other windows as they are required.</p>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- YOUR FIRST PROGRAM WITH A GUI -->
+  <a name="h_02"></a>
+  <div class="heading">Your First Program with a GUI</div>
+  <div class="headingText">
+
+    <p>This example is taken straight from the documentation for the <b>tkinter</b> module. The program
+      creates a window that looks like this:</p>
+
+    <p><div class="c"><img src="images/lessonImages/Tkdemo.png" alt="Tkinter demo window showing a Hello button and a Quit button side by side"></div></p>
+
+    <p>When you click the button on the right, the program prints some text on its standard output. When you
+      click the button on the left, the program terminates. Create a <b>tkdemo.py</b> file as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from tkinter import *
+
+class Application(Frame):
+    def say_hi(self):
+        print("Hi there, everyone!")
+
+    def createWidgets(self):
+        self.QUIT = Button(self)
+        self.QUIT["text"] = "Quit"
+        self.QUIT["fg"]   = "red"
+        self.QUIT["command"] =  self.quit
+        self.QUIT.pack({"side": "left"})
+
+        self.hi_there = Button(self)
+        self.hi_there["text"] = "Hello",
+        self.hi_there["command"] = self.say_hi
+        self.hi_there.pack({"side": "left"})
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.pack()
+        self.createWidgets()
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()</ins>
+</pre></div></div>
+
+    <p>Run it. Click the <b>Hello</b> button and then the <b>Quit</b> button, to see what they do.</p>
+
+    <p>Let's look at the code more closely:</p>
+
+<div class="observeBox"><div class="observeTitle">Observe</div><div class="observe"><pre>
+from tkinter import *
+
+class <span class="green">Application</span>(<span class="blue">Frame</span>):
+    <span class="darkred">def say_hi(self):
+        print("Hi there, everyone!")</span>
+
+    def <span class="darkgreen">createWidgets(self)</span>:
+        <span class="darkblue">self.QUIT = Button(self)
+        self.QUIT["text"] = "Quit"
+        self.QUIT["fg"]   = "red"
+        self.QUIT["command"] =  self.quit
+        self.QUIT.pack({"side": "left"})</span>
+
+        <span class="purple">self.hi_there = Button(self)
+        self.hi_there["text"] = "Hello",
+        self.hi_there["command"] = </span><span class="darkred">self.say_hi</span>
+        <span class="purple">self.hi_there.pack({"side": "left"})</span>
+
+    def <span class="red">__init__(self, master=None)</span>:
+        <span class="orange">Frame.__init__(self, master)
+        self.pack()</span>
+        <span class="darkgreen">self.createWidgets()</span>
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+    <p>The majority of the code in the program defines a class named <span class="green">Application</span>, which
+      subclasses the <span class="blue">tkinter.Frame</span> class. The <span class="blue">tkinter.Frame</span> class defines all of the general behaviors
+      required of a program's GUI, but these general behaviors do not encompass the specifics of the
+      contents of this window. For those specifics, we have the <span class="darkgreen">createWidgets()</span> method.</p>
+
+    <p>Let's begin by looking at the <span class="blue">tkinter.Frame</span> class's <span class="darkgreen">__init__()</span> method.
+      First, it performs all of the standard <span class="blue">tkinter.Frame</span> initialization actions by calling
+      its superclass's (<span class="orange">tkinter.Frame's __init__()</span>) method. Next, it calls
+      the newly created frame's <span class="orange">pack()</span> method, which prepares it to be part of the window
+      display. Then, it calls the <span class="darkgreen">createWidgets()</span> method, which as its name suggests,
+      creates the widgets (or components) that go inside of it.</p>
+
+    <p><span class="darkgreen">createWidgets()</span> initializes only two widgets: the first is <b>the Quit
+      button</b>, which reads <span class="darkblue">"Quit"</span> with the foreground (<span class="darkblue">"fg"</span>) text
+      in <span class="darkblue">"red"</span> and calls the
+      Frame's self.quit() method (inherited from tkinter.Frame) when clicked; the second is the
+      <span class="purple">hi_there</span> button, which reads "Hello" and calls the Frame's
+      <span class="darkred">say_hi()</span> method when clicked.</p>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">Hey, wait a minute. In the Python 1 course, didn't we say that we should <i>never</i>
+        use the <b>from <i>module</i> import *</b> form of the import statement? In fact we did. But
+        certain
+        modules have been designed specifically to be used in this way. If <b>tkinter</b> were used in the
+        standard form, then our code would be more difficult to read. When writing a typical program, we use many names from
+        <b>tkinter</b>. Our code readability is enhanced by limiting the use of qualified names such
+        as <b>tkinter.Tk</b>. The <b>tkinter</b> module has been designed with that in mind,
+        and although there is always some danger that you might unknowingly overwrite
+        one of the 150+ names it defines, in practice this doesn't happen much.</td>
+    </tr></table>
+
+    <p>Now, suppose the customer changed the specification for this
+      project. They want to change the colors and text a bit to make the application to look like this:</p>
+
+    <p><div class="c"><img src="images/lessonImages/Tkdemo_new.png" alt="Updated Tkinter demo window showing a blue Hello button on the left and a red Goodbye button on the right"></div></p>
+
+    <p>The changes include:</p>
+    <ul>
+      <li>Change the "QUIT" button label to "Goodbye."</li>
+      <li>Make the "Hello" label blue.</li>
+      <li>Move the "Goodbye" button to the right of the "Hello" button.</li>
+    </ul>
+
+    <p>Try to make the changes without looking at the answers below.</p>
+    <p></p>
+    <p>. . .</p>
+    <p></p>
+    <p>Try to figure it out on your own first!</p>
+    <p></p>
+    <p>. . .</p>
+    <p></p>
+    <p>I mean it!</p>
+    <p></p>
+    <p>. . .</p>
+    <p></p>
+    <p>Don't peek!</p>
+    <p></p>
+    <p>. . .</p>
+    <p></p>
+    <p>If everything went alright, your changes look something like
+      those in the box below (additions and changes in <ins>this color</ins> and deletions
+      in <del>this style</del>):</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from tkinter import *
+
+class Application(Frame):
+    def say_hi(self):
+        print("Hi there, everyone!")
+
+    def createWidgets(self):
+        <ins>self.hi_there = Button(self)
+        self.hi_there["text"] = "Hello",
+        <b>self.hi_there["fg"]   = "blue"</b>
+        self.hi_there["command"] = self.say_hi
+        self.hi_there.pack({"side": "left"})</ins>
+
+        self.QUIT = Button(self)
+        self.QUIT["text"] = "<ins>Goodbye</ins>"
+        self.QUIT["fg"]   = "red"
+        self.QUIT["command"] =  self.quit
+        self.QUIT.pack({"side": "left"})
+
+        <del>self.hi_there = Button(self)
+        self.hi_there["text"] = "Hello",
+        self.hi_there["command"] = self.say_hi
+        self.hi_there.pack({"side": "left"})</del>
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.pack()
+        self.createWidgets()
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Creating Widgets in a Window</div>
+    <div class="subheadingText">
+
+      <p>The <span class="darkgreen">createWidgets()</span> method creates precisely two widgets, which it stores as
+        the instance attributes <span class="purple">QUIT</span> and <span class="purple">hi_there</span>. <b>Button</b> is a
+        function defined by the <span class="darkblue">tkinter</span> module. When called, it requires the
+        <i>parent widget</i> to be provided as the first argument. Since the newly created frame instance
+        (the one whose <span class="purple">__init__()</span> method is being called) is the parent, <b>self</b> is
+        provided as the first argument. This makes the <span class="darkred">Application</span> instance the parent of
+        the button.</p>
+
+      <p>Once the <span class="purple">QUIT</span> widget has been created, the method then sets a number of configuration
+        items. Each of these items has a name and a value:</p>
+
+      <div class="c"><table class="tbl">
+        <tr><th>Item name</th><th>Meaning</th></tr>
+        <tr><td>text</td><td>The label to be shown inside the button</td></tr>
+        <tr><td>fg</td><td>The foreground color used to write inside the button (that is, the color in which the text
+          label will be written)</td></tr>
+        <tr><td>command</td><td>The function to call when the button is clicked</td></tr>
+      </table></div>
+
+      <p>The <b>text</b> and <b>fg</b> configuration items are pretty straightforward. The
+        <b>command</b> item takes a little more effort. This particular code is written to allow the
+        creation of multiple windows, each being an instance of the <b>Application</b> class. Because the
+        <b>command</b> item is an instance method, when the <b>QUIT</b> button is clicked on an instance of
+        the Application class, that instance's <span class="darkgreen">quit()</span> method is called. This method is
+        inherited from the <b>tkinter.Frame</b> class, and causes the application to terminate.</p>
+
+      <p>Once the widget is fully configured, its <b>pack()</b> method is called to place it at the left-hand side
+        of the (containing) application window (other options are "right", "top," and "bottom). That concludes
+        the configuration of the <b>QUIT</b> button. Next, a second widget (the <b>hi_there</b> button) is
+        created and configured to call the <b>hi_there</b> method when it's clicked. This button is then
+        packed to the left of the remaining space in the containing window.</p>
+
+      <p>The only other method in the class is <b>say_hi()</b>, which is the event handler for clicks on the
+        <b>hi_there</b> button. It prints a message on the console whenever it's called by the
+        user.</p>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Top-Level Application Code</div>
+    <div class="subheadingText">
+
+      <p>Once the <span class="darkred">Application</span> class is defined, the program needs to create
+        an instance of the application class and
+        pass control to the window manager. The code for that immediately follows the class definition.</p>
+
+      <p>The first line, <b>root = Tk()</b>, creates the application's main window. If the application created
+        any other windows, they would be children (or grandchildren) of <b>root</b>. The
+        next line, <b>app = Application(master=root)</b>, creates an instance of the application class (as a
+        subclass of <b>tkinter.Frame</b>) and attaches it to the root window.</p>
+
+      <p>The call to the application's <b>mainloop()</b> method (which is inherited from
+        <b>tkinter.Frame</b>) hands control over to the window manager. This method only returns when
+        the application is terminating—the window manager makes direct calls to the event handlers when
+        specific events that have been programmed into the window description occur. Once the application
+        terminates, the program calls its root window's <span class="darkgreen">destroy()</span> method to release any
+        window manager resources before the program ends.</p>
+
+    </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">The Program Window</div>
+    <div class="subheadingText">
+
+      <p>So, when you run the program, you see a window like this:</p>
+
+      <p><div class="c"><img src="images/lessonImages/Tkdemo_new.png" alt="Updated Tkinter demo window showing a blue Hello button on the left and a red Goodbye button on the right"></div></p>
+
+      <p>The layout of the components was created by calls to the various components'
+        <span class="darkgreen">pack()</span> methods. Every time you click the "Hello" button, the program will print
+        <b>"Hi there, everyone!"</b> in the console window. When you click the "Goodbye" button (or terminate
+        the program by clicking the "X" button at the top right of the window) the program terminates.</p>
+
+      <p>So, there you have it. You have written and run your first GUI program using Python's <b>tkinter</b>
+        package! Good for you!</p>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">By the way, you may be wondering what <i>tkinter</i> means: <i>tk</i> stands for tool kit, and
+          <i>inter</i> stands for interface.</td>
+      </tr></table>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- INTRODUCING THE TKINTER WIDGET SET -->
+  <a name="h_03"></a>
+  <div class="heading">Introducing the Tkinter Widget Set</div>
+  <div class="headingText">
+
+    <p>The word "widget" is often used as an abstract name for an object, most often
+      for something manufactured. Modern GUI toolkits, <b>tkinter</b> included, are comprised of components that are referred to as
+      "widgets." All <b>Tkinter</b> widgets have a lot in common, even though they may not look alike.</p>
+
+    <p>There aren't a whole lot of widgets in the <b>Tkinter</b> toolkit, but using them wisely will allow you to create a
+      variety of useful graphical interfaces. Below are some important ones that you should know
+      about now:</p>
+
+    <table class="tbl">
+      <tr><th>Widget Type</th><th>Purpose</th></tr>
+      <tr><td>Frame</td><td>A container for other widgets. You can set the border and background color, and place other
+        widgets inside of it.</td></tr>
+      <tr><td>Toplevel</td><td>A special kind of Frame that interacts directly with the windows manager. Toplevels will
+        usually have a title bar, and features to interact with the window manager. The windows you
+        see on your screen are mostly top-level windows, and your application can create additional
+        Toplevel windows if it is set to do that.</td></tr>
+      <tr><td>Button</td><td>Users click on buttons to trigger some action. As you already
+        know from the sample program you just entered and ran, clicks on the button can be translated
+        into actions taken by your program (this is actually true of many widgets). Buttons usually
+        have text inside of them, but they can also show graphics.</td></tr>
+      <tr><td>Checkbutton</td><td>A special type of button that has two states; clicking change the state of the button from one
+        to the other.</td></tr>
+      <tr><td>Label</td><td>Labels are used to display pieces of text or images, usually ones that won't change during the
+        execution of the application.</td></tr>
+      <tr><td>Entry</td><td>Used to enter single lines of text and all kinds of input.</td></tr>
+      <tr><td>Listbox</td><td>Used to display a set of choices. The user can select a single item or multiple items from the list.
+        The Listbox can also be rendered
+        as a set of radio buttons or checkboxes.</td></tr>
+      <tr><td>Scale</td><td>Lets the user set numerical values by dragging a slider.</td></tr>
+      <tr><td>Text</td><td>A multi-line formatted text widget, it allows the textual content to be "rich."
+        It may also contain embedded images and Frames.</td></tr>
+      <tr><td>Message</td><td>Similar to a Text, but can automatically wrap text to a particular width, or width and height.</td></tr>
+      <tr><td>Menu</td><td>This is the base widget that you use to put a menu in your window (not all programs
+        need one). It corresponds to the menu bar along the top of your program window, and can also be
+        used to implement "popup" or "context" menus.</td></tr>
+      <tr><td>Menubutton</td><td>Adds choices to your Menus.</td></tr>
+      <tr><td>Radiobutton</td><td>Represents one of a set of mutually exclusive choices. Selecting one Radiobutton from a set,
+        deselects any others.</td></tr>
+      <tr><td>Scrollbar</td><td>Implements scrolling on a larger widget such as a Canvas, Listbox, or Text.</td></tr>
+      <tr><td>Canvas</td><td>A surface on which you can draw graphs and/or plots, and also use as the basis of your own
+        widgets.</td></tr>
+    </table>
+
+    <p>Each of the above widgets has its own place in user interfaces. Your first program used a
+      <i>Toplevel</i> (created automatically to contain the application) and a <i>Frame</i> that contained
+      two <i>Button</i>s. In case you are curious about the appearance, here is a picture of a "kitchen sink"
+      interface showing various widgets. By the look of the window, you can probably tell that the elements
+      have been thrown together (in this case, it's the result of a request i received to "show the students what all of
+      these things are"). Try and avoid this look at all cost.</p>
+
+    <p><div class="c"><img src="images/lessonImages/kitchenSink.png" alt="A Tkinter window demonstrating many widgets jumbled together: labels, buttons, entry fields, checkbuttons, radiobuttons, listbox, scale, and more"></div></p>
+
+  </div>
+
+  <!-- CONFIGURING WIDGETS -->
+  <a name="h_04"></a>
+  <div class="heading">Configuring Widgets</div>
+  <div class="headingText">
+
+    <p>So, the program you wrote above runs perfectly well, but the code is a bit to wordy. Each attribute of
+      each widget is configured in a separate statement. If individual aspects of the widgets need to be
+      configured at run-time, this might a convenient way to do it, but when you are creating a widget and
+      many aspects need to be configured, there are better ways.</p>
+
+    <p>The most basic way to configure your widgets is with keyword arguments to the widget creation
+      call. Rather than having to write <b>self.QUIT["fg"] = "red"</b> after you have created the
+      button, you can add an argument reading <b>fg="red"</b> when you create the button. The same
+      principle applies to most other widget configuration items. Try this out by modifying the <b>tkdemo.py</b>
+      file as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from tkinter import *
+
+class Application(Frame):
+    def say_hi(self):
+        print("Hi there, everyone!")
+
+    def createWidgets(self):
+        <ins>self.hi_there = Button(self, text="Hello", fg="blue", command=self.say_hi)</ins>
+        self.hi_there.pack(side="left")
+
+        <ins>self.QUIT = Button(self, text="Goodbye", fg="red", command=self.quit)</ins>
+        self.QUIT.pack(side="left")
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.pack()
+        self.createWidgets()
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()
+</pre></div></div>
+
+    <p>Run it. The window will have the same
+      appearance and behavior as before, but you've compressed the code considerably without sacrificing
+      readability.</p>
+
+    <p>Read over the code; you'll see that once the buttons have been created there's no
+      reference to them anywhere else in the code. So it isn't necessary to save a reference
+      to the buttons in instance attributes, and you could abbreviate the creation of the QUIT button even
+      further to this:<br><br>
+
+      <b>Button(self, text="Goodbye", fg="red", command=self.quit).pack(side="left")</b><br><br>
+
+      But that might be taking things just a little too far. It's a judgment call. Remember, the
+      programmer who has to understand your code in six months might be you! Ask yourself whether
+      brevity is important enough to make your code that little bit harder to understand.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">The config() Method, and Configuration Options</div>
+    <div class="subheadingText">
+
+      <p>A third way to configure widget options is to call
+        the widget's <b>config()</b> method with keyword arguments, naming the options you want to set and
+        giving new values. This is sort of half-way between the two methods you have previously
+        seen, which allows several post-creation changes to be combined into a single statement.</p>
+
+      <p>So far, we have used strings as the values of the <b>pack()</b> method's <span class="purple">side</span>
+        parameter. <b>Tkinter</b> also provides named constants <b>LEFT</b>, <b>RIGHT</b>, <b>BOTTOM</b>, and
+        <b>TOP</b>, which are easier to type and stand out more when you're reading the code.
+        The module provides many similar values that make typing your code easier.</p>
+
+      <p><b>tkinter</b> has many configuration options that you may find confusing at first. Most
+        widgets have a <b>keys()</b> method that you can use to learn about the options you can configure. We'll
+        try it out and see how it works. I bet you'll be surprised at how many options
+        are available for configuration. Type the commands below in an interactive session as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from tkinter import *</ins>
+&gt;&gt;&gt; <ins>b = Button()</ins>
+&gt;&gt;&gt; <ins>for k in b.keys():</ins>
+...     <ins>print(k)</ins>
+...
+activebackground
+activeforeground
+anchor
+background
+bd
+bg
+bitmap
+borderwidth
+command
+compound
+cursor
+default
+disabledforeground
+fg
+font
+foreground
+height
+highlightbackground
+highlightcolor
+highlightthickness
+image
+justify
+overrelief
+padx
+pady
+relief
+repeatdelay
+repeatinterval
+state
+takefocus
+text
+textvariable
+underline
+width
+wraplength
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>There are too many options to consider all of them in detail here (and many that you might never use, even after years
+        of programming with tkinter), but we'll go over the ones you'll use most frequently:</p>
+
+      <table class="tbl">
+        <tr><th>Item name</th><th>Definition</th></tr>
+        <tr><td>background, bg</td><td>The color of the body of the widget (on some operating systems, it's impossible to change the
+          background color of some widgets). The colors can be specified as strings (tkinter knows
+          about a lot of colors, and also accepts web-style RGB
+          values like "#006677"—you can read about them
+          <a href="http://en.wikipedia.org/wiki/Web_colors" target="_blank">here</a>). You can generate
+          these from separate RGB values, where each element is an integer between 0 and 255, using code
+          like:<br><br>
+          <b>tk_rgb = "#{0:02X}{1:02X}{2:02X}".format(128, 192, 200)</b>.<br><br>
+          If the RGB values are already in a list or tuple, you can use:<br><br>
+          <b>tk_rgb = "#{0:02X}{1:02X}{2:02X}".format(*rgb)</b><br><br></td></tr>
+        <tr><td>foreground, fg</td><td>The color used to write inside the widget, encoded as described above.</td></tr>
+        <tr><td>padx, pady</td><td>The amount of padding to put around the widget, horizontally and vertically. Without this
+          padding, the widget will be just large enough for its contents.</td></tr>
+        <tr><td>borderwidth</td><td>This creates a visible border around a widget.</td></tr>
+        <tr><td>height, width</td><td>Specify the height and the width of a widget (some widgets only let you set the width).
+          Widgets with text in them use a height and width in text units; those
+          containing graphics use a height and width in pixels.</td></tr>
+        <tr><td>disabledforeground</td><td>This specifies the foreground color to use when the widget is <i>disabled</i> (that is, when it
+          has been configured not to interact with the user). Most interfaces use gray for disabled
+          foregrounds.</td></tr>
+        <tr><td>state</td><td>The available states depend on the particular widget. The state can be "normal"
+          (as the widget usually looks), "disabled" (how it looks when it won't interact with the user),
+          "active" (how a button looks while the user is interacting with it) or "readonly" (for a Text
+          or Entry widget with text that can be selected, but not changed, by the user). You can use the
+          Tkinter constants NORMAL, DISABLED, and ACTIVE to represent state values as well.</td></tr>
+      </table>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">For a more native look on each platform, the <code>tkinter.ttk</code> module provides
+          themed versions of many widgets: <code>ttk.Button</code>, <code>ttk.Entry</code>,
+          <code>ttk.Radiobutton</code>, and so on. You can mix classic and themed widgets freely; use
+          <code>from tkinter import ttk</code> and then refer to <code>ttk.Button(...)</code> in place of
+          <code>Button(...)</code>.</td>
+      </tr></table>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- USING MORE WIDGETS -->
+  <a name="h_05"></a>
+  <div class="heading">Using More Widgets</div>
+  <div class="headingText">
+
+    <p>Now that you understand a bit more about the way GUIs are put together and the use of widgets, we'll try to use
+      a couple of widgets
+      in an example. We'll create a window that takes a text input and produces
+      different results, depending on which of three radio buttons is selected.</p>
+
+    <p>We'll be looking at an interface with inputs—we'll have an Entry widget into which
+      users can type text, and a set of Radiobutton widgets that determine which operation the program
+      performs on the text entered, when the user clicks the <b>Convert</b> button.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Reading Widget Values</div>
+    <div class="subheadingText">
+
+      <p>For basic widgets like
+        <i>Entry</i> items, you can usually read the item's value by calling its
+        <span class="darkgreen">get()</span> method, which returns the entered value.</p>
+
+      <p>More complex widgets like the Radiobutton can't be handled that way. Radiobuttons come in
+        sets, and only one of them can be selected at a time, so you need to get a value from the set, not
+        from an individual widget. In these cases, we use tkinter Variables; tkinter Variables are associated with
+        widget values. Once the association is made, you can call the Variable's
+        <span class="darkgreen">get()</span> method instead of the widget's.</p>
+
+      <p>Variable types differ according to the type of values you will be extracting. Use a
+        <i>BooleanVar</i> for simple yes/no choices, an <i>IntVar</i> for integers, a <i>DoubleVar</i> for
+        floating-point numbers and a <i>StringVar</i> to retrieve text. Those last three are usually
+        associated with an Entry widget, using the special <i>textvariable</i> configuration item.</p>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">A More Complex Program</div>
+    <div class="subheadingText">
+
+      <p>At last, here's a program that actually does something!</p>
+
+      <p><div class="c"><img src="images/lessonImages/texthandler.png" alt="Tkinter window with a text entry field, Output label, three radio buttons (Upper case, Lower case, Title case), and Quit and Convert buttons"></div></p>
+
+      <p>The next program is longer than previous examples, because it describes a more
+        complicated interface. Two frames are used inside of the main frame. The first contains an
+        <i>Entry</i> item where the user can enter text, a <i>Label</i> under it, and three
+        <i>Radiobutton</i>s. The second frame holds the regular buttons.</p>
+
+      <p>The value of the Entry widget is read from the <i>text</i> configuration item, but the
+        Radiobuttons are read using an associated <i>IntVar</i>, as integer values are associated with the
+        choices.</p>
+
+      <p>Create <b>texthandler.py</b> and enter the code as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from tkinter import *
+
+class Application(Frame):
+    """Application main window class."""
+    def __init__(self, master=None):
+        """Main frame initialization (mostly delegated)"""
+        Frame.__init__(self, master)
+        self.pack()
+        self.createWidgets()
+
+    def createWidgets(self):
+        """Add all the widgets to the main frame."""
+        top_frame = Frame(self)
+        self.text_in = Entry(top_frame)
+        self.label = Label(top_frame, text="Output label")
+        self.text_in.pack()
+        self.label.pack()
+        self.r = IntVar()
+        Radiobutton(top_frame, text="Upper case", variable=self.r, value=1).pack(side=LEFT)
+        Radiobutton(top_frame, text="Lower case", variable=self.r, value=2).pack(side=LEFT)
+        Radiobutton(top_frame, text="Title case", variable=self.r, value=3).pack(side=LEFT)
+        top_frame.pack(side=TOP)
+
+        bottom_frame = Frame(self)
+        bottom_frame.pack(side=TOP)
+        self.QUIT = Button(bottom_frame, text="Quit", command=self.quit)
+        self.QUIT.pack(side=LEFT)
+        self.handleb = Button(bottom_frame, text="Convert", command=self.handle)
+        self.handleb.pack(side=LEFT)
+
+    def handle(self):
+        """Handle a click of the button by processing any text the
+        user has placed in the Entry widget according to the selected
+        radio button."""
+        text = self.text_in.get()
+        operation = self.r.get()
+        if operation == 1:
+            output = text.upper()
+        elif operation == 2:
+            output = text.lower()
+        elif operation == 3:
+            output  = text.title()
+        else:
+            output = "*******"
+        self.label.config(text=output)
+
+root = Tk()
+app = Application(master=root)
+app.mainloop()</ins>
+</pre></div></div>
+
+      <p>Run it. You'll see a window that looks
+        like the one shown below. If you click the <b>Convert</b> button before you select one of the
+        RadioButtons, then the label text is filled with asterisks. If you make a choice, then the
+        appropriate method is applied to the contents of the Entry widget, and displayed as the text of the
+        label.</p>
+
+      <p><div class="c"><img src="images/lessonImages/texthandler.png" alt="Tkinter window with a text entry field, Output label, three radio buttons (Upper case, Lower case, Title case), and Quit and Convert buttons"></div></p>
+
+    </div>
+    </div>
+
+    <p>So, now you know something about creating GUIs. The code can get pretty lengthy, but it's relatively
+      straightforward. In the next lesson we'll find out more about window layout, which will give
+      us better control over the appearance of our windows.</p>
+
+  </div>
+
+  <!-- FURTHER READING ON TKINTER -->
+  <a name="h_06"></a>
+  <div class="heading">Further Reading on Tkinter</div>
+  <div class="headingText">
+
+    <p>A lot of the <b>tkinter</b> documentation offers code samples written in Python 2. Don't be afraid to get creative
+      in adapting them to Python 3. Python 3 isn't really much different from
+      Python 2 (although the package's name is capitalized in Python 2). I'm confident you'll be able to
+      work out any necessary changes!</p>
+
+    <p>Your next port of call should be the <a href="http://docs.python.org/3.1/library/tkinter.html" target="_blank">Python documentation</a>. The <a href="http://tkinter.unpythonic.net/wiki/" target="_blank">Tkinter Wiki</a> is a community-maintained set of documentation that is
+      informal and friendly to read. It's also user-editable and eternally incomplete; you may want to add
+      your own insights later, as your expertise grows! Onward and forward to the next lesson!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Archives.html">Archives</a>
+    <a class="next" href="GraphicalUserInterfaceLayout.html">Graphical User Interface Layout</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

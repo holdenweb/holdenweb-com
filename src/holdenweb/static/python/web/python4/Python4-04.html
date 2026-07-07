@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Publish and Subscribe</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Publish and Subscribe</div>
+
+  <p>Welcome to your next set of Python challenges! In this lesson, we'll go over program structuring, as well as <b>Publish</b> and <b>Subscribe</b>.</p>
+
+  <!-- ON PROGRAM STRUCTURE -->
+  <a name="on_program_structure"></a>
+  <a name="h_01"></a>
+  <div class="heading">On Program Structure</div>
+  <div class="headingText">
+
+    <p>Ideally every part of your program will communicate via known
+        APIs only, but accomplishing that can be a real challenge. When you are writing frameworks to be used in a wide
+        variety of circumstances, it can be difficult to predict
+        what the environment will look like. Data must be produced, but it may be consumed by a variety of functions. Consider a
+        spreadsheet, for example. It may display both a bar chart and a pie chart of the same data. How does the code that
+        updates the cells as users type in new numbers know to update the graphics, and how many graphics there are? The answer
+        lies in a generic technique known as "publish-and-subscribe", which is a general mechanism to allow flexible distribution
+        of data. </p>
+
+  </div>
+
+  <!-- PUBLISH AND SUBSCRIBE -->
+  <a name="publish_and_subscribe"></a>
+  <a name="h_02"></a>
+  <div class="heading">Publish and Subscribe</div>
+  <div class="headingText">
+
+    <p>Thanks to publish-and-subscribe and similar systems, data producers do not need to know in advance who
+        will be using their data. The term "data producer" is deliberately vague, because publish-and-subscribe is a
+        broad and encompassing architectural pattern. A data producer (the "publisher" element in publish-and-subscribe) might be a stock price
+        ticker that periodically spits out new prices for stocks, or a weather forecasting program that produces new forecasts
+        every six hours, or even the lowly ticket machine that provides people with numbers to take turns at a grocery counter.
+        Anyone who wants to make use of the data must subscribe (typically by calling a method of the producer
+        object to "register" a subscription) and then when new data is available, it is distributed to all subscribers
+        by the publisher calling a method of each of the subscribed objects with the new information as an argument. </p>
+
+    <p>This "loosens the coupling" between the producers and consumers of data, allowing each to be written in a general way,
+        pretty much independent of each other. Each subscriber needs to know only about its own relationship with the publisher,
+        regardless of any other subscriber. </p>
+
+    <!-- Publish and Subscribe in Action -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Publish and Subscribe in Action</div>
+    <div class="subheadingText">
+
+      <p>Suppose you have a class Publisher, whose instances can be given objects to publish, and that a number of consumers are
+          potentially interested in consuming that "data feed." The Publisher class will need methods to allow the subscribers to
+          subscribe when they want to start receiving the feed and unsubscribe when they no longer require it. </p>
+
+      <p>The consumers, in turn, have to know how the Publisher will transmit the data to them, which will normally be achieved by
+          calling one of its methods. So consumers may need to provide an API to satisfy the requirements of the Publisher. We'll
+          create an example. </p>
+
+      <p>For our purposes, we'll write a module that asks for lines of input from the user, and then distributes the lines to any
+          subscribed consumers. The subscriber interface will have subscribe and unsubscribe methods that add and remove items from
+          the publisher's subscriber list. Subscribers must provide a "process" method, which the publisher will call with each new
+          input. </p>
+
+      <p>We will have the subscribers print the input string after processing it in basic, but distinguishable ways. In the first
+          example, subscribers print out the uppercase version of the string they've received.</p>
+
+      <p>Create <b>pubandsub.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+class Publisher:
+    def __init__(self):
+        self.subscribers  = []
+    def subscribe(self, subscriber):
+        self.subscribers.append(subscriber)
+    def unsubscribe(self, subscriber):
+        self.subscribers.remove(subscriber)
+    def publish(self, s):
+        for subscriber in self.subscribers:
+            subscriber.process(s)
+
+if __name__ == '__main__':
+    class SimpleSubscriber:
+        def __init__(self, publisher):
+            publisher.subscribe(self)
+            self.publisher = publisher
+        def process(self, s):
+            print(s.upper())
+
+    publisher = Publisher()
+    for i in range(3):
+        newsub = SimpleSubscriber(publisher)
+        line = input("Input {}: ".format(i))
+        publisher.publish(line)
+</pre></div></div>
+
+      <p>The program asks you for three lines of input. The first is echoed in uppercase once, the
+          second twice, and the third three times, because each time through the loop, a new subscriber is subscribed to the
+          publisher. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+Input 0: <ins>pub</ins>
+PUB
+Input 1: <ins>and</ins>
+AND
+AND
+Input 2: <ins>sub</ins>
+SUB
+SUB
+SUB
+</pre></div></div>
+
+      <p>The Publisher keeps a list of subscribers (which starts out empty). Subscribing an object appends it to the
+          subscriber list; unsubscribing an object removes it. The SimpleSubscriber object takes a publisher as an argument to the
+          <b>__init__()</b> method and immediately subscribes to the publisher. </p>
+
+      <p>These same principles can be applied to programs you may already use. For example, a spreadsheet program may have
+          to process spreadsheets where there are multiple graphics based on the data, all of which must be updated as the data
+          changes. One way to arrange that is to enlist the graphics as subscribers to an event stream publisher, which publishes an
+          alert every time any change is made to the data. To avoid unnecessary computing, the event stream publisher might publish
+          the event after a change only when no further changes were made to the data within a fixed (and preferably short) period of time.
+          </p>
+
+      <p>We can refine this process further in various ways because it allows very
+          <i>loose coupling</i> between the publisher and the subscriber: neither needs to have advance knowledge of the other, and
+          the connections are created at run-time rather than determined in advance. We like loose coupling in systems
+          design because it's flexible and allows dynamic relationships between objects.</p>
+
+    </div></div>
+
+    <!-- Validating Requests and Identifying Output -->
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Validating Requests and Identifying Output</div>
+    <div class="subheadingText">
+
+      <p>Our initial implementation is defective in a couple of ways. First, there is nothing to stop a given subscriber from
+          being subscribed multiple times. Similarly, there is nothing present to check whether a subscriber
+          requesting unsubscription (code not yet exercised in the main program) is actually subscribed. Passing a nonexistent
+          subscriber would cause the list's remove() method to raise an exception: </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+&gt;&gt;&gt; <ins>[1, 2, 3].remove(4)</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+ValueError: list.remove(x): x not in list
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>In order to make the message associated with the exception easier to understand, you'll want to trap it or test
+          beforehand for the condition that would cause the exception and then raise your own, more meaningful, exception. </p>
+
+      <p>Finally, the original version of our program does not identify which specific subscriber is responsible for an
+          individual message. We want it to identify the culprit though, because that will make
+          the operation of the program easier to understand.  Let's revise it so that each subscriber instance
+          takes an additional argument (its name), which it will then use to identify all of its output.
+          Modify <b>pubandsub.py</b> to check for errors and identify subscribers: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+class Publisher:
+    def __init__(self):
+        self.subscribers  = []
+    def subscribe(self, subscriber):
+        <ins>if subscriber in self.subscribers:
+            raise ValueError("Multiple subscriptions are not allowed")</ins>
+        self.subscribers.append(subscriber)
+    def unsubscribe(self, subscriber):
+        <ins>if subscriber not in self.subscribers:
+            raise ValueError("Can only unsubscribe subscribers")</ins>
+        self.subscribers.remove(subscriber)
+    def publish(self, s):
+        for subscriber in self.subscribers:
+            subscriber.process(s)
+
+if __name__ == '__main__':
+    class SimpleSubscriber:
+        def __init__(self, <ins>name, </ins>publisher):
+            publisher.subscribe(self)
+            <ins>self.name = name</ins>
+            self.publisher = publisher
+        def process(self, s):
+            print(<ins>self.name, ":", </ins>s.upper())
+
+    publisher = Publisher()
+    for i in range(3):
+        newsub = SimpleSubscriber(<ins>"Sub"+str(i), </ins>publisher)
+        line = input("Input {}: ".format(i))
+        publisher.publish(line)
+</pre></div></div>
+
+      <p>This version of the program doesn't actually trigger any of the newly-added exceptions, but the inclusion of the tests
+          makes our code more robust. The SimpleSubscriber.process() method identifies each output line with the name of the
+          instance that was responsible for it, which can be especially helpful in more complex situations. The code that creates the
+          subscribers generates names such as  "Sub0", "Sub1" and so on for the subscribers. You should see output that looks like this:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+Input 0: <ins>sub</ins>
+Sub0 : SUB
+Input 1: <ins>and</ins>
+Sub0 : AND
+Sub1 : AND
+Input 2: <ins>pub</ins>
+Sub0 : PUB
+Sub1 : PUB
+Sub2 : PUB
+</pre></div></div>
+
+      <p>If we were to write unit tests for this code, we might include an assertRaises() test to ensure that the double-subscription and
+          attempts to remove non-subscribed objects were handled correctly. In the absence of unit tests, we should at least make sure
+          that exceptions will be raised under expected circumstances. We can verify this at an interactive console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from pubandsub import Publisher</ins>
+&gt;&gt;&gt; <ins>publisher = Publisher()</ins>
+&gt;&gt;&gt; <ins>publisher.unsubscribe(None)</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+  File "pubandsub.py", line 16, in unsubscribe
+    raise ValueError("Can only unsubscribe subscribers")
+ValueError: Can only unsubscribe subscribers
+&gt;&gt;&gt; <ins>publisher.subscribe(None)</ins>
+&gt;&gt;&gt; <ins>publisher.subscribe(None)</ins>
+Traceback (most recent call last):
+  File "&lt;console&gt;", line 1, in &lt;module&gt;
+  File "pubandsub.py", line 12, in subscribe
+    raise ValueError("Multiple subscriptions are not allowed")
+ValueError: Multiple subscriptions are not allowed
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Since exceptions appear to be raised under the correct circumstances, we could proceed without modifying the code further,
+          but it's a good idea to copy and paste the interactive session into your source as a doctest. A
+          simple copy-and-paste from the console panel is not adequate, however, because the console is designed to let you copy
+          and paste <i>only</i> the code, so when you copy from the interactive session in Eclipse, the necessary
+          prompt strings ("&gt;&gt;&gt; " and "... ") are absent from the pasted content. doctest and Eclipse don't
+          always play nicely together. It's a good thing Eclipse has so many other
+          useful features. </p>
+
+      <p>So far our program has not tested the non-error branch of the unsubscribe code.
+          We'll perform that test next by restricting the number of subscribers.
+          This can be done either internally (from within the Publisher.subscribe() method, for example) or by
+          truncating the subscription list from the main loop. We're going to do the latter.
+          We'll add a few loops to make sure that the strategy
+          is properly tested. After each new subscription, we'll remove the least recent if the length of the subscription list
+          exceeds three. This will ensure that no input sees more than three responses. Modify <b>pubandsub.py</b> as shown below:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+class Publisher:
+    def __init__(self):
+        self.subscribers  = []
+    def subscribe(self, subscriber):
+        if subscriber in self.subscribers:
+            raise ValueError("Multiple subscriptions are not allowed")
+        self.subscribers.append(subscriber)
+    def unsubscribe(self, subscriber):
+        if subscriber not in self.subscribers:
+            raise ValueError("Can only unsubscribe subscribers")
+        self.subscribers.remove(subscriber)
+    def publish(self, s):
+        for subscriber in self.subscribers:
+            subscriber.process(s)
+
+if __name__ == '__main__':
+    class SimpleSubscriber:
+        def __init__(self, name, publisher):
+            publisher.subscribe(self)
+            self.name = name
+            self.publisher = publisher
+        def process(self, s):
+            print(self.name, ":", s.upper())
+
+    publisher = Publisher()
+    for i in range(<ins>5</ins>):
+        newsub = SimpleSubscriber("Sub"+str(i), publisher)
+        <ins>if len(publisher.subscribers) &gt; 3:
+            publisher.unsubscribe(publisher.subscribers[0])</ins>
+        line = input("Input {}: ".format(i))
+        publisher.publish(line)
+</pre></div></div>
+
+      <p>This code is not much different from the last example, except that there are never more than three responses to
+          any input which indicates that the unsubscribe function is working correctly.
+          Each time the subscriber count exceeds three it is trimmed from the left:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+Input 0: <ins>sub</ins>
+Sub0 : SUB
+Input 1: <ins>and</ins>
+Sub0 : AND
+Sub1 : AND
+Input 2: <ins>pub</ins>
+Sub0 : PUB
+Sub1 : PUB
+Sub2 : PUB
+Input 3: <ins>more</ins>
+Sub1 : MORE
+Sub2 : MORE
+Sub3 : MORE
+Input 4: <ins>inputs</ins>
+Sub2 : INPUTS
+Sub3 : INPUTS
+Sub4 : INPUTS
+</pre></div></div>
+
+    </div></div>
+
+    <!-- Making the Algorithm More General -->
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">Making the Algorithm More General</div>
+    <div class="subheadingText">
+
+      <p>At present, the publisher requires subscribers to have a "process" method, which it calls to have each subscriber
+          process the published data. This works well enough, but it does constrain the nature of the subscribers.
+          For example, there is no way to subscribe functions, because there is no way to add a method to a function. </p>
+
+      <p>Let's modify the program so that it registers the callable method directly instead of registering an instance and then calling a
+          specific method. Our program will then allow any callable to be registered. We'll verify this by defining a simple function and
+          registering it with the publisher before the loop begins. Modify <b>pubandsub.py</b> to allow registration of any callable:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+class Publisher:
+    def __init__(self):
+        self.subscribers  = []
+    def subscribe(self, subscriber):
+        if subscriber in self.subscribers:
+            raise ValueError("Multiple subscriptions are not allowed")
+        self.subscribers.append(subscriber)
+    def unsubscribe(self, subscriber):
+        if subscriber not in self.subscribers:
+            raise ValueError("Can only unsubscribe subscribers")
+        self.subscribers.remove(subscriber)
+    def publish(self, s):
+        for subscriber in self.subscribers:
+            subscriber<del>.process</del>(s)
+
+if __name__ == '__main__':
+    <ins>def multiplier(s):
+        print(2*s)</ins>
+
+    class SimpleSubscriber:
+        def __init__(self, name, publisher):
+            <del>publisher.subscribe(self)</del>
+            self.name = name
+            self.publisher = publisher
+            <ins>publisher.subscribe(self.process)</ins>
+        def process(self, s):
+            print(self, ":", s.upper())
+        <ins>def __repr__(self):
+            return self.name</ins>
+
+    publisher = Publisher()
+    <ins>publisher.subscribe(multiplier)</ins>
+    for i in range(<ins>6</ins>):
+        newsub = SimpleSubscriber("Sub"+str(i), publisher)
+        <ins>line = input("Input {}: ".format(i))
+        publisher.publish(line)</ins>
+        if len(publisher.subscribers) &gt; 3:
+            publisher.unsubscribe(publisher.subscribers[0])
+</pre></div></div>
+
+      <p>The SimpleSubscriber object now registers its (bound) process method as a callable, and the
+          Publisher.publish() method calls the subscribers directly rather than calling a method of the subscriber. This makes it
+          possible to subscribe functions to the Publisher:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE:</div><div class="observe"><pre>
+Input 0: <ins>pub</ins>
+pubpub
+Sub0 : PUB
+Input 1: <ins>and</ins>
+andand
+Sub0 : AND
+Sub1 : AND
+Input 2: <ins>sub</ins>
+subsub
+Sub0 : SUB
+Sub1 : SUB
+Sub2 : SUB
+Input 3: <ins>and</ins>
+Sub0 : AND
+Sub1 : AND
+Sub2 : AND
+Sub3 : AND
+Input 4: <ins>dub</ins>
+Sub1 : DUB
+Sub2 : DUB
+Sub3 : DUB
+Sub4 : DUB
+Input 5: <ins>and</ins>
+Sub2 : AND
+Sub3 : AND
+Sub4 : AND
+Sub5 : AND
+</pre></div></div>
+
+      <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> The full "publish and subscribe" algorithm is general enough to allow communication between completely different
+          processes. Technically, we have been studying a subset of publish-and-subscribe also referred to as "the observer pattern."
+          </td></tr></table>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">When using a plain <code>list</code> as the subscriber registry, the publisher keeps a
+          strong reference to every subscribed callable. If subscribers are bound methods or objects that should
+          be garbage-collected when no longer needed elsewhere, they will remain alive as long as the publisher
+          does. The standard-library <code>weakref</code> module (in particular
+          <code>weakref.WeakSet</code> for object subscribers, or storing
+          <code>weakref.ref</code> objects for callables) can be used to build a subscriber list that does not
+          prevent garbage collection. This is a design consideration rather than a defect in the code above.</td>
+      </tr></table>
+
+    </div></div>
+
+  </div>
+
+  <!-- A NOTE ON DEBUGGING -->
+  <a name="a_note_on_debugging"></a>
+  <a name="h_03"></a>
+  <div class="heading">A Note on Debugging</div>
+  <div class="headingText">
+
+    <p>Eclipse has some advanced debugging features, but we've ignored them. You won't
+        always have Eclipse at your disposal (at least when you aren't in the lab), so instead, we've directed our attention
+        to assuring your code through testing. </p>
+
+    <p>The relatively simple expedient of <b>inserting print()</b> calls in your code is good enough to solve many problems, and in the
+        upcoming project the most important part of the exercise is to use this technique to discover exactly how the suggested
+        modification breaks the program. See you in the next lesson!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-03.html">Delegation and Composition</a>
+    <a class="next" href="Python4-05.html">Optimizing Your Code</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Time-Based Computations</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Time-Based Computations</div>
+
+  <p>What time is it?</p>
+
+  <p>If it takes seven days for the check to arrive, on what day will it arrive?</p>
+
+  <p>How many days until my birthday?</p>
+
+  <p>While these might seem amusing, they are serious—and common—questions for software
+      developers. Time-based functions are invariably complex because we track time by
+      non-decimal methods. While we might have 10 fingers and a meter has 100 centimeters, when it
+      comes to time an hour has 60 minutes, a week has 7 days, and a month can have from
+      28 to 31
+      days. Also, almost every four years you have to account for leap year. Many day-tracking
+      calculations have to take into account the standard business days of Monday through Friday,
+      and the weekend days of Saturday and Sunday. The list of "edge cases" in time calculations is
+      almost infinite! </p>
+
+  <p>It is arguably for this reason that Python has three built-in libraries for handling time
+      issues: <b>datetime</b>, <b>time</b>, and <b>calendar</b>, each of which has a lot of
+      sophisticated functionality. Because of the volume of functionality provided by each library,
+      this lesson will focus on the <b>datetime</b> library. In fact, this lesson will focus on the
+      three questions asked at the start, since they provide an excellent introduction to many
+      features of handling time from the perspective of a software developer.</p>
+
+  <p>This lesson includes these sections:</p>
+  <ul>
+    <li><a href="#what_time_is_it">What Time is It?</a></li>
+    <li><a href="#if_it_takes_thirtyone_days">If It Takes Thirty-One Days...?</a></li>
+    <li><a href="#how_many_days_until_my_birthday">How Many Days Until My Birthday?</a></li>
+  </ul>
+
+  <!-- WHAT TIME IS IT -->
+  <a name="what_time_is_it"></a>
+  <a name="h_01"></a>
+  <div class="heading">What Time is It?</div>
+  <div class="headingText">
+
+    <p>A common way to find the current time is with the code in this interactive session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>import datetime</ins>
+&gt;&gt;&gt; <ins>print(datetime.datetime.now())</ins>
+2010-09-26 20:21:50.813824
+</pre></div></div>
+
+    <p>And there you have the time!</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The output of <code>datetime.datetime.now()</code> is date-dependent and will
+        differ from the value shown here. To get a timezone-aware UTC datetime (recommended for
+        unambiguous timestamps), use <code>datetime.datetime.now(datetime.timezone.utc)</code> or,
+        more concisely after <code>from datetime import datetime, timezone</code>,
+        <code>datetime.now(timezone.utc)</code>. This requires no additional packages in Python 3.2+.</td>
+    </tr></table>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">Time Representations</div>
+    <div class="subheadingText">
+
+      <p>How a date is formatted depends on who is looking at it. For a software developer, engineer,
+          system administrator, or scientist, the format shown in that last session is a good way to
+          see time. Because the date is in YYYY-MM-DD format and the time uses the 24-hour clock, you
+          can do easy sorting on the results either by hand or with computers, whereas the American
+          (MM/DD/YYYY) and European (DD/MM/YYYY) date methods require more work for sorting, and the
+          12-hour clock repeats itself, so times after noon won't sort correctly.</p>
+
+      <p>In fact, often people working in these time-sensitive fields rely on alternate time
+          measurement methods like counting seconds since the epoch or the Julian date (JD) system
+          used by the astronomy community. Python supports these alternate methods extremely well,
+          which is one minor reason why Python is so frequently used by the scientific community. </p>
+
+      <p>However, most people don't like, or even understand, this way of representing time. It isn't
+          what they're used to seeing and forcing them to use a new time representation format is a
+          good way to lose their interest in your projects. Let's do some formatting to make this a
+          little more natural to the American eye. Continue your interactive session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>now = datetime.datetime.now()</ins>
+&gt;&gt;&gt; <ins>format_string = "%x %X"</ins>
+&gt;&gt;&gt; <ins>now.strftime(format_string)</ins>
+09/26/10 20:35:04
+</pre></div></div>
+
+      <p>From previous lessons, you know what a formatter string does. Now nearly every time object by
+          Python supports the <span class="darkgreen">strftime()</span> method, which accepts a format string
+          with any number of predefined mapping keys. <b>"%x %X"</b> fetches the datetime setup you
+          defined on your computer when you set it up.</p>
+
+      <p>These predefined mapping keys let you actually precisely map exactly what date and time
+          setup you want your users to experience. The legal mapping keys are: </p>
+
+      <table class="tbl">
+        <tr><th>key</th><th>Meaning</th></tr>
+        <tr><td>%a</td><td>Locale's abbreviated weekday name.</td></tr>
+        <tr><td>%A</td><td>Locale's full weekday name.</td></tr>
+        <tr><td>%b</td><td>Locale's abbreviated month name.</td></tr>
+        <tr><td>%B</td><td>Locale's full month name.</td></tr>
+        <tr><td>%c</td><td>Locale's appropriate date and time representation.</td></tr>
+        <tr><td>%d</td><td>Day of the month as a decimal number [01,31].</td></tr>
+        <tr><td>%f</td><td>Microsecond as a decimal number [0,999999], zero-padded on the left</td></tr>
+        <tr><td>%H</td><td>Hour (24-hour clock) as a decimal number [00,23].</td></tr>
+        <tr><td>%I</td><td>Hour (12-hour clock) as a decimal number [01,12].</td></tr>
+        <tr><td>%j</td><td>Day of the year as a decimal number [001,366].</td></tr>
+        <tr><td>%m</td><td>Month as a decimal number [01,12].</td></tr>
+        <tr><td>%M</td><td>Minute as a decimal number [00,59].</td></tr>
+        <tr><td>%p</td><td>Locale's equivalent of either AM or PM.</td></tr>
+        <tr><td>%S</td><td>Second as a decimal number [00,61].</td></tr>
+        <tr><td>%U</td><td>Week number of the year (Sunday as the first day of the week) as a decimal number
+            [00,53]. All days in a new year preceding the first Sunday are considered to be in
+            week 0.</td></tr>
+        <tr><td>%w</td><td>Weekday as a decimal number [0(Sunday),6].</td></tr>
+        <tr><td>%W</td><td>Week number of the year (Monday as the first day of the week) as a decimal number
+            [00,53]. All days in a new year preceding the first Monday are considered to be in
+            week 0.</td></tr>
+        <tr><td>%x</td><td>Locale's appropriate date representation.</td></tr>
+        <tr><td>%X</td><td>Locale's appropriate time representation.</td></tr>
+        <tr><td>%y</td><td>Year without century as a decimal number [00,99].</td></tr>
+        <tr><td>%Y</td><td>Year with century as a decimal number.</td></tr>
+        <tr><td>%z</td><td>UTC offset in the form +HHMM or -HHMM (empty string if the object is naive).</td></tr>
+        <tr><td>%Z</td><td>Time zone name (empty string if the object is naive).</td></tr>
+        <tr><td>%%</td><td>A literal '%' character.</td></tr>
+      </table>
+
+      <p>Armed with this table and the strftime() function, you can now provide a much more
+          attractive date format customized for your target user. Continue your interactive
+          session now to try it out:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>format_string = "%A, %B %d, %Y at %I:%M %p."</ins>
+&gt;&gt;&gt; <ins>now.strftime(format_string)</ins>
+Sunday, September 26, 2010 at 8:35 PM.
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The <code>%z</code> and <code>%Z</code> keys produce empty strings for
+          <i>naive</i> datetimes (those with no timezone information). To get meaningful timezone
+          output, use a timezone-aware datetime. In Python 3.9+ you can use the standard library
+          <code>zoneinfo</code> module: <code>from zoneinfo import ZoneInfo</code> followed by
+          <code>datetime.now(ZoneInfo("Europe/London"))</code>. For earlier Python 3 versions,
+          the third-party <b>pytz</b> package provides the same functionality, but
+          <code>zoneinfo</code> is now the recommended approach.</td>
+      </tr></table>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- IF IT TAKES THIRTY-ONE DAYS -->
+  <a name="if_it_takes_thirtyone_days"></a>
+  <a name="h_02"></a>
+  <div class="heading">If it Takes Thirty-One Days...?</div>
+  <div class="headingText">
+
+    <p>At a glance this should be easy—you just take the date of the month as fetched by
+        <span class="darkgreen">datetime.datetime.now()</span> and add 31, right? Lets give it a try.
+        Create <b>count_thirtyone_days.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import datetime
+now = datetime.datetime.now()
+date = now.strftime("%d")
+delivery = int(date) + 31
+print("Today: %s" % date)
+print("Delivery: %s" % delivery)</ins>
+</pre></div></div>
+
+    <p>At a glance, this looks like it should work, but in fact you'll get a response like this: </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running count_thirtyone_days.py on November 29th</div><div class="observe"><pre>
+Today: 29
+Delivery: 60
+</pre></div></div>
+
+    <p>In theory, you could write a bit of code that would handle month rollovers and the leap year.
+        This is not a small undertaking and will probably take more time than you really want to
+        dedicate to the problem of adding thirty-one days to the current date. Also, your result would
+        lack the ability to reformat the results via the <span class="darkgreen">strftime()</span> method
+        because it would be a simple integer, not a time object. </p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">There Must be a Better Way to Add Days to a Date!</div>
+    <div class="subheadingText">
+
+      <p>Yes, there is a way. The Python datetime library has an object named <b>timedelta</b>,
+          which represents the difference between two dates or times. This difference is called a
+          <i>duration</i>. You can add a timedelta to the current date, and it will account for
+          month rollovers and the leap year. Modify <b>count_thirtyone_days.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime </ins>import datetime<ins>, timedelta # more attractive import</ins>
+now = <del>datetime.</del>datetime.now()
+<ins>delta = timedelta(31) # create a timedelta of 31 days</ins>
+delivery = <ins>now + delta # add the timedelta to the current datetime.</ins>
+print("Today: %s" % <ins>now.strftime("%d")</ins>)
+print("Delivery: %s" % delivery<ins>.strftime("%d")</ins>)
+</pre></div></div>
+
+      <p>Save and run it. You'll see that it works correctly:</p>
+
+<div class="observeBox"><div class="observeTitle">Running count_thirtyone_days.py on November 29th</div><div class="observe"><pre>
+Today: 29
+Delivery: 30
+</pre></div></div>
+
+      <p>You may have noticed that what was printed was string values returned from the
+          <span class="darkgreen">strftime()</span> methods on the <span class="darkgreen">now()</span> and
+          <b>delivery</b> objects. This means that you can execute further calculations as needed on
+          these objects—they have not been changed at all. This becomes really useful when
+          you want to skip over weekends. Thanks to the <b>datetime</b> object's
+          <span class="darkgreen">isoweekday()</span> method which returns a numeric value as shown below,
+          we can write code that skips over weekends with some ease. </p>
+
+      <table class="tbl">
+        <tr><th>Value returned from isoweekday()</th><th>Weekday name</th></tr>
+        <tr><td>1</td><td>Monday</td></tr>
+        <tr><td>2</td><td>Tuesday</td></tr>
+        <tr><td>3</td><td>Wednesday</td></tr>
+        <tr><td>4</td><td>Thursday</td></tr>
+        <tr><td>5</td><td>Friday</td></tr>
+        <tr><td>6</td><td>Saturday</td></tr>
+        <tr><td>7</td><td>Sunday</td></tr>
+      </table>
+
+      <p>The next example shows how to skip over weekends. It doesn't take into account national
+          or bank holidays, but it is similar to what organizations use to determine when they can
+          expect payments and other letters to arrive.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime import datetime, timedelta
+
+delivery = datetime.now()
+delta = timedelta(1)
+count = 0
+while count &lt; 31:
+    delivery = delivery + delta
+    if delivery.isoweekday() in (6, 7):
+        continue
+    count += 1
+
+now = datetime.now()
+print(now)
+print(delivery)
+print("Today: %s" % now.strftime("%d"))
+print("Delivery: %s" % delivery.strftime("%d"))</ins>
+</pre></div></div>
+
+      <p>Save and run it. It counts only working days.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running skip_weekdays.py on November 29th</div><div class="observe"><pre>
+2010-11-29 10:40:26.439000
+2011-01-11 10:40:26.439000
+Today: 29
+Delivery: 11
+</pre></div></div>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">timedeltas for Weeks, Hours, Minutes, and Seconds</div>
+    <div class="subheadingText">
+
+      <p>The <b>timedelta</b> object can be instantiated with other values than days. Some of the
+          ones you'll use frequently are weeks, hours, minutes, and seconds. All you need to do is
+          add one or more of these items as arguments and the timedelta is constructed accordingly.
+          Create <b>more_deltas.py</b> as shown to see what you get: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime import datetime, timedelta
+
+weeks = timedelta(weeks=2)
+hours = timedelta(hours=1)
+minutes = timedelta(minutes=100)
+seconds = timedelta(seconds=1000)
+composite = timedelta(hours=1, minutes=30)
+
+now = datetime.now()
+print(now)
+print(now + weeks)
+print(now + hours)
+print(now + minutes)
+print(now + seconds)
+print(now + composite)</ins>
+</pre></div></div>
+
+      <p>Save and run it (your results will vary
+          unless you traveled back in time to November 29, 2010):</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Running more_deltas.py</div><div class="observe"><pre>
+2010-11-29 10:41:06.312000
+2010-12-13 10:41:06.312000
+2010-11-29 11:41:06.312000
+2010-11-29 12:21:06.312000
+2010-11-29 10:57:46.312000
+2010-11-29 12:11:06.312000
+</pre></div></div>
+
+    </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">timedeltas for Years and Months</div>
+    <div class="subheadingText">
+
+      <p>Years and months are not constants, thanks to the leap year issue and the general
+          inconsistency of month durations. Therefore, the timedelta does not accept them as
+          arguments. However, because the other arguments (weeks, hours, minutes, etc.) are constants,
+          timedeltas can handle the leapyear and month durations, which works well for years and not
+          so well for months. </p>
+
+      <p>This means you can provide an almost exact year timedelta by simply doing this:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from datetime import timedelta</ins>
+&gt;&gt;&gt; <ins>timedelta(365)</ins>
+datetime.timedelta(365)
+</pre></div></div>
+
+      <p>On the other hand, this obviously fails because months range in duration from
+          28 to 31 days:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>timedelta(30)</ins>
+datetime.timedelta(30)
+</pre></div></div>
+
+      <p>The general indeterminate duration of a month is exactly why bankers use 30 days as their
+          standard value and why scientists prefer other date formats.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">If you need to add calendar months or years to a date, the standard library
+          does not provide a direct method. The <b>datetime.replace()</b> method can be used to
+          construct a new date with an adjusted year or month, taking care to handle month-end edge
+          cases manually. Alternatively, the third-party <b>dateutil</b> library provides
+          <code>relativedelta</code> for this purpose:
+          <code>from dateutil.relativedelta import relativedelta</code>.</td>
+      </tr></table>
+
+    </div>
+    </div>
+
+  </div>
+
+  <!-- HOW MANY DAYS UNTIL MY BIRTHDAY -->
+  <a name="how_many_days_until_my_birthday"></a>
+  <a name="h_03"></a>
+  <div class="heading">How Many Days Until my Birthday?</div>
+  <div class="headingText">
+
+    <p>Remember when you were a kid and carefully counted the days until your next birthday? As a
+        programmer you can skip marking off each day and simply write a program to do the work for
+        you. You can write a simple program that:</p>
+
+    <ol>
+      <li>Takes your birthday</li>
+      <li>Converts your birthday to a datetime object</li>
+      <li>Subtracts the current date from your birthday object</li>
+      <li>Publishes the results</li>
+    </ol>
+
+    <p>Ready? Let's do this thing!</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">When is Your Birthday?</div>
+    <div class="subheadingText">
+
+      <p>The first step is to accept a date as your birthday. Let's use optparse to accept a
+          string to be converted into a datetime object. Then we'll use a new method,
+          <span class="darkgreen">datetime.strptime()</span> to not only convert the string to a date, but
+          confirm that it is a valid date. The <span class="darkgreen">datetime.strptime()</span> method works
+          like <span class="darkgreen">datetime.strftime()</span>, but in reverse, converting strings to date
+          objects. You use the same date-formatting keys as described for
+          <span class="darkgreen">datetime.strftime()</span>, which means you can create common formatting
+          strings used across your application for both creating and rendering time objects. </p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>formatter_string = "%m-%d-%Y" # format for MM-DD-YYYY</ins>
+&gt;&gt;&gt; <ins>from datetime import datetime</ins>
+&gt;&gt;&gt; <ins>datetime.strptime("07-24-1967", formatter_string) # The conversion code</ins>
+datetime.datetime(1967, 7, 24, 0, 0)
+</pre></div></div>
+
+      <p>But what if someone enters a date such as "1967-07-24" or something like "Python ROCKS" or
+          even "15-35-2010"? Since those does not match the format specified by the formatter string
+          and are not valid dates, <span class="darkgreen">datetime.strptime()</span> throws a ValueError
+          exception. This makes it trivial to create datetime validators without having to lean on
+          string methods or even regular expressions, which could handle the rough formatting issue
+          of numbers, but can't as easily handle the confirmation that a date is real. </p>
+
+      <p>With what we've learned so far, let's write some <b>birthday.py</b> code:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>import logging
+from datetime import datetime
+from optparse import OptionParser
+
+logging.basicConfig(filename='birthday.log',level=logging.DEBUG)
+
+class InvalidDateFormat(Exception):
+    pass
+
+def string_to_date(date):
+    """
+    Converts 'MM-DD-YYYY' to a date/time object
+        or throws an InvalidDateFormat exception
+    """
+    try:
+        # create a datetime object from the date value
+        formatter_string = "%m-%d-%Y"
+        birthday = datetime.strptime(date, formatter_string)
+    except ValueError as e:
+        # log the format error then raise it again so it can be handled gracefully
+        logging.error(e)
+        raise InvalidDateFormat(e)
+    return birthday
+
+def birthday_counter(birthday):
+    """
+    Returns the number of days until your birthday.
+        (not yet fully implemented)
+    """
+    return 100
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-b', '--birthday', dest="birthday", action="store",
+    help="Your birthday in MM-DD-YYYY format")
+    (options, args) = parser.parse_args()
+
+    format_error_message = "birthday.py requires a date in MM-DD-YYYY format"
+    if not options.birthday:
+        parser.error(format_error_message)
+
+    try:
+        print(birthday_counter(options.birthday))
+    except InvalidDateFormat:
+        parser.error(format_error_message)</ins>
+</pre></div></div>
+
+      <p>This looks pretty good, but how do you know it works? Time to write a unittest!</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime import datetime
+import unittest
+
+
+from birthday import *
+
+class TestBirthday(unittest.TestCase):
+
+    def test_birthday_counter(self):
+        self.assertEqual(birthday_counter("10-31-1948"), 100)
+
+    def test_string_to_date(self):
+
+        self.assertRaises(InvalidDateFormat, string_to_date, "10-32-1948")
+        # create a new datetime object from scratch
+        datetime_obj = datetime(2012, 10, 31)
+        self.assertEqual(datetime_obj, string_to_date("10-31-2012"))
+
+if __name__ == "__main__":
+    unittest.main()
+</ins>
+</pre></div></div>
+
+      <p>Save and run it; both tests pass. Take a careful look at the second test, which checks that the
+          <span class="darkgreen">string_to_date()</span> function works properly. To do that, its second
+          assertion requires a datetime created from scratch. Hence this line of code:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from datetime import datetime</ins>
+&gt;&gt;&gt; <ins>datetime(2012, 10, 31)</ins>
+datetime.datetime(2012, 10, 31, 0, 0)
+</pre></div></div>
+
+      <p>Note that the <b>self.assertEqual(datetime_obj, string_to_date("10-31-1948"))</b> assertion
+          is actually just doing <b>datetime_obj == string_to_date("10-31-1948")</b>. Just as you can
+          add or subtract datetime objects to or from each other, you can also do comparisons against
+          them. This means you can do any of these comparisons:</p>
+
+      <table class="tbl">
+        <tr><th>Sign</th><th>Description</th></tr>
+        <tr><td>==</td><td>equals</td></tr>
+        <tr><td>&gt;</td><td>greater than</td></tr>
+        <tr><td>&gt;=</td><td>greater than or equals</td></tr>
+        <tr><td>&lt;</td><td>less than</td></tr>
+        <tr><td>&lt;=</td><td>less than or equals</td></tr>
+      </table>
+
+    </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">More Ways to Construct Dates</div>
+    <div class="subheadingText">
+
+      <p>You can get a lot more specific than days. You can specify hours, minutes, seconds, and
+          microseconds. This is good for constructing tests and setting up deadlines and other
+          time-related points. Create <b>making_time.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime import datetime
+print(datetime(2012, 10, 31))
+print(datetime(2012, 10, 31, 12))
+print(datetime(2012, 10, 31, 12, 30))
+print(datetime(2012, 10, 31, 12, 30, 59))
+print(datetime(2012, 10, 31, 12, 30, 59, 300))</ins>
+</pre></div></div>
+
+      <p>Save and run it:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Results from Running making_time.py</div><div class="observe"><pre>
+2012-10-31 00:00:00
+2012-10-31 12:00:00
+2012-10-31 12:30:00
+2012-10-31 12:30:59
+2012-10-31 12:30:59.000300
+</pre></div></div>
+
+    </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">Fetching Years, Months, Hours, etc. from a Datetime Object</div>
+    <div class="subheadingText">
+
+      <p>The datetime object has integer attributes that are specific year, month, day, hour, minute,
+          second, and microsecond representations for that object. Create <b>time_attributes.py</b>
+          as shown below to demonstrate your options: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>from datetime import datetime
+dt = datetime(2012, 10, 31, 12, 30, 59, 300)
+print(dt.year)
+print(dt.month)
+print(dt.day)
+print(dt.hour)
+print(dt.minute)
+print(dt.second)
+print(dt.microsecond)</ins>
+</pre></div></div>
+
+      <p>Save and run it:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Results from Running time_attributes.py</div><div class="observe"><pre>
+2012
+10
+31
+12
+30
+59
+300
+</pre></div></div>
+
+    </div>
+    </div>
+
+    <a name="s_04"></a>
+    <div id="s_04">
+    <div class="subheading">Finishing the birthday counter</div>
+    <div class="subheadingText">
+
+      <p>We now have enough information to finish the <b>birthday.py</b> program and test it
+          adequately. Let's expand the unittest to properly test the
+          <span class="darkgreen">birthday_counter()</span> function. </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+from datetime import datetime
+import unittest
+
+
+from birthday import *
+
+class TestBirthday(unittest.TestCase):
+
+    def test_birthday_counter(self):
+        <del>self.assertEqual(birthday_counter("10-31-1948"), 100)</del>
+        <ins># will fail on October 31
+        self.assertTrue(birthday_counter("10-31-1948") &gt; 0)
+
+        # will fail on February 1
+        self.assertTrue(birthday_counter("02-01-1999") &gt; 0)</ins>
+
+    def test_string_to_date(self):
+
+        self.assertRaises(InvalidDateFormat, string_to_date, "10-32-1948")
+        # create a new datetime object from scratch
+        datetime_obj = datetime(2012, 10, 31)
+        self.assertEqual(datetime_obj, string_to_date("10-31-2012"))
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Now, we'll finish the <span class="darkgreen">birthday_counter()</span> itself. Because datetime
+          handling can get tricky, we'll include lots of comments and <b>logging.debug</b> statements.
+          Once we confirm that the provided birthday is valid, we can construct an upcoming birthday
+          using attributes from your own birthday and the current year. Give it a try: </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+import logging
+from datetime import datetime<ins>, timedelta</ins>
+from optparse import OptionParser
+
+logging.basicConfig(filename='birthday.log',level=logging.DEBUG)
+
+class InvalidDateFormat(Exception):
+    pass
+
+def string_to_date(date):
+    """
+    Converts 'MM-DD-YYYY' to a date/time object
+        or throws an InvalidDateFormat exception
+    """
+    try:
+        # create a datetime object from the date value
+        formatter_string = "%m-%d-%Y"
+        birthday = datetime.strptime(date, formatter_string)
+    except ValueError as e:
+        # log the format error then raise it again so it can be handled gracefully
+        logging.error(e)
+        raise InvalidDateFormat(e)
+    return birthday
+
+def birthday_counter(birthday):
+    """
+    Returns the number of days until your birthday.
+    <del>(not yet fully implemented)</del>
+    """
+    <del>return 100</del>
+    <ins>now = datetime.now()
+    birthday = string_to_date(birthday)
+    logging.debug("birthday: %s" % birthday)
+
+    # construct the upcoming birthday from this year, your birthday month, and birthday day
+    upcoming = datetime(now.year, birthday.month, birthday.day)
+    logging.debug("upcoming: %s" % upcoming)
+
+    # Make sure that upcoming is in the future, not the past
+    if upcoming &lt; now:
+        upcoming = upcoming + timedelta(365)
+        logging.debug("fixed upcoming: %s" % upcoming)
+
+    # create a timedelta (duration) between the now and your birthday
+    duration = upcoming - now
+    logging.debug("duration: %s" % duration)
+
+    # return only the days
+    return duration.days</ins>
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-b', '--birthday', dest="birthday", action="store",
+    help="Your birthday in MM-DD-YYYY format")
+    (options, args) = parser.parse_args()
+
+    format_error_message = "birthday.py requires a date in MM-DD-YYYY format"
+    if not options.birthday:
+        parser.error(format_error_message)
+
+    try:
+        print(birthday_counter(options.birthday))
+    except InvalidDateFormat:
+        parser.error(format_error_message)
+</pre></div></div>
+
+      <p>Save both programs and run the test:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Results from Running test_birthday.py</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.172s
+
+OK
+</pre></div></div>
+
+      <p>Once the tests pass, run the program:</p>
+
+<div class="observeBox"><div class="observeTitle">birthday.py -b 11-01-1957 (as done on 11-29-2010)</div><div class="observe"><pre>
+336
+</pre></div></div>
+
+      <p>So how many days is it until <i>your</i> birthday?</p>
+
+    </div>
+    </div>
+
+    <a name="s_05"></a>
+    <div id="s_05">
+    <div class="subheading">Summary</div>
+    <div class="subheadingText">
+
+      <p>Handling basic dates and times seems easy for us humans to do in our head because we've been
+          taught from a very young age how to read clocks. However, as soon as you need to calculate
+          adding 156 minutes to the current time or 65 days to the current day, things get very
+          challenging. We often need to stop and think about things because the math is not
+          clear—we are converting from decimal into a chaotic mix of base 60, base 24 and other
+          counting systems. Because of this lack of clarity, we need to take extra special care when
+          writing any kind of date/time code.</p>
+
+    </div>
+    </div>
+
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-12.html">Engineering Your Programs</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

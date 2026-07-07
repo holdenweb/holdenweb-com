@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Python's Built-In Functions</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Python's Built-In Functions</div>
+
+  <p>In every previous lesson, you've used some of Python's built-in functions. The first built-in function you used was
+    <span class="darkgreen">print()</span> back in lesson 1. Since then you've used built-in functions like <span class="darkgreen">range()</span>,
+    <span class="darkgreen">open()</span>, and more. Built-in functions are an invaluable part of your Python tool kit. In this lesson, we'll
+    learn even more about them.</p>
+
+  <p>First we'll go over some examples that use Python built-in functions, and then explore the functions themselves.</p>
+
+  <!-- PARTY FUN WITH BUILT-IN FUNCTIONS -->
+  <a name="h_01"></a>
+  <div class="heading">Party Fun with Built-In Functions</div>
+  <div class="headingText">
+
+    <p>Suppose you're throwing a party. Each invitation to your party might have 0, 1, 2, or more people attached to it. You are storing
+      the invitations in a pair of lists. The first list holds the names of the attendees; the corresponding element in the second
+      list is the size of the invited group. You need to know the total number of people attending in order to buy the right amount of
+      food for the party, and for seating purposes, you need to know who has the largest group. Python's built-in functions will help
+      you to execute both of these tasks. Start an interactive session as shown below:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>invites = ["Jay", "Conan", "Jimmy", "Craig"]</ins>
+&gt;&gt;&gt; <ins>attendees = [3, 2, 0, 5]</ins>
+&gt;&gt;&gt; <ins>sum(attendees)</ins>
+10
+&gt;&gt;&gt; <ins>zipped = zip(attendees, invites)</ins>
+&gt;&gt;&gt; <ins>party = tuple(zipped)</ins>
+&gt;&gt;&gt; <ins>party</ins>
+((3, 'Jay'), (2, 'Conan'), (0, 'Jimmy'), (5, 'Craig'))
+&gt;&gt;&gt; <ins>max(party)</ins>
+(5, 'Craig')
+&gt;&gt;&gt; <ins>for people, name in party:</ins>
+...     <ins>print(people, name)</ins>
+...
+3 Jay
+2 Conan
+0 Jimmy
+5 Craig
+&gt;&gt;&gt; <ins>for people, name in sorted(party):</ins>
+...   <ins>print(people, name)</ins>
+...
+0 Jimmy
+2 Conan
+3 Jay
+5 Craig
+</pre></div></div>
+
+    <p>Keep the console open. This example helps demonstrate a couple of new functions:
+      <span class="darkgreen">sum()</span> returns the total of all the elements in its argument; <span class="darkgreen">zip()</span> interleaves
+      (that is, alternates, like the teeth of a zipper) the elements of any number of sequences. If you call
+      <span class="darkgreen">zip()</span> with two arguments, when you loop over the result you get a sequence of two-element tuples; call it
+      with three arguments and you get three-element tuples. <span class="darkgreen">zip()</span> doesn't return a list or a tuple, but
+      something called a generator; we called the <span class="darkgreen">tuple()</span> function on it so we could see the data without
+      needing to loop over it.</p>
+
+    <p>Next, using the same data, let's check to see if any or all invitations have any attendees and the total number of invitations.
+      Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>any(attendees)</ins>
+True
+&gt;&gt;&gt; <ins>all(attendees)</ins>
+False
+&gt;&gt;&gt; <ins>len(attendees)</ins>
+4
+</pre></div></div>
+
+    <p>The <span class="darkgreen">any()</span> function returns <b>True</b> if any element of its argument is true. <span class="darkgreen">all()</span>
+      returns <b>True</b> if all of the elements of its argument are true. <span class="darkgreen">len()</span> returns the number of elements
+      in the argument. </p>
+
+    <p>The rest of this lesson provides an alphabetical reference guide to Python's built-in functions, with brief examples. As you
+      become more familiar with Python, you'll find new and innovative ways to make use of these built-in functions.</p>
+
+  </div>
+
+  <!-- abs -->
+  <a name="h_02"></a>
+  <div class="heading">abs(x)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">abs()</span> function returns the absolute value of an integer, floating point, or complex number. The
+      returned value is always positive. If the input value is a negative integer or floating-point number, then the absolute value is
+      the negated argument. If the argument is complex, a positive result will still be returned, but it's a complicated calculation
+      (the square root of the sum of the squares of the real and imaginary components). Take a look. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>abs(3.14)</ins>
+3.14
+&gt;&gt;&gt; <ins>abs(-3.14)</ins>
+3.14
+&gt;&gt;&gt; <ins>abs(3+4j)</ins>
+5.0</pre></div></div>
+
+  </div>
+
+  <!-- all -->
+  <a name="h_03"></a>
+  <div class="heading">all(iterable)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">all()</span> function returns <b>True</b> if all elements of the
+      supplied iterable are true (or if there are no elements: technically, you could say
+      it returns <b>False</b> if any element evaluates as false). So if all elements in a
+      list, tuple, or set match Python's definition of being true, then
+      <span class="darkgreen">all()</span> returns <b>True</b>. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst = [1, 2, 3, 4, 5, 6]</ins>
+&gt;&gt;&gt; <ins>all(lst)</ins>
+True
+&gt;&gt;&gt; <ins>lst.append('')</ins>
+&gt;&gt;&gt; <ins>all(lst)</ins>
+False
+&gt;&gt;&gt; <ins>all([])</ins>
+True
+&gt;&gt;&gt; <ins>t1 = ("Tuple")</ins>
+&gt;&gt;&gt; <ins>all(t1)</ins>
+True
+&gt;&gt;&gt; <ins>t2 = ("Tuple", "")</ins>
+&gt;&gt;&gt; <ins>all(t2)</ins>
+False
+&gt;&gt;&gt; <ins>s = {}</ins>
+&gt;&gt;&gt; <ins>all(s)</ins>
+True
+</pre></div></div>
+
+  </div>
+
+  <!-- any -->
+  <a name="h_04"></a>
+  <div class="heading">any(iterable)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">any()</span> function is the converse of the <span class="darkgreen">all()</span>
+      function. <span class="darkgreen">any()</span> returns <b>True</b> if any element of the iterable
+      evaluates true. If the iterable is empty, the function returns <b>False</b>. type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst = ["", 0, False, 0.0, None]</ins>
+&gt;&gt;&gt; <ins>any(lst)</ins>
+False
+&gt;&gt;&gt; <ins>lst.append("String")</ins>
+&gt;&gt;&gt; <ins>any(lst)</ins>
+True
+&gt;&gt;&gt; <ins>any([])</ins>
+False
+&gt;&gt;&gt; <ins>any(("", 0))</ins>
+False
+&gt;&gt;&gt; <ins>any(("", 1))</ins>
+True
+&gt;&gt;&gt; <ins>any({})</ins>
+False
+&gt;&gt;&gt; <ins>any({0: "zero"})</ins>
+False
+&gt;&gt;&gt; <ins>any({"zero": 0})</ins>
+True
+</pre></div></div>
+
+  </div>
+
+  <!-- bool -->
+  <a name="h_05"></a>
+  <div class="heading">bool(x)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">bool</span> function converts the value to a Boolean, using the standard
+      Python truth testing procedure. If <i>x</i> is false or omitted, it returns <b>False</b>;
+      otherwise it returns <b>True</b>. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>bool("Python is fun!")</ins>
+True
+&gt;&gt;&gt; <ins>t = []</ins>
+&gt;&gt;&gt; <ins>bool(t)</ins>
+False
+&gt;&gt;&gt; <ins>bool(0)</ins>
+False
+&gt;&gt;&gt; <ins>bool()</ins>
+False
+&gt;&gt;&gt; <ins>bool(1)</ins>
+True
+</pre></div></div>
+
+  </div>
+
+  <!-- chr -->
+  <a name="h_06"></a>
+  <div class="heading">chr(i)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">chr()</span> function returns a string of one character, which has the ordinal
+      value equal to the given integer. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>chr(90)</ins>
+'Z'
+&gt;&gt;&gt; <ins>alphabet = ''</ins>
+&gt;&gt;&gt; <ins>for letter in range(65, 91):</ins>
+...   <ins>alphabet += chr(letter)</ins>
+...
+&gt;&gt;&gt; <ins>alphabet</ins>
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+</pre></div></div>
+
+  </div>
+
+  <!-- dict -->
+  <a name="h_07"></a>
+  <div class="heading">dict(arguments)</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">dict()</span> creates a new data dictionary with items taken from the arguments. If no arguments are passed, an
+      empty dictionary is created. You can call <span class="darkgreen">dict()</span> with a tuple or list
+      as its argument. In those cases, each of the argument's elements must be a two-element (key,
+      value) list or tuple. You can also use a sequence of <i>keyword arguments</i>. We will cover
+      those in the lesson on functions, but in short, a keyword argument is a name followed by an
+      equals sign and a value. Try this example:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>{'number': 3, 'string': 'abc', 'numbers': [3, 4, 5]}</ins>
+{'number': 3, 'string': 'abc', 'numbers': [3, 4, 5]}
+&gt;&gt;&gt; <ins>dict([(1, "one"), [2, "two"], (3, "three")])</ins>
+{1: 'one', 2: 'two', 3: 'three'}
+&gt;&gt;&gt; <ins>dict(zip("ABCDEF", range(10, 16)))</ins>
+{'A': 10, 'B': 11, 'C': 12, 'D': 13, 'E': 14, 'F': 15}
+&gt;&gt;&gt; <ins>dict(</ins>
+...   <ins>number=3,</ins>
+...   <ins>string="abc",</ins>
+...   <ins>numbers=[3, 4, 5]</ins>
+... <ins>)</ins>
+{'number': 3, 'string': 'abc', 'numbers': [3, 4, 5]}
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Since Python 3.7, dictionaries preserve insertion order as part of the language
+        specification. The original output showed <code>{'numbers': [3, 4, 5], 'number': 3, 'string': 'abc'}</code>
+        with a different key order; current Python returns the keys in the order they were inserted.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- dir -->
+  <a name="h_08"></a>
+  <div class="heading">dir(arguments)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">dir()</span> function can accept any argument: string, integer, dictionary, function, class, or
+      method. Without arguments, <span class="darkgreen">dir()</span> returns the list of names in the
+      current local scope. If an argument is given, then the result is a list of the names in the
+      namespace of the given object. The list returned is always sorted in alphabetical order. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>p = 'Python'</ins>
+&gt;&gt;&gt; <ins>dir(p)</ins>
+['__add__', '__class__', '__contains__', '__delattr__', '__dir__', '__doc__',
+'__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__',
+'__getnewargs__', '__getstate__', '__gt__', '__hash__', '__init__',
+'__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__mod__',
+'__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
+'__rmod__', '__rmul__', '__setattr__', '__sizeof__', '__str__',
+'__subclasshook__', 'capitalize', 'casefold', 'center', 'count', 'encode',
+'endswith', 'expandtabs', 'find', 'format', 'format_map', 'index', 'isalnum',
+'isalpha', 'isascii', 'isdecimal', 'isdigit', 'isidentifier', 'islower',
+'isnumeric', 'isprintable', 'isspace', 'istitle', 'isupper', 'join', 'ljust',
+'lower', 'lstrip', 'maketrans', 'partition', 'removeprefix', 'removesuffix',
+'replace', 'rfind', 'rindex', 'rjust', 'rpartition', 'rsplit', 'rstrip',
+'split', 'splitlines', 'startswith', 'strip', 'swapcase', 'title', 'translate',
+'upper', 'zfill']
+</pre></div></div>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">The list above was produced on current Python and is longer than the original.
+        New methods like <code>casefold()</code>, <code>format_map()</code>, <code>isascii()</code>,
+        <code>removeprefix()</code>, and <code>removesuffix()</code> have been added to strings since
+        Python 3.1. Private helpers such as <code>_formatter_field_name_split</code> were removed.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- globals -->
+  <a name="h_09"></a>
+  <div class="heading">globals()</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">globals()</span> function returns a dictionary representing the current
+      global symbol table. This is always the namespace dictionary of the current module. Type the commands below as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>list(globals().items())</ins>
+[('__name__', '__main__'), ('__doc__', None), ('__package__', None),
+('__loader__', &lt;class '_frozen_importlib.BuiltinImporter'&gt;),
+('__spec__', None), ('__builtins__', &lt;module 'builtins' (built-in)&gt;)]
+&gt;&gt;&gt; <ins>first = "Hello"</ins>
+&gt;&gt;&gt; <ins>second = "Goodbye"</ins>
+&gt;&gt;&gt; <ins>list(globals().items())</ins>
+[('__name__', '__main__'), ('__doc__', None), ('__package__', None),
+('__loader__', &lt;class '_frozen_importlib.BuiltinImporter'&gt;),
+('__spec__', None), ('__builtins__', &lt;module 'builtins' (built-in)&gt;),
+('first', 'Hello'), ('second', 'Goodbye')]
+</pre></div></div>
+
+    <p><div class="c"><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> If you see more keys listed than are displayed in this example, it's probably because
+      you've been trying different snippets of code.</td></tr></table></div></p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Current Python adds <code>__loader__</code> and <code>__spec__</code> to the
+        global namespace, and preserves insertion order. The original output showed a different (and
+        shorter) set of keys in an unspecified order.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- help -->
+  <a name="h_10"></a>
+  <div class="heading">help(object)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">help()</span> function is your new best friend. Invoke the built-in help
+      system on any object and it will return usage information on the object. For experienced
+      Python programmers, this is the first tool to use when trying to figure out something they
+      don't understand. Once you start writing more advanced Python programs, you'll learn how
+      to write your own help text.</p>
+
+    <p>In an interactive Python console, use the <span class="darkgreen">help(<i>object</i>)</span> function on any variable, string, integer,
+      list, tuple, set, or built-in function, including the <span class="darkgreen">help()</span> function. Some of the text won't make sense to
+      you right now, but you'll still find this function very useful. To scroll through larger help documents, press the space bar. To
+      exit, press <b>q</b>. Type the commands as shown:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>help(globals)</ins>
+Help on built-in function globals in module builtins:
+
+globals()
+    Return the dictionary containing the current scope's global variables.
+
+    NOTE: Updates to this dictionary *will* affect name lookups in the current
+    global scope and vice-versa.
+&gt;&gt;&gt; <ins>help(len)</ins>
+Help on built-in function len in module builtins:
+
+len(obj, /)
+    Return the number of items in a container.
+&gt;&gt;&gt;
+</pre></div></div>
+
+    <p>Once you have opened the help context you can leave it simply by pressing the <b>q</b> key.</p>
+
+  </div>
+
+  <!-- len -->
+  <a name="h_11"></a>
+  <div class="heading">len(s)</div>
+  <div class="headingText">
+
+    <p> <span class="darkgreen">len(s)</span> returns the length of an object. The argument provided may be a sequence (string, tuple, or
+      list) or a mapping (dictionary). Type in these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>s = "Python"</ins>
+&gt;&gt;&gt; <ins>len(s)</ins>
+6
+&gt;&gt;&gt; <ins>lst = [1, 2, 3]</ins>
+&gt;&gt;&gt; <ins>len(lst)</ins>
+3
+&gt;&gt;&gt; <ins>d = {"a":"b", "c":"d", "e":"f"}</ins>
+&gt;&gt;&gt; <ins>len(d)</ins>
+3
+</pre></div></div>
+
+  </div>
+
+  <!-- locals -->
+  <a name="h_12"></a>
+  <div class="heading">locals()</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">locals()</span> function returns a dictionary representing the current local symbol table.
+      Unless it's called inside a function, it will return the same list as <span class="darkgreen">globals()</span>. Type in
+      this command:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>locals()</ins>
+{'__name__': '__main__', '__doc__': None, '__package__': None,
+'__loader__': &lt;class '_frozen_importlib.BuiltinImporter'&gt;,
+'__spec__': None, '__builtins__': &lt;module 'builtins' (built-in)&gt;}
+</pre></div></div>
+
+    <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> Just like the <span class="darkgreen">globals()</span> function, you will likely see
+      more keys than we show in this example. That's perfectly fine; it means
+      you've probably been testing different snippets of code. Good for you!</td></tr></table></p>
+
+  </div>
+
+  <!-- max -->
+  <a name="h_13"></a>
+  <div class="heading">max(iterable)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">max()</span> function, with a single argument iterable, returns the largest
+      item of a non-empty iterable (such as a string, tuple, or list). With more than one argument,
+      it returns the largest of the arguments. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst1 = [16, 32, 8, 64, 2, 4]</ins>
+&gt;&gt;&gt; <ins>max(lst1)</ins>
+64
+&gt;&gt;&gt; <ins>lst2 = ['one', 'two', 'three', 'One', 'Two', 'Three']</ins>
+&gt;&gt;&gt; <ins>max(lst2)</ins>
+'two'
+&gt;&gt;&gt; <ins>max(42, 76, -104)</ins>
+76
+&gt;&gt;&gt; <ins>max(1, 2, "three")</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+TypeError: '&gt;' not supported between instances of 'str' and 'int'
+</pre></div></div>
+
+    <p>Don't close the session—we'll use lst1 and lst2 with the next function! The first result is 64. The second result of 'two'
+      might have surprised you, but Python compares strings "lexicographically" (like they would be sorted for a dictionary, but with
+      all the lower-case letters greater than any upper-case one), not by the meaning of the words. The last expression caused an
+      error, because you can't compare strings and integers: they are fundamentally different types.</p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">The <code>TypeError</code> message has changed. Python 3.1 said
+        <code>unorderable types: str() &gt; int()</code>; current Python says
+        <code>'&gt;' not supported between instances of 'str' and 'int'</code>, which is
+        more specific about the operation that failed.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- min -->
+  <a name="h_14"></a>
+  <div class="heading">min(iterable)</div>
+  <div class="headingText">
+
+    <p>The opposite of the <span class="darkgreen">max()</span> function, <span class="darkgreen">min(iterable)</span> returns the smallest item of a
+      non-empty iterable (such as a string, tuple, or list). With more than one argument, it returns the smallest of the arguments.
+      Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>min(lst1)</ins>
+2
+&gt;&gt;&gt; <ins>min(lst2)</ins>
+'One'
+&gt;&gt;&gt; <ins>min(42, 76, -104)</ins>
+-104
+&gt;&gt;&gt; <ins>min(1, 2, 'three')</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+TypeError: '&lt;' not supported between instances of 'str' and 'int'
+</pre></div></div>
+
+    <p>The first result is 2. The second result of 'One' seems to make sense, but be aware that Python returned the lowest value of an
+      alphanumeric sort, "O" being less than "T": Python neither knows nor cares about the meaning of the words. The fourth expression
+      raised an exception here as well, because you can't compare strings and integers. </p>
+
+  </div>
+
+  <!-- ord -->
+  <a name="h_15"></a>
+  <div class="heading">ord(c)</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">ord(c)</span> is the inverse of the <span class="darkgreen">chr()</span> function we discussed earlier. Given a string of
+      length one, it returns an integer representing the ordinal value of the character. For example, ord('A') returns the integer 65.
+      Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>alphabet = 'ABCDEFGH'</ins>
+&gt;&gt;&gt; <ins>for letter in alphabet:</ins>
+...   <ins>print(ord(letter), letter)</ins>
+...
+65 A
+66 B
+67 C
+68 D
+69 E
+70 F
+71 G
+72 H
+</pre></div></div>
+
+  </div>
+
+  <!-- pow -->
+  <a name="h_16"></a>
+  <div class="heading">pow(x, y[, z])</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">pow(x, y[, z])</span> returns <i>x</i> to the power <i>y</i>. If a third argument <i>z</i> is given, then the
+      result is reduced modulo <i>z</i> (then you get the remainder after dividing (<i>x</i> raised to the power <i>y</i>) by
+      <i>z</i>).</p>
+
+    <p>You might have played with a calculator at one time or another, using repeated multiplication to raise a number to successive
+      powers. In the next example, Python automates the calculations for you. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>pow(2, 2)</ins>
+4
+&gt;&gt;&gt; <ins>pow(2, 3)</ins>
+8
+&gt;&gt;&gt; <ins>pow(2, 4)</ins>
+16
+&gt;&gt;&gt; <ins>for i in range(5, 12):</ins>
+...    <ins> print(pow(2, i), pow(2, i, 100))</ins>
+...
+32 32
+64 64
+128 28
+256 56
+512 12
+1024 24
+2048 48
+</pre></div></div>
+
+  </div>
+
+  <!-- sorted -->
+  <a name="h_17"></a>
+  <div class="heading">sorted(iterable)</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">sorted(iterable)</span> returns a new sorted list from the items in <i>iterable</i>. This arranges your lists,
+      tuples, and sets in a known order. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>numbers = [3, 1, 6, 7, 1100, 10]</ins>
+&gt;&gt;&gt; <ins>sorted(numbers)</ins>
+[1, 3, 6, 7, 10, 1100]
+&gt;&gt;&gt; <ins>t = ['Beta','beta','alpha','Alpha']</ins>
+&gt;&gt;&gt; <ins>sorted(t)</ins>
+['Alpha', 'Beta', 'alpha', 'beta']
+&gt;&gt;&gt; <ins>lst2 = ['one', 'two', 'three', 'One', 'Two', 'Three']</ins>
+&gt;&gt;&gt; <ins>sorted(lst2)</ins>
+['One', 'Three', 'Two', 'one', 'three', 'two']
+</pre></div></div>
+
+    <p>The first sorted list provides an expected result. The second list you may not have anticipated. Python sorts in
+      alphanumeric order, but all upper-case letters sort lower than all lower-case letters.</p>
+
+    <p>You can also use keyword arguments to specify how the sort keys should be created, and whether to sort in ascending or descending
+      order. Suppose you want to have a case-insensitive search. You can do this by using a function as the <span class="purple">key</span>
+      argument of the sort. In this case, you use the Python string type's lower-case method. In the second example, you request a
+      descending sort with the <span class="purple">reverse</span> keyword argument. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>t = ['Beta','beta','alpha','Alpha']</ins>
+&gt;&gt;&gt; <ins>sorted(t, key=str.lower)</ins>
+['alpha', 'Alpha', 'Beta', 'beta']
+</pre></div></div>
+
+    <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note"> When you use the <span class="darkgreen">lower()</span> function on otherwise identical strings like 'Beta' and 'beta', Python
+      treats them as identical, keeping them in the same order they were input, so 'beta' might not appear before 'Beta' when you try
+      the above example.</td></tr></table></p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>t = ['Bete','beta','alphie','Alpha']</ins>
+&gt;&gt;&gt; <ins>sorted(t, key=str.lower)</ins>
+['Alpha', 'alphie', 'beta', 'Bete']
+&gt;&gt;&gt; <ins>sorted(t, reverse=True)</ins>
+['beta', 'alphie', 'Bete', 'Alpha']
+</pre></div></div>
+
+  </div>
+
+  <!-- reversed -->
+  <a name="h_18"></a>
+  <div class="heading">reversed(seq)</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">reversed(seq)</span> is a reverse iterator on an object of the type that you can loop through and process. The
+      <span class="purple">list</span> and <span class="purple">tuple</span> types are supported with this function, but the <span class="purple">set</span> type is not
+      (because the elements of a set aren't ordered). Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst = [1, 2, 3]</ins>
+&gt;&gt;&gt; <ins>reversed(lst)</ins>
+&lt;list_reverseiterator object at 0x...&gt;
+&gt;&gt;&gt; <ins>for i in reversed(lst):</ins>
+...   <ins>print(i)</ins>
+...
+3
+2
+1
+</pre></div></div>
+
+    <table class="noteBox"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">The memory address shown after <code>0x</code> will differ on your machine.
+        The source had a typo (<code>&gt;&gt;&gt;</code> instead of <code>...</code> on the loop body
+        line); the corrected prompt is shown here.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- round -->
+  <a name="h_19"></a>
+  <div class="heading">round(x[, n])</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">round(x[, n])</span> function rounds the decimal value <i>x</i> to the nearest integer. If you give a second
+      argument <i>n</i>, it rounds to that number of decimal places. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>round(33.5)</ins>
+34
+&gt;&gt;&gt; <ins>round(33.3333333333, 2)</ins>
+33.33
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Python uses <i>round-half-to-even</i> (banker's rounding): when a value is
+        exactly halfway between two integers it rounds to the nearest <i>even</i> integer.
+        So <code>round(0.5)</code> is <code>0</code> and <code>round(34.5)</code> is
+        <code>34</code>, not <code>35</code>. <code>round(33.5)</code> gives <code>34</code>
+        because 34 is even. This behaviour has been present since Python 3.0.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- sum -->
+  <a name="h_20"></a>
+  <div class="heading">sum(iterable)</div>
+  <div class="headingText">
+
+    <p><span class="darkgreen">sum(iterable)</span> sums the numeric values in an <i>iterable</i> such as a list, tuple, or set.
+      <span class="darkgreen">sum(iterable)</span> does not work
+      with strings because you can't do math on strings (when you add two strings you are really
+      using an operation called <i>concatenation</i>). Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>s = {1, 2, 3}</ins>
+&gt;&gt;&gt; <ins>sum(s)</ins>
+6
+&gt;&gt;&gt; <ins>lst = ['Python','is','fun']</ins>
+&gt;&gt;&gt; <ins>sum(lst)</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+TypeError: unsupported operand type(s) for +: 'int' and 'str'
+</pre></div></div>
+
+    <p>So we are able to add up numbers, but things break down on letters and words. To combine strings in a list, rely
+      on the string <span class="darkgreen">join()</span> method as shown below:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst = ['Python','is','fun!']</ins>
+&gt;&gt;&gt; <ins>' '.join(lst)</ins>
+'Python is fun!'
+</pre></div></div>
+
+  </div>
+
+  <!-- zip -->
+  <a name="h_21"></a>
+  <div class="heading">zip(*iterables)</div>
+  <div class="headingText">
+
+    <p>The <span class="darkgreen">zip()</span> function takes iterables and aggregates elements from each of
+      the iterables into a new iterable object. That might sound complicated, but the example below
+      will help illustrate the concept. Type these commands:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst_1 = ['Python','is','fun']</ins>
+&gt;&gt;&gt; <ins>lst_2 = [1000, 2000, 3000]</ins>
+&gt;&gt;&gt; <ins>lst_3 = [10, 9, 8, 7, 6, 5]</ins>
+&gt;&gt;&gt; <ins>list(zip(lst_1, lst_2))</ins>
+[('Python', 1000), ('is', 2000), ('fun', 3000)]
+&gt;&gt;&gt; <ins>list(zip(lst_1, lst_2, lst_3))</ins>
+[('Python', 1000, 10), ('is', 2000, 9), ('fun', 3000, 8)]
+</pre></div></div>
+
+    <p>In the first result, we used the <span class="darkgreen">list()</span> function to create a list
+      of three tuples. The second example is not so clear, as we are missing the last two elements
+      of <b>lst_3</b>. That's because the zip function ignored iterations for which it
+      didn't have elements in all of the supplied iterables. This enables us to create dicts
+      using the <span class="darkgreen">zip()</span> function. Try it out:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>&gt;&gt;&gt; <ins>lst_1 = ['Python','is','fun']</ins>
+&gt;&gt;&gt; <ins>lst_3 = [10, 9, 8, 7, 6, 5]</ins>
+&gt;&gt;&gt; <ins>d = {}</ins>
+&gt;&gt;&gt; <ins>for k, v in zip(lst_1, lst_3):</ins>
+...   <ins>d[k] = v</ins>
+...
+&gt;&gt;&gt; <ins>d</ins>
+{'Python': 10, 'is': 9, 'fun': 8}
+&gt;&gt;&gt; <ins>zip((1, 2), (3, 4))</ins>
+&lt;zip object at 0x...&gt;
+</pre></div></div>
+
+    <p><span class="darkgreen">zip()</span> returned a generator called a "zip object."
+    </p>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note"><code>zip()</code>, <code>map()</code>, and <code>filter()</code> all return
+        lazy iterator objects rather than lists—the object prints as
+        <code>&lt;zip object at 0x...&gt;</code>. Wrap the call in <code>list()</code> when you need
+        to see all the values at once, as shown in the examples above.</td>
+    </tr></table>
+
+  </div>
+
+  <!-- Fun with Built-In Functions (closing) -->
+  <a name="h_22"></a>
+  <div class="heading">Fun with Built-In Functions</div>
+  <div class="headingText">
+
+    <p>You've worked with lots of different functions in this lesson, and used them to get a real idea of how they
+      work. </p>
+
+    <p>Keep your interpreter window open to test your understanding of new functions as you come into contact with them.
+    Experiment and try to find their limits. Use the
+      <span class="darkgreen">help()</span> function to learn more about the built-in functions
+      too.</p>
+
+    <p>You're looking good so far. Keep up the great work!</p>
+
+  </div>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="readingAndWritingFiles.html">Reading and Writing Files</a>
+    <a class="next" href="definingAndCallingYourOwnFunctions.html">Defining and Calling Your Own Functions</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

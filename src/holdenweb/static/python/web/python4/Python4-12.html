@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-Processing</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Multi-Processing</div>
+
+  <p>This lesson includes the following topics:</p>
+  <ul>
+    <li><a href="#the_multiprocessing_library_module">The Multiprocessing Library Module</a></li>
+    <li><a href="#a_multiprocessor_worker_process_pool">A Multiprocessing Worker Process Pool</a></li>
+  </ul>
+
+  <!-- THE MULTIPROCESSING LIBRARY MODULE -->
+  <a name="the_multiprocessing_library_module"></a>
+  <a name="h_01"></a>
+  <div class="heading">The Multiprocessing Library Module</div>
+  <div class="headingText">
+
+    <p>
+        The <b>multiprocessing</b> module was written specifically to offer features closely
+        parallel to the <b>threading</b> library but allowing the individual threads of control to
+        be processes rather than threads within a single process. This allows the operating system
+        to take advantage of any parallelism inherent in the hardware design, since generally
+        processes can run completely independently of one another, and on separate processors
+        if they are available.
+    </p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+      <div class="subheading">multiprocessing Objects</div>
+      <div class="subheadingText">
+        <p>
+            The <b>multiprocessing</b> library defines various classes, most of which operate
+            in the same way as similar classes in the <b>threading</b> and related modules. Whereas in
+            using <b>threading</b> you also imported resources from other modules, the
+            <b>multiprocessing</b> module tries to put all necessary resources into one
+            convenient place, simplifying imports. But you will easily recognize the program
+            style from your recent work on multi-threading.
+        </p>
+      </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+      <div class="subheading">A Simple Multiprocessing Example</div>
+      <div class="subheadingText">
+        <p>
+            Our first multiprocessing example is marked up below as
+            though we were editing the first <i>thread.py</i> example. This
+            shows how similar the two environments are. Create
+            <b>process.py</b> as shown:
+        </p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+<ins>process.py: demonstrate creation and parallel execution of processes.</ins>
+"""
+
+import <ins>multiprocessing</ins>
+import time
+import sys
+
+def run(i, name):
+    """Sleep for a given number of seconds, report and terminate."""
+    time.sleep(i)
+    print(name, "finished after", i, "seconds")
+    sys.stdout.flush()
+
+<ins>if __name__ == "__main__":</ins>
+    for i in range(6):
+        t = <ins>multiprocessing.Process</ins>(target=run, args=(i, <ins>"P"</ins>+str(i)))
+        t.start()
+    print("<ins>Processes</ins> started")
+</pre></div></div>
+
+        <p>
+            Note that this program has been correctly written as a module,
+            so that the action of starting six processes is only performed by the
+            process that runs this code, and not in any processes that may try to
+            import the module.
+            This is very important, because the subprocesses have to get their
+            description of the work to be done from somewhere, and they do that by
+            importing the main module. So in this case the subprocesses will import the
+            <b>process</b> module (so the test <b>__name__ == "__main__"</b> is false)
+            to access the <b>run()</b> function.
+        </p>
+
+        <table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">
+            Not all platforms require that the main module be "importable" in that way.
+            Since it does not hurt to write your programs this way, however, we recommend that you
+            do so every time. Then, platform differences are less likely to "bite" you.
+        </td></tr></table>
+
+        <table class="noteBox is-tip"><tr>
+          <td class="noteTitle">Modern Python</td>
+          <td class="note">Since Python 3.8, the default process-start method on macOS has changed
+            from <code>"fork"</code> to <code>"spawn"</code>. Under <code>"spawn"</code>, the worker
+            interpreter imports the main module from scratch rather than inheriting a forked copy of
+            the parent's memory. This makes the <code>if __name__ == "__main__":</code> guard
+            essential on macOS and Windows — without it, every spawned worker would attempt to start
+            six more processes, causing an explosion of subprocesses. The example above is already
+            correctly written. Linux still defaults to <code>"fork"</code>, so code that relies on
+            inherited state may work there but silently break on macOS; for portable code, always
+            use <code>"spawn"</code> semantics and ensure all worker-callable code is importable
+            without side effects.<br><br>
+            For higher-level parallelism, consider <code>multiprocessing.Pool</code> (which manages
+            a fixed pool of worker processes and exposes <code>map()</code>, <code>apply()</code>,
+            and friends) or <code>concurrent.futures.ProcessPoolExecutor</code> (a cleaner, more
+            modern interface compatible with the same <code>Executor</code> API used by
+            <code>ThreadPoolExecutor</code>).
+          </td>
+        </tr></table>
+
+        <p>
+            The output should not be at all surprising:
+        </p>
+
+<div class="observeBox"><div class="observeTitle">Waiting in processes rather than threads</div><div class="observe"><pre>
+Processes started
+P0 finished after 0 seconds
+P1 finished after 1 seconds
+P2 finished after 2 seconds
+P3 finished after 3 seconds
+P4 finished after 4 seconds
+P5 finished after 5 seconds
+</pre></div></div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- A MULTIPROCESSING WORKER PROCESS POOL -->
+  <a name="a_multiprocessor_worker_process_pool"></a>
+  <a name="h_02"></a>
+  <div class="heading">A Multiprocessing Worker Process Pool</div>
+  <div class="headingText">
+
+    <p>
+        The lesson on multi-threading concluded with an example that used a pool of worker
+        threads to convert the characters of a string into upper case. To demonstrate the
+        (at least superficial) similarities between <b>multiprocessing</b> and <b>threading</b>
+        and friends, we'll now adapt that code.
+    </p>
+
+    <p>So first, copy the three programs (<b>output.py</b>, <b>worker.py</b>, and <b>control.py</b> from your
+        previous lesson's folder to your current folder.</p>
+
+    <a name="s_01"></a>
+    <div id="s_01">
+      <div class="subheading">The Output Process</div>
+      <div class="subheadingText">
+        <p>
+            The following listing shows the code for the <b>multiprocessor</b> version alongside
+            the equivalent <b>threading</b>-based code. The differences are small enough to be
+            negligible, and to allow anyone who understood the threaded code to also understand
+            the multi-process version.
+        </p>
+
+<div class="listingBox"><div class="listingTitle">Modifying output.py for multi-processor operations</div><div class="listing"><pre>
+"""
+output.py: The output <ins>process</ins> for the miniature framework.
+"""
+identity = lambda x: x
+
+import <ins>multiprocessing</ins>
+<ins>import sys</ins>
+
+class OutThread(<ins>multiprocessing.Process</ins>):
+    def __init__(self, N, q, sorting=True, *args, **kw):
+        """Initialize <ins>process</ins> and save queue reference."""
+        <ins>multiprocessing.Process</ins>.__init__(self, *args, **kw)
+        self.queue = q
+        self.workers = N
+        self.sorting = sorting
+        self.output = []
+
+    def run(self):
+        """Extract items and print until all done."""
+        while self.workers:
+            p = self.queue.get()
+            if p is None:
+                self.workers -= 1
+            else:
+                # This is a real output packet
+                self.output.append(p)
+        print("".join(c for (i, c) in (sorted if self.sorting else identity)(self.output)))
+        print ("Output <ins>process</ins> terminating")
+        <ins>sys.stdout.flush()</ins>
+</pre></div></div>
+
+        <p>
+            The main difference between the two pieces of code is the use of <b>multiprocessing.process</b>
+            in place of <b>threading.Thread</b>, and associated changes to a couple of comments. It is also
+            necessary to flush the process's standard output stream to make sure that it is captured
+            before the process terminates—otherwise you will see a confusing lack of output! (Feel free to
+            try running the program with the flush() call commented out to verify this).
+        </p>
+      </div>
+    </div>
+
+    <a name="s_02"></a>
+    <div id="s_02">
+      <div class="subheading">The Worker Process</div>
+      <div class="subheadingText">
+        <p>
+            The next listing shows the differences in the worker code when processes are
+            being used instead of threads.
+        </p>
+
+<div class="listingBox"><div class="listingTitle">Modifying worker.py for multi-processor operations</div><div class="listing"><pre>
+"""
+worker.py: a sample worker <ins>process</ins> that receives input
+       through one queue and routes output through another.
+"""
+
+from <ins>multiprocessing</ins> import <ins>Process</ins>
+<ins>import sys</ins>
+
+class WorkerThread(<ins>Process</ins>):
+    def __init__(self, iq, oq, *args, **kw):
+        """Initialize <ins>process</ins> and save Queue references."""
+        <ins>Process</ins>.__init__(self, *args, **kw)
+        self.iq, self.oq = iq, oq
+    def run(self):
+        while True:
+            work = self.iq.get()
+            if work is None:
+                self.oq.put(None)
+                print("Worker", self.name, "done")
+                self.iq.task_done()
+                break
+            i, c = work
+            result = (i, self.process(c)) # this is the "work"
+            self.oq.put(result)
+            self.iq.task_done()
+        <ins>sys.stdout.flush()</ins>
+    def process(self, s):
+        """This defines how the string is processed to produce a result."""
+        return s.upper()
+</pre></div></div>
+
+        <p>
+            Again the only change is to use <b>Process</b> from <b>multiprocessing</b> instead
+            of <b>Thread</b> from <b>threading</b>. (Two of the differences are again in comments.)
+        </p>
+      </div>
+    </div>
+
+    <a name="s_03"></a>
+    <div id="s_03">
+      <div class="subheading">The Control Process</div>
+      <div class="subheadingText">
+        <p>
+            The control process again needs very little change: <b>queue</b> objects come from
+            the <b>multiprocessing</b> module rather than the <b>queue</b> module, and in that
+            module if you are going to <b>join()</b> a <b>queue</b> then you must use a
+            <b>JoinableQueue</b>. The rest of the logic is exactly the same, with the exception
+            that <i>the code must now be guarded so that it isn't executed when the module is
+            imported by the multiprocessing module</i>. This means you have to indent the
+            majority of the logic. This is easy in Eclipse: just highlight all the lines of code
+            (making sure you are selecting whole lines) and then press <b>Tab</b> once.
+        </p>
+
+<div class="listingBox"><div class="listingTitle">Modifying control.py for multi-processor operations</div><div class="listing"><pre>
+"""
+control.py: Creates queues, starts output and worker <ins>processes</ins>,
+        and pushes inputs into the input queue.
+"""
+from <ins>multiprocessing</ins> import Queue<ins>, JoinableQueue</ins>
+from output import OutThread
+from worker import WorkerThread
+
+<ins>if __name__ == '__main__':</ins>
+    WORKERS = 10
+
+    inq = <ins>Joinable</ins>Queue(maxsize=int(WORKERS*1.5))
+    outq = Queue(maxsize=int(WORKERS*1.5))
+
+    ot = OutThread(WORKERS, outq, sorting=True)
+    ot.start()
+
+    for i in range(WORKERS):
+        w = WorkerThread(inq, outq)
+        w.start()
+    instring = input("Words of wisdom: ")
+    # feed the <ins>process</ins> pool with work units
+    for work in enumerate(instring):
+        inq.put(work)
+    # terminate the <ins>process</ins> pool
+    for i in range(WORKERS):
+        inq.put(None)
+    inq.join()
+    print("Control <ins>process</ins> terminating")
+</pre></div></div>
+
+      </div>
+    </div>
+
+    <p>
+        Running this version of control.py should do exactly what the threading version did, except that the
+        individual characters are now being passed to one of a pool of <i>processes</i> rather
+        than one of a pool of threads. The computation is trivial, but the principle would be
+        the same if the work packets were filenames and the outputs were MD5 checksums of the
+        contents of the file (which could require substantial computation and I/O in the case
+        of long files). Since the processes run independently of each other, they can be run
+        on different processors at the same time, allowing programs to take true advantage of
+        hardware parallelism. The output will seem prosaic for the amount of work that is being
+        done!
+    </p>
+
+<div class="observeBox"><div class="observeTitle">Output of the multiprocessing upper-case converter</div><div class="observe"><pre>
+Words of wisdom: No words of wisdom at all, in fact. Just a rather long and boring line of text.
+Worker Thread-2 done
+Worker Thread-3 done
+Worker Thread-4 done
+Worker Thread-5 done
+Worker Thread-6 done
+Worker Thread-7 done
+Worker Thread-8 done
+Worker Thread-9 done
+Worker Thread-10 done
+Worker Thread-11 done
+Control thread terminating
+NO WORDS OF WISDOM AT ALL, IN FACT. JUST A RATHER LONG AND BORING LINE OF TEXT.
+Output thread terminating.
+</pre></div></div>
+
+    <table class="noteBox is-warning"><tr>
+      <td class="noteTitle">Note</td>
+      <td class="note">The output above shows <code>Worker Thread-2</code> through <code>Thread-11</code>
+        and "Control thread terminating" / "Output thread terminating." because this sample run was
+        captured from the <em>threading</em> version; the multiprocessing version will display
+        process names such as <code>Worker Process-2</code> and the messages will say "process"
+        rather than "thread". Process output ordering is non-deterministic and PIDs vary between
+        runs — the content shown is original source output kept verbatim.</td>
+    </tr></table>
+
+  </div>
+
+  <p>
+      Do not make the mistake of thinking that this brief treatment has taught you all you need to
+      know about multiprocessing. There are many more things to learn about it including, for
+      example, limitations on what can be transmitted from process to process through a
+      <b>multiprocessing.Queue</b>. These restrictions are fairly commonsense, and are the result
+      of having to pickle the objects to transmit them to the remote process. As long as you stick
+      to Python's basic data objects (and combinations thereof), you should be fine. Other restrictions
+      are less obvious: when you subclass <b>multiprocessing.Process</b>, the instances should be pickleable
+      (because the class has to be instantiated in a new process when the instance's start()
+      method is called).
+  </p>
+  <p>
+      As systems evolve, multiprocessor solutions will become more and more common, and it will be necessary
+      to put systems together to take control of multi-processor machines. This lesson is intended to give
+      you the necessary grounding so that you can take the next steps with confidence.
+  </p>
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python4-11.html">More On Multi-Threading</a>
+    <a class="next" href="Python4-13.html">Functions and Other Objects</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright &#169; 1998&#8211;2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

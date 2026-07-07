@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Properties</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Properties</div>
+
+  <p>A property is a special sort of class attribute. You access it like a standard attribute, but
+      "under the hood," the interpreter runs methods ("getters" to access the data and "setters" to
+      store new data) to produce the required results. The data-like syntax is easier to read and
+      write than lots of method calls, yet the interposition of the method calls allows for data
+      validation, active updating, and/or read-only attributes. Before looking in detail at
+      properties, you should understand some of the reasons they are desirable. </p>
+
+  <!-- PUTTING COMPUTATIONS BEHIND ATTRIBUTES -->
+  <a name="h_01"></a>
+  <div class="heading">Putting Computations Behind Attributes</div>
+  <div class="headingText">
+
+    <p>In the last lesson, we learned about several special methods that let us access and control
+        attributes—<span class="darkgreen">__getattr__()</span>, <span class="darkgreen">__setattr__()</span>,
+        and <span class="darkgreen">__delattr__()</span>. You can use these techniques to control the value
+        of various attributes—but remember that the <span class="darkgreen">__getattr__()</span> method
+        will only be used if normal attribute access fails to find the named attribute. Therefore,
+        you'll want to store the values of "managed" attributes (values that must be processed on
+        retrieval) in a special directory, to ensure that normal attribute access does not find them.
+        The following code sample demonstrates control of specific attributes via the
+        <span class="darkgreen">__getattr__()</span> method.</p>
+
+    <p>Suppose you want to keep a first name, last name, age, list of classes, and a grade for
+        teachers in a school. Further suppose that you were prepared to allow some laxity in data
+        entry, but that you always wanted to return the names properly capitalized, the age as an
+        integer, the list of classes in sorted order and the grade as a string (though it should be
+        entered as a number). This kind of management is precisely what the attribute-handling
+        special methods were designed for. </p>
+
+    <p>As is usually the case, there must be test code, which follows first in the time-honored
+        tradition of TDD—Test-Driven Development. Create <b>test_teacher.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">test_teacher.py</div><div class="listing"><pre><ins>import unittest
+from teacher import Teacher
+
+class TestTeacher(unittest.TestCase):
+
+    def setUp(self):
+        self.teacher = Teacher("steve",
+                                "holden",
+                                "63",
+                                ["Python 3-3","Python 3-1","Python 3-2"],
+                                5)
+
+    def test_get(self):
+        self.assertEqual(self.teacher.first_name, "Steve")
+        self.assertEqual(self.teacher.last_name, "Holden")
+        self.assertEqual(self.teacher.age, 63)
+        self.assertEqual(self.teacher.classes, ["Python 3-1","Python 3-2","Python 3-3"])
+        self.assertEqual(self.teacher.grade, "Fifth")
+        self.teacher.description = "curmudgeon"
+        self.assertEqual(self.teacher.description, "curmudgeon")
+if __name__ == "__main__":
+    unittest.main()</ins>
+</pre></div></div>
+
+    <p>We'll start out with a simplistic implementation of the <span class="darkred">Teacher</span> class that
+        simply stores the attributes as regular values and relies on the standard Python mechanism
+        for attribute retrieval. Since no transformation is taking place on the data, it should not
+        be too surprising if this first naive implementation fails. Create <b>teacher.py</b> in the
+        same folder as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO TYPE: teacher.py</div><div class="listing"><pre><ins>class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.age = age
+        self.classes = classes
+        self.grade = grade</ins>
+</pre></div></div>
+
+    <p>Save both files and run <b>test_teacher.py</b>.
+        Sure enough, you see a failure:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The simple implementation fails</div><div class="observe"><pre>
+F
+======================================================================
+FAIL: test_get (__main__.TestTeacher.test_get)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_teacher.py", line 14, in test_get
+    self.assertEqual(self.teacher.first_name, "Steve")
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+AssertionError: 'steve' != 'Steve'
+- steve
+? ^
++ Steve
+? ^
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)
+</pre></div></div>
+
+    <table class="noteBox is-tip"><tr>
+      <td class="noteTitle">Modern Python</td>
+      <td class="note">Current Python's unittest output includes the full test id
+        (<code>test_get (__main__.TestTeacher.test_get)</code>) and caret/diff lines in
+        <code>AssertionError</code> messages. The original output showed only
+        <code>test_get (__main__.TestTeacher)</code> and a plain assertion message. The test
+        logic and result (1 failure) are unchanged.</td>
+    </tr></table>
+
+    <p>One of the beauties of Python, however, is that it is almost infinitely flexible, and so it
+        is quite possible to change this implementation to do what is required. Although it may seem
+        contradictory, the first thing you need to change is the way the object stores
+        attributes—until you do that, the attribute assignments will always result in their
+        being available without invoking <span class="darkgreen">__getattr__()</span>. </p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+"""
+Demonstrate simple attribute management
+"""
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        <ins>self.__dict__['_attrs'] = {}</ins>
+        self.first_name = first_name
+        self.last_name = last_name
+        self.age = age
+        self.classes = classes
+        self.grade = grade
+
+    <ins>def __setattr__(self, name, value):
+        self._attrs[name] = value
+
+    def __getattr__(self, name):
+        if name not in self._attrs:
+            raise AttributeError("Teacher has no attribute {0!r}".format(name))
+        value = self._attrs[name]
+        if name in ("first_name", "last_name"):
+            return value.capitalize()
+        elif name == "age":
+            return int(value)
+        elif name == "classes":
+            return sorted(value)
+        elif name == "grade":
+            return self.grades[value]
+        else:
+            return value</ins>
+</pre></div></div>
+
+    <p>Here the <span class="darkgreen">__init__</span> method creates a regular attribute called
+        <i>_attrs</i>, a dict in which the attribute values are kept, by making a direct entry in
+        the instance's __dict__. It uses this technique to avoid a direct assignment, which would
+        invoke the instance's <span class="darkgreen">__setattr__()</span> method. That method attempts to
+        store the attribute value against its name <b>self._attrs</b>, which would need to be looked
+        up by <span class="darkgreen">__getattr__()</span>. This in turn would try and find the name "_attrs"
+        in the <b>self._attrs</b> dict, which would again invoke <span class="darkgreen">__getattr__()</span>,
+        and so on. This infinite regression would only terminate when the interpreter ran out of
+        <i>stack</i>, the area of memory where it stores partially-completed function
+        namespaces.</p>
+
+    <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The convention in Python is that attributes whose names begin with "_" are internal to
+        the implementation of a class. Because of that, such attributes don't appear in <b>help</b>
+        but do appear in the output from <b>dir()</b>. While there is nothing to stop you from
+        accessing these attributes directly, the naming convention acts as a flag that outside
+        interference is likely to break the internal logic.</td></tr></table></p>
+
+    <p> Now, all attributes are stored in the <b>_attrs</b> dict, and the
+        <span class="darkgreen">__getattr__()</span> method uses the name of the retrieved attribute to
+        decide what processing needs to be performed on the stored value in order to meet
+        specifications. Save both files and run
+        <b>test_teacher.py</b>. Happily, the updated object should now pass its tests. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: All tests now pass</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+</pre></div></div>
+
+    <p>This may not look so bad at a glance, but maintenance for this code is challenging. For
+        example, if you wanted to create a subclass that had different behavior on just the "age"
+        attribute, you would have to rewrite the <span class="darkgreen">__getattr__()</span> method for
+        the child class. Then if the parent had a bug, you might have to rewrite both the parent
+        and child. As you might imagine, this quickly leads to fragile code, and tends to encourage
+        code duplication (which is normally held to be a bad thing).</p>
+
+    <p>For example, suppose you want to create a Teacher subclass that supports gender differences.
+        If male, the Teacher subclass returns "Mr." at the start of "first_name." If female, it
+        returns "Ms." The current design forces you to completely rewrite the
+        <span class="darkgreen">__getattr__()</span> method, because it is "monolithic"—all the
+        attributes are dealt with in the same method, so changing the response for just one attribute
+        is difficult or impossible.</p>
+
+    <p>An alternative is to use <i>properties</i>. Properties let you assign computations to
+        accesses involving a specific attribute, so if you inherit the class, you can easily extend
+        it without having to dance around the subtleties of <span class="darkgreen">__getattr__()</span>.
+        This allows you to easily change one small method without worrying about tangling with a
+        multitude of unrelated attributes.</p>
+
+    <!-- A Teacher Class Constructed of Properties -->
+    <a name="s_01"></a>
+    <div id="s_01"><div class="subheading">A Teacher Class Constructed of Properties</div><div class="subheadingText">
+
+      <p>A <i>property</i> in Python is a data component to which access is mediated by methods, even
+          though the user of the property can treat it as a simple data attribute. This allows you to
+          hide a layer of logic underneath attribute-style access to an object's data. </p>
+
+      <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">If you <i>know</i>&nbsp;&nbsp;in advance that the logic is required, there is something to
+          recommend simply writing the methods and documenting them as the necessary solution to the
+          problem. Properties excel when the logic needs to be introduced later, after you have
+          already written code that treats the data as simple attributes. Under those circumstances,
+          properties allow you to insert a layer of logic without changing the code that currently
+          uses the attributes. </td></tr></table></p>
+
+      <p>Like a lot of other programming descriptions, this sounds a lot more complex than it is. And
+          since a bit of code often helps to clarify new concepts, let's construct the teacher class
+          with properties using the techniques as we've described:</p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        <del>self.__dict__['_attrs'] = {}
+        self.first_name = first_name
+        self.last_name = last_name
+        self.age = age
+        self.classes = classes
+        self.grade = grade</del>
+        <ins>self._first_name = first_name # internal data attributes are set
+        self._last_name = last_name
+        self._age = age
+        self._classes = classes
+        self._grade = grade</ins>
+
+    <del>def __setattr__(self, name, value):
+        self._attrs[name] = value
+
+    def __getattr__(self, name):
+        if name not in self._attrs:
+            raise AttributeError("Teacher has no attribute {0!r}".format(name))
+        value = self._attrs[name]
+        if name in ("first_name", "last_name"):
+            return value.capitalize()
+        elif name == "age":
+            return int(value)
+        elif name == "classes":
+            return sorted(value)
+        elif name == "grade":
+            return self.grades[value]
+        else:
+            return value</del>
+
+    <ins>def first_name(self):
+        return self._first_name.capitalize()
+    first_name = property(first_name)
+
+    def last_name(self):
+        return self._last_name.capitalize()
+    last_name = property(last_name)
+
+    def age(self):
+        return int(self._age)
+    age = property(age)
+
+    def classes(self):
+        return sorted(self._classes)
+    classes = property(classes)
+
+    def grade(self):
+        return self.grades[self._grade]
+    grade = property(grade)</ins>
+</pre></div></div>
+
+      <p>Save both files and run
+          <b>test_teacher.py</b>.</p>
+
+<div class="observeBox"><div class="observeTitle">running test_teacher.py with teacher.py changed to use properties</div><div class="observe"><pre>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>Thanks to the magic of <b>unittest</b>, this demonstration of a new programming technique
+          appears to be a valid refactoring. At least you have passed a definite "smoke test" by
+          passing the current tests. Let's review the changes in the code of teacher.py:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: teacher.py __init__() method</div><div class="observe"><pre>
+def __init__(self, <span class="darkred">first_name</span>, last_name, age, classes, grade):
+    <span class="darkblue">self._first_name</span> = <span class="darkred">first_name</span> # internal data attributes are set
+    self._last_name = last_name
+    self._age = age
+    self._classes = classes
+    self._grade = grade
+</pre></div></div>
+
+      <p>In the __init__() method, we set <span class="darkred">first_name</span> via
+          <span class="darkblue">self._first_name</span>. This is done to provide a data attribute on which to
+          base the <span class="darkred">first_name</span> property (if it had the same name as the property,
+          the assignment would overwrite the method!). We made similar changes for the other managed
+          attributes. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: New Methods in teacher.py</div><div class="observe"><pre>
+def <span class="darkgreen">first_name(</span>self<span class="darkgreen">)</span>:
+    return self.<span class="darkblue">_first_name</span>.capitalize()
+first_name = <span class="purple">property(</span>first_name<span class="purple">)</span>
+
+def last_name(self):
+    return self._last_name.capitalize()
+last_name = property(last_name)
+
+def age(self):
+    return int(self._age)
+age = property(age)
+
+def classes(self):
+    return sorted(self._classes)
+classes = property(classes)
+
+def grade(self):
+    return self.grades[self._grade]
+grade = property(grade)
+</pre></div></div>
+
+      <p>The <span class="darkgreen">first_name()</span> method accesses the <span class="darkblue">_first_name</span>
+          data attribute, and processes it before returning it as the value of the attribute. We
+          provide similar methods for the other managed attributes.</p>
+
+      <p>The <span class="darkgreen">first_name()</span> method becomes a property when it is replaced inside
+          the class body by the result of calling the built-in <span class="purple">property()</span> function
+          with the method as an argument. We changed the other managed attributes likewise into
+          properties.</p>
+
+      <p>You can see that if you wanted to create a Teacher subclass where the first_name attribute
+          was modified by a gender attribute, you would only need to redefine the first_name property
+          in your subclass—the other property definitions would continue to stand. This is in
+          distinction to the preceding class, whose "monolithic" (all in one piece)
+          <span class="darkgreen">__getattr__()</span> makes it hard to separate one attribute from another.</p>
+
+    </div></div>
+
+    <!-- Decorator Syntax -->
+    <a name="s_02"></a>
+    <div id="s_02"><div class="subheading">Decorator Syntax</div><div class="subheadingText">
+
+      <p>Because defining a function or method and then applying a function such as
+          <span class="darkgreen">property()</span> to it is a common pattern, Python has a special shorthand
+          for it. The syntax we used above was:</p>
+
+<div class="observeBox"><div class="observeTitle">Standard Property Creation</div><div class="observe"><pre>
+def method(self, ...):
+    """Method body."""
+    ...
+method = property(method)
+</pre></div></div>
+
+      <p>This application of a function to another function is called <i>decoration</i>, and the
+          applied function (in this case <span class="darkgreen">property</span>) is called a
+          <i>decorator</i>. If the method is lengthy, the final reassignment to the method name is
+          easy to miss. Consequently you can also use the following syntax, which is merely a shortcut
+          for the standard mechanism above:</p>
+
+<div class="observeBox"><div class="observeTitle">Property Creation with a Decorator</div><div class="observe"><pre>
+@property
+def method(self, ...):
+    """Method body."""
+    ...
+</pre></div></div>
+
+      <p>You should find that the code works exactly the same using this syntax as it does using the
+          standard property creation. Try it, just to be sure. </p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        self._first_name = first_name # internal data attributes are set
+        self._last_name = last_name
+        self._age = age
+        self._classes = classes
+        self._grade = grade
+
+    <ins>@property</ins>
+    def first_name(self):
+        return self._first_name.capitalize()
+    <del>first_name = property(first_name)</del>
+
+    <ins>@property</ins>
+    def last_name(self):
+        return self._last_name.capitalize()
+    <del>last_name = property(last_name)</del>
+
+    <ins>@property</ins>
+    def age(self):
+        return int(self._age)
+    <del>age = property(age)</del>
+
+    <ins>@property</ins>
+    def classes(self):
+        return sorted(self._classes)
+    <del>classes = property(classes)</del>
+
+    <ins>@property</ins>
+    def grade(self):
+        return self.grades[self._grade]
+    <del>grade = property(grade)</del>
+</pre></div></div>
+
+      <p>As always, the first thing that you should do after changing your code is... run your tests!
+          These two ways to apply properties to methods are entirely equivalent, so your tests should
+          continue to pass.</p>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The decorator form (<code>@property</code>, <code>@x.setter</code>,
+          <code>@x.deleter</code>) introduced in this section is the idiomatic modern style.
+          The function-call form (<code>name = property(name)</code>) shown in the previous
+          section is still valid Python, but you will rarely see it in contemporary code. Where
+          practical, prefer the decorator form for clarity.</td>
+      </tr></table>
+
+    </div></div>
+
+    <!-- Settable Properties -->
+    <a name="s_03"></a>
+    <div id="s_03"><div class="subheading">Settable Properties</div><div class="subheadingText">
+
+      <p>Note that while the first implementation correctly allowed you to reassign the managed
+          attributes through use of the <span class="darkgreen">__setattr__()</span> method, this one does
+          not. Neither can you delete managed attributes (which was also an issue with the earlier
+          code, though we did not mention it at the time). You can verify this using an interactive
+          interpreter session:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">CODE TO TYPE: Verify </div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from teacher import *</ins>
+&gt;&gt;&gt; <ins>t = Teacher("steve", "holden", "63",</ins>
+...             <ins>["Python 3-3","Python 3-1","Python 3-2"], 5)</ins>
+&gt;&gt;&gt;
+&gt;&gt;&gt; <ins>t.first_name</ins>
+'Steve'
+&gt;&gt;&gt; <ins>t.first_name = "joe"</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AttributeError: property 'first_name' of 'Teacher' object has no setter
+&gt;&gt;&gt; <ins>del t.first_name</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AttributeError: property 'first_name' of 'Teacher' object has no deleter
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In Python 3.11+, the <code>AttributeError</code> messages for read-only
+          properties changed from <code>can't set attribute</code> / <code>can't delete
+          attribute</code> to the more descriptive form shown above, identifying the property name
+          and the missing accessor.</td>
+      </tr></table>
+
+      <p>So at the moment you can neither assign to nor delete the managed attributes. You will be
+          changing the tests to include these features shortly, to provide failing tests that new
+          functionality in your <b>teacher</b> module can turn into success. </p>
+
+      <p>The built-in <span class="darkgreen">property</span> function is actually rather more complicated
+          than you have so far seen. Its full <i>signature</i> (the pattern of arguments it can be
+          called with) is as follows. </p>
+
+<div class="observeBox"><div class="observeTitle">property function signature</div><div class="observe"><pre>
+property(fget=None, fset=None, fdel=None, doc=None)
+</pre></div></div>
+
+      <p><b>fget</b> is the <i>getter function</i>, <b>fset</b> is the <i>setter function</i>,
+          <b>fdel</b> is the <i>deleter function</i> and <b>doc</b> is the <i>documentation</i>. So
+          the reason that the properties you have defined so far cannot be set is that the
+          <i>decorator syntax only passes a single argument to the call of
+              <span class="darkgreen">property()</span></i>. This single positional argument is associated
+          (positionally) with the <b>fget</b> parameter, so you can get the attribute value, but
+          there is no way to set or delete the attributes (and no documentation!) </p>
+
+    </div></div>
+
+    <!-- Setting values via properties -->
+    <a name="s_04"></a>
+    <div id="s_04"><div class="subheading">Setting values via properties</div><div class="subheadingText">
+
+      <p>Properties do more than just provide the ability to compute values during retrieval of
+          attributes. They also let you perform calculations while <i>setting</i> values. This is
+          useful during validation of incoming data. For example, what if you wanted to confirm that
+          the age attribute was passed a valid integer rather than converting it to an integer when
+          it was accessed? Using standard techniques, you would declare a second method and pass it
+          as the second argument to the call of <span class="darkgreen">property()</span>. First, of course,
+          we need to add a new test to the test suite that fails. This should be fairly easy with
+          the experience we had in the interactive interpreter session above. Since we want the
+          values we can assign to age to be limited to integers, we'll also add a test to make
+          sure that any other type of data raises a ValueError exception. </p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: test_teacher.py</div><div class="listing"><pre>
+import unittest
+from teacher import Teacher
+
+class TestTeacher(unittest.TestCase):
+
+    def setUp(self):
+        self.teacher = Teacher("steve",
+                                "holden",
+                                "63",
+                                ["Python 3-3","Python 3-1","Python 3-2"],
+                                5)
+
+    def test_get(self):
+        self.assertEqual(self.teacher.first_name, "Steve")
+        self.assertEqual(self.teacher.last_name, "Holden")
+        self.assertEqual(self.teacher.age, 63)
+        self.assertEqual(self.teacher.classes, ["Python 3-1","Python 3-2","Python 3-3"])
+        self.assertEqual(self.teacher.grade, "Fifth")
+        self.teacher.description = "curmudgeon"
+        self.assertEqual(self.teacher.description, "curmudgeon")
+
+    <ins>def test_set(self):
+        self.teacher.age = "21"
+        self.assertEqual(self.teacher._age, 21)
+        self.assertEqual(self.teacher.age, 21)
+        self.assertRaises(ValueError, self.setAgeWrong)
+
+    def setAgeWrong(self):
+        self.teacher.age = "twentyone"</ins>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>Note that <b>unittest.TestCase.assertRaises</b> expects a function and an exception as
+          arguments. It calls the function, and flags a failure if the call does not raise the
+          specified exception type. After these modifications, you would expect your new test to
+          fail, and sure enough it does (before it even gets around to testing to see whether the
+          <b>setAgeWrong</b> method raises the required exception). </p>
+
+<div class="observeBox"><div class="observeTitle">Tests fail as expected before you update your teacher class</div><div class="observe"><pre>
+.E
+======================================================================
+ERROR: test_set (__main__.TestTeacher.test_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_teacher.py", line 23, in test_set
+    self.teacher.age = "21"
+    ^^^^^^^^^^^^^^^^
+AttributeError: property 'age' of 'Teacher' object has no setter
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+FAILED (errors=1)
+</pre></div></div>
+
+      <p>Having updated the tests to make it obvious that an upgrade is required to the teacher
+          module, we need to add the necessary new code. We'll start by using the standard method to
+          give the <b>age</b> attribute both a getter <i>and</i> a setter. </p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        self._first_name = first_name # internal data attributes are set
+        self._last_name = last_name
+        <del>self._age = age</del>
+        <ins>self.age = age</ins>
+        self._classes = classes
+        self._grade = grade
+
+    @property
+    def first_name(self):
+        return self._first_name.capitalize()
+
+    @property
+    def last_name(self):
+        return self._last_name.capitalize()
+
+    <del>@property
+    def age(self):
+        return int(self._age)</del>
+
+    <ins>def getage(self):
+        return self._age
+
+    def setage(self, value):
+        self._age = int(value)
+
+    age = property(getage, setage, doc="Teacher's age: must be convertible to integer")</ins>
+
+    @property
+    def classes(self):
+        return sorted(self._classes)
+
+    @property
+    def grade(self):
+        return self.grades[self._grade]
+</pre></div></div>
+
+      <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">You will see that the <span class="darkgreen">__init__()</span> method is now relying on the
+          property to establish the initial value of the managed attribute rather than directly
+          assigning to the underlying data member. This is generally a good thing, since if the setter
+          method performs validations these will also be applied to the initial value passed in as
+          an argument to <span class="darkgreen">__init__()</span>. </td></tr></table></p>
+
+      <p>Now the <b>age</b> attribute has both a getter and a setter, you should see that it passes
+          all tests with flying colors. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: All tests pass once teacher.py is modified</div><div class="observe"><pre>
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>You may wonder whether it is possible to achieve the same ends using decorators, and the
+          answer is yes. This is because a read-only property (which, you will remember, can be created
+          with the use of a decorator because it only requires a single argument) has a
+          <span class="darkgreen">setter()</span> method that can be used to decorate a... setter method! This
+          means that you can create the age property as before, with a decorator, and then decorate the
+          setter() method with a method of the getter() property that you just created. </p>
+
+      <p>This may sound a little confusing, but once you have typed the code, it should seem a little
+          more natural. The <b>age()</b> property goes back to its original code, and the age setter is
+          decorated by one of the getter property's methods (the getter has been defined specifically
+          to provide these extra methods as a convenience). </p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        self._first_name = first_name # internal data attributes are set
+        self._last_name = last_name
+        self.age = age
+        self._classes = classes
+        self._grade = grade
+
+    @property
+    def first_name(self):
+        return self._first_name.capitalize()
+
+    @property
+    def last_name(self):
+        return self._last_name.capitalize()
+
+    <del>def getage(self):</del>
+    <ins>@property
+    def age(self):</ins>
+        return self._age
+
+    <del>def setage(self, value):</del>
+    <ins>@age.setter
+    def age(self, value):</ins>
+        self._age = int(value)
+
+    <del>age = property(getage, setage, doc="Teacher's age: must be convertible to integer")</del>
+
+    @property
+    def classes(self):
+        return sorted(self._classes)
+
+    @property
+    def grade(self):
+        return self.grades[self._grade]
+</pre></div></div>
+
+      <p><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The second age definition might be flagged as a "duplicate signature" in some IDEs;
+          you can safely ignore this for now.</td></tr></table></p>
+
+      <p>You should, of course, confirm as usual that your tests continue to succeed.</p>
+
+    </div></div>
+
+    <!-- Deleting Attributes Using Properties -->
+    <a name="s_05"></a>
+    <div id="s_05"><div class="subheading">Deleting Attributes Using Properties</div><div class="subheadingText">
+
+      <p>Deleting attributes works in nearly the same fashion as setting attributes. Create yet
+          another function with the same name as your attribute and place a
+          <b>@&lt;my-attribute-name&gt;.deleter</b>. In our next example, removing a grade means
+          creating a grade function, placing a <span class="darkgreen">@grade.deleter</span> above it, and
+          then in the logic, adding a year to the age of the teacher. </p>
+
+      <p>First, let's write a test for our expected behavior:</p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: test_teacher.py</div><div class="listing"><pre>
+import unittest
+from teacher import Teacher
+
+class TestTeacher(unittest.TestCase):
+
+    def setUp(self):
+        self.teacher = Teacher("steve",
+                                "holden",
+                                "63",
+                                ["Python 3-3","Python 3-1","Python 3-2"],
+                                5)
+
+    def test_get(self):
+        self.assertEqual(self.teacher.first_name, "Steve")
+        self.assertEqual(self.teacher.last_name, "Holden")
+        self.assertEqual(self.teacher.age, 63)
+        self.assertEqual(self.teacher.classes, ["Python 3-1","Python 3-2","Python 3-3"])
+        self.assertEqual(self.teacher.grade, "Fifth")
+        self.teacher.description = "curmudgeon"
+        self.assertEqual(self.teacher.description, "curmudgeon")
+
+    def test_set(self):
+        self.teacher.age = "21"
+        self.assertEqual(self.teacher._age, 21)
+        self.assertEqual(self.teacher.age, 21)
+        self.assertRaises(ValueError, self.setAgeWrong)
+
+    def setAgeWrong(self):
+        self.teacher.age = "twentyone"
+
+    <ins>def test_delete(self):
+        del self.teacher.grade
+        self.assertEqual(self.teacher.age, 64)
+        self.assertRaises(AttributeError, self.accessGrade)
+
+    def accessGrade(self):
+        return self.teacher.grade</ins>
+
+if __name__ == "__main__":
+    unittest.main()
+</pre></div></div>
+
+      <p>As usual, a newly added test should fail. You should verify this, as usual, by running the
+          updated test suite.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The deletion tests fail, as expected</div><div class="observe"><pre>
+E..
+======================================================================
+ERROR: test_delete (__main__.TestTeacher.test_delete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_teacher.py", line 32, in test_delete
+    del self.teacher.grade
+        ^^^^^^^^^^^^^^^^^^
+AttributeError: property 'grade' of 'Teacher' object has no deleter
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (errors=1)
+</pre></div></div>
+
+      <p>Now, modify the teacher.py code to add the deleter method:</p>
+
+<div class="listingBox"><div class="listingTitle">CODE TO EDIT: teacher.py</div><div class="listing"><pre>
+class Teacher(object):
+
+    grades = {1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth"}
+
+    def __init__(self, first_name, last_name, age, classes, grade):
+        self._first_name = first_name
+        self._last_name = last_name
+        self._age = age
+        self._classes = classes
+        self._grade = grade
+
+    @property
+    def first_name(self):
+        return self._first_name.capitalize()
+
+    @property
+    def last_name(self):
+        return self._last_name.capitalize()
+
+    @property
+    def age(self):
+        return <ins>int(self._age)</ins>
+
+    @age.setter
+    def age(self, value):
+        self._age = int(value)
+
+    @property
+    def classes(self):
+        return sorted(self._classes)
+
+    @property
+    def grade(self):
+        return self.grades[self._grade]
+
+    <ins>@grade.setter
+    def grade(self, value):
+        self.grades[value] # throw error if value != a key
+        self._grade = value</ins>
+
+    <ins>@grade.deleter
+    def grade(self):
+        self.age += 1
+        del self._grade</ins>
+</pre></div></div>
+
+      <p><div class="c"><table class="noteBox"><tr><td class="noteTitle">Note</td><td class="note">The updated "age" property now applies the int() built-in to its argument. This allows users
+          to specify the age as a character string without the code breaking. Whether this is a good
+          idea or not, and whether the setter should even accept strings or not, is an interesting
+          question—one that we will ignore for now.</td></tr></table></div></p>
+
+      <p>Save it and run the test. All tests should
+          pass immediately. </p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The newly-added deleter tests now pass</div><div class="observe"><pre>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+</pre></div></div>
+
+      <p>So you now understand how you can put logic behind all types of attribute access. Beware of
+          using this technique when it isn't really necessary: remember, if you know method calls
+          are going to be required from the outset, it is much better to build them into the API for
+          your objects from the start. If the logic needs to be retrofitted, however, properties are
+          a really useful way of fitting it. </p>
+
+    </div></div>
+
+  </div>
+
+  <p>Properties allow you to isolate each piece of logic in its own method, making it easy to
+      extend and reuse as a parent superclass or to implement in child classes. They are often used
+      for validation, logging, formatting, and a myriad of other tasks. The only possible downside
+      to properties is that they require a little bit of extra work, but the extra functionality
+      they provide is generally well worth that effort. </p>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-09.html">Advanced Objects: Special Methods</a>
+    <a class="next" href="Python3-11.html">A First Look at Logging</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>

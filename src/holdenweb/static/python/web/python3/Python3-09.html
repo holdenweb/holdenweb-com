@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 1998-2014 O'Reilly Media, Inc.
+     This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+     Unported License. See http://creativecommons.org/licenses/by-sa/3.0/legalcode
+     Republished by Steve Holden. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advanced Objects: Special Methods</title>
+  <link rel="stylesheet" href="../common/course.css">
+  <script src="../common/course.js" defer></script>
+</head>
+<body>
+
+<main class="lesson">
+
+  <div class="title">Advanced Objects: Special Methods</div>
+
+  <p>Since you started writing classes and creating objects in Python, you've become familiar with
+    the <span class="darkgreen">__init__()</span> method in the initialization of the object to set up the
+    object data. You've also learned about the <span class="darkgreen">__add__()</span> method. Methods
+    whose names start and end with double underscores ("__") designate special behaviors for Python
+    classes via what are called <i>special methods</i>.</p>
+
+  <p>These special method names are tied directly into Python's infrastructure. They control how
+    objects are created and destroyed, how they render through the <span class="darkgreen">print()</span>
+    function, and many other things. Their advantage is that they let you do a lot of very
+    interesting, almost magical things with Python classes—which is why an alternative name
+    for special methods is <i>magic methods</i>. Fortunately, the magic is like stage magic.
+    Wonderful things seem to "just happen," but behind the scenes very explicit things are taking
+    place, based on the way the interpreter has been designed. The wonderful part is that you can
+    define your own objects to interact with the interpreter in pretty much the same way that
+    Python's built-in objects do.</p>
+
+  <p>This lesson includes the following sections:</p>
+  <ul>
+    <li><a href="#basic_customization">Basic Customization</a></li>
+    <li><a href="#attribute_access">Attribute Access</a></li>
+    <li><a href="#emulating_functions_the_call_method">Emulating Functions: the __call__() Method</a></li>
+  </ul>
+
+  <!-- BASIC CUSTOMIZATION -->
+  <a name="basic_customization"></a>
+  <a name="h_01"></a>
+  <div class="heading">Basic Customization</div>
+  <div class="headingText">
+
+    <p>The most commonly used special methods are <span class="darkgreen">__init__()</span>,
+      <span class="darkgreen">__new__()</span>, <span class="darkgreen">__repr__()</span>, and
+      <span class="darkgreen">__str__()</span>. You've already used the <span class="darkgreen">__init__()</span>
+      method many times to initialize instance variables when new objects are created, so now
+      we'll focus on the others. For each method, we'll provide some descriptive information,
+      and then will include a brief example at the end to help you familiarize yourself with it.</p>
+
+    <!-- __new__() -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">__new__(): Creating New Objects</div>
+    <div class="subheadingText">
+
+      <p>At first glance, the <span class="darkgreen">__new__()</span> method seems similar to the
+        <span class="darkgreen">__init__()</span> method, but it is actually quite different. You will
+        remember that you <i>instantiate</i> a class (that is, create a new instance of that class)
+        by calling the class. The <span class="darkgreen">__init__()</span> method returns
+        nothing—it merely initializes what <span class="darkgreen">__new__()</span> has created. The
+        <span class="darkgreen">__new__()</span> method, on the other hand, returns the object that will
+        become the return value of the instantiation call.</p>
+
+      <p>Like <span class="darkgreen">__init__()</span>, <span class="darkgreen">__new__()</span> receives the
+        arguments that the caller passes when calling the class. Unlike
+        <span class="darkgreen">__init__()</span>, <span class="darkgreen">__new__()</span> receives a first
+        argument that is the <i>class to be created</i> rather than the newly-created instance.</p>
+
+      <p>This is important: the default <span class="darkgreen">__new__()</span> method (inherited from the
+        <i>object</i> type) can be used to create immutable object instances. Most of the time you
+        use this when extending immutable built-in types like numbers and strings, since it would
+        not be possible to change them in the <span class="darkgreen">__init__()</span> method. In our
+        example, we'll create <b>ustr</b>, an extension of the basic <b>str</b> type that returns a
+        string object that always has upper-case versions of any letters it may contain. Create
+        <b>newmagic.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Python classes with magic methods
+"""
+
+class ustr(str):
+    "An upper case string object."
+    def __new__(cls, arg):
+        arg = str(arg)
+        return str.__new__(cls, arg.upper())</ins>
+</pre></div></div>
+
+      <p>Before we continue, let's look closely at this class.</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: The ustr Class</div><div class="observe"><pre>
+class <span class="darkred">ustr(</span><span class="darkblue">str</span><span class="darkred">)</span>:
+    "An upper case string object."
+    def <span class="darkgreen">__new__(</span><span class="purple">cls</span>, <span class="orange">arg</span><span class="darkgreen">)</span>:
+        <span class="orange">arg</span> = <span class="darkblue">str(</span><span class="orange">arg</span><span class="darkblue">)</span>
+        return <span class="darkblue">str</span>.<span class="darkgreen">__new__(</span><span class="purple">cls</span>, <span class="orange">arg</span>.<span class="red">upper()</span><span class="darkgreen">)</span>
+</pre></div></div>
+
+      <p>This example defines the class <span class="darkred">ustr</span> as a subclass of the built-in
+        <span class="darkblue">str</span> type used to represent Unicode strings. Because Python's type names
+        are lower-case, we break from the tradition of naming a class in MixedCase, and use a
+        lower-case class name. The class defines a <span class="darkgreen">__new__()</span> method that
+        accepts <span class="purple">cls</span> and <span class="orange">arg</span> arguments.</p>
+
+      <p>The <span class="purple">cls</span> parameter is the actual class that was called—this is
+        different from the <i>self</i> argument passed to other methods, which represents the
+        instantiated object. Like <i>self</i>, the <span class="purple">cls</span> argument is provided
+        automatically by the interpreter. The whole purpose of the <span class="darkgreen">__new__()</span>
+        method is to <i>create and return</i> the new object: this method is directly responsible
+        for instantiation!</p>
+
+      <p>The <span class="orange">arg</span> parameter is the argument provided to the class when it is called.
+        The value of <span class="orange">arg</span> is converted into a string, and the last statement returns
+        a new string. It does so, however, by calling the built-in string type's
+        <span class="darkgreen">__new__()</span> method explicitly, asking it (with the first argument) to
+        return an object of the correct type. The second argument to
+        <span class="darkblue">str</span>.<span class="darkgreen">__new__()</span> provides the value for the string,
+        and upper case is guaranteed by calling its <span class="red">.upper()</span> method.</p>
+
+      <p>The call to <span class="darkblue">str</span>.<span class="darkgreen">__new__()</span> is analogous to an
+        explicit call on a class method giving an instance as the first argument. The call to
+        <span class="darkblue">str</span>.<span class="darkgreen">__new__()</span> returns a <b>ustr</b> object,
+        because the first argument to <span class="darkgreen">__new__()</span> specifies the return type
+        required. Test the class at the interactive console:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from newmagic import *</ins>
+&gt;&gt;&gt; <ins>s = ustr("Steve Holden")</ins>
+&gt;&gt;&gt; <ins>s</ins>
+'STEVE HOLDEN'
+&gt;&gt;&gt; <ins>type(s)</ins>
+&lt;class 'newmagic.ustr'&gt;
+&gt;&gt;&gt; <ins>s.lower()</ins>
+'steve holden'
+&gt;&gt;&gt; <ins>len(s)</ins>
+12
+&gt;&gt;&gt; <ins>s.size = 12</ins>
+&gt;&gt;&gt; <ins>s.size</ins>
+12
+&gt;&gt;&gt; <ins>ss = "A regular string"</ins>
+&gt;&gt;&gt; <ins>ss.size = 16</ins>
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AttributeError: 'str' object has no attribute 'size' and no __dict__ for setting new attributes
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In current Python 3, the <code>AttributeError</code> message when you try to set an
+          attribute on a built-in <code>str</code> instance is more explicit: it says <em>and no __dict__ for
+          setting new attributes</em>. The original showed a shorter message. The behaviour is unchanged.</td>
+      </tr></table>
+
+      <p>You can see that instances of the <span class="darkred">ustr</span> class behave almost the same as
+        instances of <span class="darkblue">str</span>, except that they have to be created with an explicit
+        call to the class. There is also the difference that you can set new attributes on
+        <span class="darkred">ustr</span> instances, but you cannot do that with the built-in type.</p>
+
+    </div></div>
+
+    <!-- __str__() -->
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">Representing objects as strings: __str__()</div>
+    <div class="subheadingText">
+
+      <p>The built-in <span class="darkgreen">str()</span> seems to be a function, but strictly speaking, it
+        is actually a built-in type that can be <i>used</i> like a function. When you call it with
+        a single argument, it tries to return a string representation of the argument by calling the
+        argument's <span class="darkgreen">__str__()</span> method. The <span class="darkgreen">print()</span>
+        built-in function does the same thing.</p>
+
+      <p>The return value of <span class="darkgreen">__str__()</span> must be a string object. In our example
+        below, the <span class="darkred">Person</span> class is a normal class and the <span class="darkred">NamedPerson</span>
+        class provides a more attractive print statement. Create <b>strmagic.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate string representations using inheritance
+"""
+class Person:
+    "Represents a person"
+    def __init__(self, name):
+        self.name = name
+
+class NamedPerson(Person):
+    "Represents a person using their name"
+    def __str__(self):
+        return self.name</ins>
+</pre></div></div>
+
+      <p>The difference between the two classes is that <span class="darkred">NamedPerson</span> has an
+        <span class="darkgreen">__str__()</span> method, which <span class="darkred">Person</span> does not. You can
+        see the difference quite easily in an interactive interpreter session.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from strmagic import *</ins>
+&gt;&gt;&gt; <ins>p1 = Person("Danny Greenfeld")</ins>
+&gt;&gt;&gt; <ins>p1</ins>
+&lt;strmagic.Person object at 0x...&gt;
+&gt;&gt;&gt; <ins>print(p1)</ins>
+&lt;strmagic.Person object at 0x...&gt;
+&gt;&gt;&gt; <ins>p2 = NamedPerson("Danny Greenfeld")</ins>
+&gt;&gt;&gt; <ins>p2</ins>
+&lt;strmagic.NamedPerson object at 0x...&gt;
+&gt;&gt;&gt; <ins>print(p2)</ins>
+Danny Greenfeld
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">The hex addresses in object reprs (e.g. <code>0x01E1D710</code>) vary with each run
+          and Python version. They are shown here as <code>0x...</code> to make that clear.</td>
+      </tr></table>
+
+      <p>The string returned by <span class="darkgreen">__str__()</span> is supposed to be an "informal"
+        representation of the object, which can be used to convey its principal characteristics
+        without necessarily allowing you to reproduce the object exactly. For the latter purpose,
+        Python expects your objects to provide another magic method,
+        <span class="darkgreen">__repr__()</span>.</p>
+
+    </div></div>
+
+    <!-- __repr__() -->
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">__repr__()</div>
+    <div class="subheadingText">
+
+      <p>The <span class="darkgreen">__repr__()</span> method of object <i>o</i> is called by
+        <span class="darkgreen">repr(o)</span>. The built-in function <span class="darkgreen">repr()</span> is
+        supposed to represent the "official" string representation of an object. Ideally, this
+        representation should look like a valid Python expression which, when evaluated, produces
+        the object being represented. Its primary use is in debugging or logging, and is best not
+        revealed to users. The information should be as rich as possible.</p>
+
+      <p>The <span class="darkgreen">str()</span> representation of a container object such as a list or a
+        tuple also represents the contained objects using their <span class="darkgreen">repr()</span>
+        representation. Containers themselves generally use the same representation for both
+        <span class="darkgreen">str()</span> and <span class="darkgreen">repr()</span>, and this is the easiest
+        way to ensure that their representations are meaningful.</p>
+
+      <p>To determine a little more about the relationship between the two representational methods,
+        we'll create four different classes that have different combinations of those methods. You
+        can then see how they interact with the interactive interpreter and the
+        <span class="darkgreen">print()</span> function. (Don't forget, if you have other questions about
+        this, the interactive interpreter is the best way to answer those questions). Create
+        <b>reprmagic.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate differences between __str__() and __repr__().
+"""
+
+class neither:
+    pass
+
+class stronly:
+    def __str__(self):
+        return "STR"
+
+class repronly:
+    def __repr__(self):
+        return "REPR"
+
+class both(stronly, repronly):
+    pass
+
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    def __str__(self):
+        return self.name
+    def __repr__(self):
+        return "Person({0.name!r}, {0.age!r})".format(self)</ins>
+</pre></div></div>
+
+      <p>The <span class="darkred">neither</span> class simply inherits all its behavior from Python's
+        fundamental object. The <span class="darkred">stronly</span> class, as its name implies, only
+        implements <span class="darkgreen">__str__()</span>, while the <span class="darkred">repronly</span> class
+        only implements <span class="darkgreen">__repr__()</span>. The <span class="darkred">both</span> class uses
+        multiple inheritance to implement both methods. Finally, the <span class="darkred">Person</span>
+        class represents its instances as a string by using the instance's name and provides a
+        full representation that could actually be pasted into a Python program as code. Note that
+        it uses the <b>!r</b> format effector to include the formal representations of the
+        instance's name and age. This avoids any tricky problems of representing strings with
+        characters inside them that require escapes and so on.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from reprmagic import *</ins>
+&gt;&gt;&gt; <ins>o1 = neither()</ins>
+&gt;&gt;&gt; <ins>print(str(o1), repr(o1))</ins>
+&lt;reprmagic.neither object at 0x...&gt; &lt;reprmagic.neither object at 0x...&gt;
+&gt;&gt;&gt; <ins>o2 = stronly()</ins>
+&gt;&gt;&gt; <ins>print(str(o2), repr(o2))</ins>
+STR &lt;reprmagic.stronly object at 0x...&gt;
+&gt;&gt;&gt; <ins>o3 = repronly()</ins>
+&gt;&gt;&gt; <ins>print(str(o3), repr(o3))</ins>
+REPR REPR
+&gt;&gt;&gt; <ins>o4 = both()</ins>
+&gt;&gt;&gt; <ins>print(str(o4), repr(o4))</ins>
+STR REPR
+&gt;&gt;&gt; <ins>o1</ins>
+&lt;reprmagic.neither object at 0x...&gt;
+&gt;&gt;&gt; <ins>o2</ins>
+&lt;reprmagic.stronly object at 0x...&gt;
+&gt;&gt;&gt; <ins>o3</ins>
+REPR
+&gt;&gt;&gt; <ins>o4</ins>
+REPR
+&gt;&gt;&gt; <ins>steve = Person("Steve Holden", 21)</ins>
+&gt;&gt;&gt; <ins>print(str(steve), repr(steve))</ins>
+Steve Holden Person('Steve Holden', 21)
+&gt;&gt;&gt; <ins>tim = Person('Tim O\'Reilly', 55)</ins>
+&gt;&gt;&gt; <ins>tim</ins>
+Person("Tim O'Reilly", 55)
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>In the lines where we asked the interactive interpreter directly for the objects o1 through
+        o4, it presented the <span class="darkgreen">repr()</span> of the objects. Remember that this
+        behavior is specific to the interpreter's interactive mode: if you write an expression on
+        its own in a Python module that is run as a main program, the interpreter simply calculates
+        the value of the expression. Also note, from the example of the <span class="darkgreen">repronly()</span>
+        object bound to <b>o3</b>, that if an object has a <span class="darkgreen">__repr__()</span> method
+        but no <span class="darkgreen">__str__()</span> method, the <span class="darkgreen">__repr__()</span> method
+        is used for both purposes.</p>
+
+    </div></div>
+
+  </div>
+
+  <!-- ATTRIBUTE ACCESS -->
+  <a name="attribute_access"></a>
+  <a name="h_02"></a>
+  <div class="heading">Attribute Access</div>
+  <div class="headingText">
+
+    <p>Attributes are where objects store data. Python lets you override the interpreter's normal
+      attribute-handling behaviors by providing further special methods:
+      <span class="darkgreen">__getattr__()</span>, <span class="darkgreen">__setattr__()</span>, and
+      <span class="darkgreen">__delattr__()</span> are used to access, set, and delete attributes
+      respectively. These methods should be defined with great care: it is quite possible to end
+      up with completely unusable objects if you are not sufficiently careful, or (even worse)
+      objects that seem to do what you want them to but under certain circumstances don't behave
+      as planned. As with <span class="darkgreen">__str__()</span> and <span class="darkgreen">__repr__()</span>,
+      there are functions that you can use to access an object's special methods for attribute
+      access, summarized here:</p>
+
+    <table class="tbl">
+      <tr><th>Function Call</th><th>Description</th></tr>
+      <tr>
+        <td>hasattr(o, name)</td>
+        <td>Returns <b>True</b> if object o has an attribute whose name is the same as the
+          <b>name</b> argument, (which must be a string), otherwise returns <b>False</b>.</td>
+      </tr>
+      <tr>
+        <td>setattr(o, name, value)</td>
+        <td>Sets object <b>o</b>'s <b>name</b> attribute to <b>value</b> (provided that the
+          object allows it). Equivalent to <span class="darkgreen">o.__setattr__(name, value)</span>.</td>
+      </tr>
+      <tr>
+        <td>delattr(o, name)</td>
+        <td>If object <b>o</b> has an attribute called <b>name</b>, deletes the attribute. If no
+          such attribute exists, raises an AttributeError exception. Equivalent to
+          <span class="darkgreen">o.__delattr__(name)</span>.</td>
+      </tr>
+      <tr>
+        <td>getattr(o, name[, default])</td>
+        <td>If object <b>o</b> has an attribute whose name is the same as the call's <b>name</b>
+          argument (which should be a string), returns its value. If no such attribute exists,
+          returns the default (if it is provided in the call); if no default is provided,
+          raises an AttributeError exception.</td>
+      </tr>
+    </table>
+
+    <!-- __setattr__() -->
+    <a name="s_01"></a>
+    <div id="s_01">
+    <div class="subheading">__setattr__()</div>
+    <div class="subheadingText">
+
+      <p>Normally, when you set an attribute on an object, the name is used as a key and the value is
+        stored in the object's __dict__, a special attribute used specifically to store instance
+        variables. This method is called each and every time an attribute is set. In the code sample
+        below, we use this feature to print a message each time an attribute is set. Create
+        <b>attrmagic.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate magic methods for attribute access.
+"""
+class AttrMixin:
+    "Displays a message when an instance's attributes are set."
+    def __setattr__(self, key, value):
+        print("ATTR: setting attribute {0!r} to {1!r}".format(key, value))
+        self.__dict__[key] = value
+
+class Person(AttrMixin):
+    "Represents a person"
+    def __init__(self, name):
+        self.name = name</ins>
+</pre></div></div>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">In object-oriented languages, a <i>mixin</i> class is a class that contains a certain
+          behavior to be inherited by subclasses to add specific behaviors. A class can inherit some
+          or all of its behaviors from one or more mixins. Ending the name with "Mixin" is not
+          required; it's simply a flag so that your behavior-focused classes are clearly
+          delineated.</td>
+      </tr></table>
+
+      <p>Here the <span class="darkred">Person</span> class inherits its attribute setting behavior from the
+        AttrMixin class. The <span class="darkgreen">AttrMixin.__setattr__()</span> method does here make
+        the definite assumption that the classes it will be mixed in with are storing all
+        attributes using the standard instance __dict__ mechanism. When you start to see the layers
+        of behavior that Python allows you to add to the process of attribute assignment, you will
+        realize that this may be a dangerous assumption, but certainly it holds for the
+        <span class="darkred">Person</span> class.</p>
+
+      <p>As usual, you can verify the actions of this code in the interactive interpreter. Note that
+        the setting of an attribute is reported whether it is set inside an object method or in
+        external code.</p>
+
+    </div></div>
+
+    <!-- __getattr__() -->
+    <a name="s_02"></a>
+    <div id="s_02">
+    <div class="subheading">__getattr__()</div>
+    <div class="subheadingText">
+
+      <p>Attribute retrieval works a little differently from attribute setting. When you try to
+        access an attribute of some instance <i>o</i>, the interpreter looks in
+        o.__dict__; if the attribute is not found there, it looks in the instance's class, then in
+        that class's superclass, and so on. <i>Only if the attribute is not found does the
+          interpreter then call the instance's <span class="darkgreen">__getattr__()</span> method with
+          the name of the attribute</i>. It is conventional for
+        <span class="darkgreen">__getattr__()</span> to raise the AttributeError exception when the
+        attribute name provided is unacceptable for some reason.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+Demonstrate magic methods for attribute access.
+"""
+class AttrMixin:
+    "Displays a message when an object's attributes are <ins>retrieved or </ins>set."
+
+    def __setattr__(self, key, value):
+        print("ATTR: setting attribute {0!r} to {1!r}".format(key, value))
+        self.__dict__[key] = value
+
+<ins>    def __getattr__(self, key):
+        print("ATTR: getting attribute {0!r}".format(key))
+        self.__setattr__(key, "No value")
+        return "No value"</ins>
+
+class Person(AttrMixin):
+    "Represents a person"
+    def __init__(self, name):
+        self.name = name
+</pre></div></div>
+
+      <p>Start an entirely new interactive console session in which to test the updated
+        module—remember, the code of a module is executed only on the first import. Trying to
+        import the updated module will therefore fail, and you will not see the expected behaviors.</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from attrmagic import *</ins>
+&gt;&gt;&gt; <ins>steve = Person("Steve Holden")</ins>
+ATTR: setting attribute 'name' to 'Steve Holden'
+&gt;&gt;&gt; <ins>steve.newattr</ins>
+ATTR: getting attribute 'newattr'
+ATTR: setting attribute 'newattr' to 'No value'
+'No value'
+&gt;&gt;&gt; <ins>steve.newattr</ins>
+'No value'
+&gt;&gt;&gt; <ins>steve.name</ins>
+'Steve Holden'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <p>Observe that while the first access to the <b>newattr</b> attribute results in a call to
+        <span class="darkgreen">__getattr__()</span>, the second one does not. This is because the first
+        call actually sets a value in the object's __dict__ and so the second attempt finds the
+        attribute using the standard methods.</p>
+
+      <table class="noteBox"><tr>
+        <td class="noteTitle">Note</td>
+        <td class="note">The interpreter uses a slightly different mechanism to access the special attributes
+          whose names begin and end in double underscores. This is done to enforce certain standard
+          object behaviors, which otherwise could be overridden.</td>
+      </tr></table>
+
+    </div></div>
+
+    <!-- __delattr__() -->
+    <a name="s_03"></a>
+    <div id="s_03">
+    <div class="subheading">__delattr__()</div>
+    <div class="subheadingText">
+
+      <p>This method is called whenever an attribute is deleted from an object. Again, we'll publish
+        a message to show what can be done with this method.</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre>
+"""
+Demonstrate magic methods for attribute access.
+"""
+class AttrMixin:
+    "Displays a message when an object's attributes are retrieved<ins>, deleted</ins> or set."
+
+    def __setattr__(self, key, value):
+        print("ATTR: setting attribute {0!r} to {1!r}".format(key, value))
+        self.__dict__[key] = value
+
+    def __getattr__(self, key):
+        print("ATTR: getting attribute {0!r}".format(key))
+        self.__setattr__(key, "No value")
+        return "No value"
+
+<ins>    def __delattr__(self, key):
+        print("ATTR: Deleting key {0!r}".format(key))
+        object.__delattr__(self, key)</ins>
+
+class Person(AttrMixin):
+    "Represents a person"
+    def __init__(self, name):
+        self.name = name
+</pre></div></div>
+
+      <p>Note that your version of __delattr__ simply <i>delegates</i> the deletion to Python's
+        standard <b>object</b> behavior. This allows you to ignore whatever complexities may be
+        required in deletion. Again, test your modifications:</p>
+
+<div class="interactiveBox"><div class="interactiveTitle">Code and output</div><div class="interactive"><pre>
+&gt;&gt;&gt; <ins>from attrmagic import *</ins>
+&gt;&gt;&gt; <ins>student = Person("your name")</ins>
+ATTR: setting attribute 'name' to 'your name'
+&gt;&gt;&gt; <ins>student.age</ins>
+ATTR: getting attribute 'age'
+ATTR: setting attribute 'age' to 'No value'
+'No value'
+&gt;&gt;&gt; <ins>student.age = 21</ins>
+ATTR: setting attribute 'age' to 21
+&gt;&gt;&gt; <ins>student.age</ins>
+21
+&gt;&gt;&gt; <ins>del student.age</ins>
+ATTR: Deleting key 'age'
+&gt;&gt;&gt; <ins>student.age</ins>
+ATTR: getting attribute 'age'
+ATTR: setting attribute 'age' to 'No value'
+'No value'
+&gt;&gt;&gt; <ins>del student.__delattr__</ins>
+ATTR: Deleting key '__delattr__'
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+    del student.__delattr__
+        ^^^^^^^^^^^^^^^^^^^
+  File "attrmagic.py", line 18, in __delattr__
+    object.__delattr__(self, key)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AttributeError: 'Person' object has no attribute '__delattr__'
+&gt;&gt;&gt;
+</pre></div></div>
+
+      <table class="noteBox is-tip"><tr>
+        <td class="noteTitle">Modern Python</td>
+        <td class="note">In current Python 3 the traceback for <code>del student.__delattr__</code>
+          includes caret underlines pinpointing each offending expression, and the
+          <code>AttributeError</code> message reads <em>'Person' object has no attribute
+          '__delattr__'</em> rather than the original bare <em>AttributeError: __delattr__</em>.
+          The underlying behaviour—that special attributes are not found via the normal lookup
+          chain—is unchanged.</td>
+      </tr></table>
+
+      <p>You can see that the attempt to delete __delattr__ fails, because the special attributes are
+        not discovered in the same way as the regular ones. This avoids the deletion of standard
+        behaviors that are required to be true of all objects.</p>
+
+    </div></div>
+
+  </div>
+
+  <!-- EMULATING FUNCTIONS: THE __call__() METHOD -->
+  <a name="emulating_functions_the_call_method"></a>
+  <a name="h_03"></a>
+  <div class="heading">Emulating Functions: the __call__() Method</div>
+  <div class="headingText">
+
+    <p>Implementing the <span class="darkgreen">__call__()</span> method allows you to make your instances
+      callable, just as though they were regular functions. Create <b>callmagic.py</b> as shown:</p>
+
+<div class="listingBox"><div class="listingTitle">Code</div><div class="listing"><pre><ins>"""
+Demonstrate how to make instances callable.
+"""
+
+class funclike:
+    def __call__(self, *args, **kwargs):
+        print("Args are:", args)
+        print("Kwargs are:", kwargs)
+
+f = funclike()
+f(1, 2, 3, this="one", that="the other")</ins>
+</pre></div></div>
+
+    <p>Save and run it:</p>
+
+<div class="observeBox"><div class="observeTitle">OBSERVE: Result of running callmagic.py</div><div class="observe"><pre>
+Args are: (1, 2, 3)
+Kwargs are: {'this': 'one', 'that': 'the other'}
+</pre></div></div>
+
+    <p>In this chapter, we've started to investigate the relationship between the interpreter and
+      the objects that we create. This explanation should make you more aware of what is going on
+      "under the hood," and give you some idea of the wider possibilities for using Python to
+      solve your problems. Most of the time the standard interpreter behavior is perfectly
+      acceptable. For those occasions when it is not, you now have some idea how to modify it.</p>
+
+    <p>There are other special methods that we have not covered yet, but for now you have done quite
+      enough. Take a break, and then move on to the next lesson, where you will be learning how to
+      make your objects' behaviors even more complex while retaining the essential simplicity of
+      Python.</p>
+
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a class="prev" href="Python3-08.html">Consuming and Creating Binary Data</a>
+    <a class="next" href="Python3-10.html">Properties</a>
+  </nav>
+
+</main>
+
+<footer class="footer">
+  Copyright © 1998–2014 O'Reilly Media, Inc.<br>
+  This work is licensed under a Creative Commons Attribution-ShareAlike 3.0
+  Unported License.<br>
+  See <a href="http://creativecommons.org/licenses/by-sa/3.0/legalcode">creativecommons.org/licenses/by-sa/3.0/legalcode</a>
+  for more information.
+</footer>
+
+</body>
+</html>
