@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from importlib.resources import files
 from logging import getLogger, basicConfig
+from pathlib import Path
 
 import markdown
 
@@ -30,6 +31,12 @@ from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 
 import holdenweb
+from .content import (
+    ContentNotFound,
+    ContentUnavailable,
+    LocalContentSource,
+    rewrite_asset_urls,
+)
 from .forms import QRcode_Form
 from .pdf import pdf_blueprint
 from .version import __version__
@@ -130,43 +137,60 @@ def get_my_ip():
 ######## /note/... [Markdown notes] ########
 @main_bp.route("/note/<name>")
 def markdown_page(name: str):
-    fpath = DATA_PATH / "md-pages" / f"{name}.md"
-    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
-        abort(404)
-    title = None
+    from flask import current_app
+    source = current_app.extensions["content"]
     try:
-        with open(fpath) as f:
-            title_line = f.readline()
-            # Check whether the first line is a title
-            match = re.match(r'^(#+)\s+(.+)', title_line)
-            if match:
-                title = match.group(2)
-                content = f.read()
-            else:
-                title = "Just another holdenweb note"
-                content = title_line + f.read()
-            html = md.convert(content)
-            return render_template(
-                'markdown.html',
-                content=html,
-                title=title
-            )
-    except OSError:
+        raw = source.markdown(name)
+    except ContentNotFound:
         abort(404)
+    except ContentUnavailable:
+        abort(502)
+    first, _, rest = raw.partition("\n")
+    match = re.match(r'^(#+)\s+(.+)', first)
+    if match:
+        title = match.group(2)
+        body = rest
+    else:
+        title = "Just another holdenweb note"
+        body = raw
+    return render_template(
+        'markdown.html',
+        content=md.convert(body),
+        title=title,
+    )
 
 
 ######## /page/... [HTML page] ########
 @main_bp.route("/page/<path:name>/")
 def page_from_html(name: str):
     "Serve an HTML page selected by name."
-    fpath = DATA_PATH / "html-pages" / f"{name}.html"
-    if not os.path.commonpath([DATA_PATH, fpath]).startswith(str(DATA_PATH)):
-        abort(404)
+    from flask import current_app
+    source = current_app.extensions["content"]
     try:
-        with open(fpath) as f:
-            return render_template("base.html", content=f.read())
-    except OSError:
+        raw = source.html(name)
+    except ContentNotFound:
         abort(404)
+    except ContentUnavailable:
+        abort(502)
+    page_dir = os.path.dirname(name)
+    body = rewrite_asset_urls(raw, page_dir)
+    return render_template("base.html", content=body)
+
+
+######## /asset/... [Proxy for content-app-hosted assets] ########
+@main_bp.route("/asset/<path:path>")
+def get_asset(path: str):
+    from flask import current_app
+    source = current_app.extensions["content"]
+    try:
+        body, ctype = source.asset(path)
+    except ContentNotFound:
+        abort(404)
+    except ContentUnavailable:
+        abort(502)
+    resp = Response(body, mimetype=ctype)
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
 
 
 ######## /parts/xxxxxxx ########
@@ -251,6 +275,8 @@ def create_app(config_overrides=None):
     mail.init_app(app)
     db.init_app(app)
     security.init_app(app, user_datastore)
+
+    app.extensions["content"] = LocalContentSource(Path(str(DATA_PATH)))
 
     app.register_error_handler(404, handle_404)
     app.register_blueprint(main_bp)
