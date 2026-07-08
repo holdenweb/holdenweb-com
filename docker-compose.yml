@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8456:8456"
+    env_file:
+      - .env
+    environment:
+      # Override .env's localhost URI so the container reaches the host's
+      # Postgres instead of its own loopback. host.docker.internal is native
+      # on Docker Desktop; the extra_hosts entry below adds the same alias
+      # on Linux Docker and Podman, so the same compose file works on all
+      # three runtimes.
+      SQLALCHEMY_DATABASE_URI: >-
+        postgresql+psycopg2://hweb_auth_user:${POSTGRES_PASSWORD}@host.docker.internal/holdenweb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
