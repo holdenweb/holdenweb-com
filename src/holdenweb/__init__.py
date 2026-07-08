@@ -34,6 +34,7 @@ import holdenweb
 from .content import (
     ContentNotFound,
     ContentUnavailable,
+    HTTPContentSource,
     LocalContentSource,
     rewrite_asset_urls,
 )
@@ -248,6 +249,17 @@ def create_app(config_overrides=None):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+    app.config['CONTENT_BASE_URL'] = os.environ.get("CONTENT_BASE_URL")
+    app.config['CONTENT_ACCESS_TOKEN'] = os.environ.get("CONTENT_ACCESS_TOKEN")
+    app.config['CONTENT_HTTP_TIMEOUT'] = float(
+        os.environ.get("CONTENT_HTTP_TIMEOUT", 5.0)
+    )
+    app.config['CONTENT_CACHE_TTL'] = int(
+        os.environ.get("CONTENT_CACHE_TTL", 300)
+    )
+    app.config['CONTENT_ASSET_CACHE_TTL'] = int(
+        os.environ.get("CONTENT_ASSET_CACHE_TTL", 3600)
+    )
     app.config['SECURITY_REGISTERABLE'] = True
     app.config["SECURITY_RECOVERABLE"] = True
 
@@ -276,7 +288,22 @@ def create_app(config_overrides=None):
     db.init_app(app)
     security.init_app(app, user_datastore)
 
-    app.extensions["content"] = LocalContentSource(Path(str(DATA_PATH)))
+    if app.config.get("CONTENT_BASE_URL"):
+        token = app.config.get("CONTENT_ACCESS_TOKEN")
+        if not token:
+            raise RuntimeError(
+                "CONTENT_BASE_URL is set but CONTENT_ACCESS_TOKEN is missing; "
+                "refusing to make un-authenticated content fetches."
+            )
+        app.extensions["content"] = HTTPContentSource(
+            base_url=app.config["CONTENT_BASE_URL"],
+            token=token,
+            timeout=app.config["CONTENT_HTTP_TIMEOUT"],
+            text_ttl=app.config["CONTENT_CACHE_TTL"],
+            asset_ttl=app.config["CONTENT_ASSET_CACHE_TTL"],
+        )
+    else:
+        app.extensions["content"] = LocalContentSource(Path(str(DATA_PATH)))
 
     app.register_error_handler(404, handle_404)
     app.register_blueprint(main_bp)

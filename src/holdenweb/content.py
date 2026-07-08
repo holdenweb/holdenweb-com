@@ -18,6 +18,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import Protocol
 
+import requests
+from cachetools import TTLCache
+
 logger = getLogger(__name__)
 
 
@@ -87,6 +90,103 @@ class LocalContentSource:
             raise ContentNotFound(path) from exc
         ctype, _ = mimetypes.guess_type(str(fpath))
         return body, ctype or "application/octet-stream"
+
+
+class HTTPContentSource:
+    """Fetches content from an Opalstack static app behind a Bearer token.
+
+    Both text and asset lookups are cached with distinct TTLs -- assets
+    change less often than the wrapping text, so their cache is longer.
+    If a fetch fails and a stale entry exists, the stale value is served
+    with a warning log rather than surfacing an error.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        token: str,
+        timeout: float = 5.0,
+        text_ttl: int = 300,
+        asset_ttl: int = 3600,
+    ) -> None:
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._session = requests.Session()
+        self._session.headers["Authorization"] = f"Bearer {token}"
+        self._text_cache: TTLCache[str, str] = TTLCache(maxsize=256, ttl=text_ttl)
+        self._asset_cache: TTLCache[str, tuple[bytes, str]] = TTLCache(
+            maxsize=128, ttl=asset_ttl
+        )
+
+    def html(self, name: str) -> str:
+        _check_relative(name)
+        return self._fetch_text(f"html/{name}.html")
+
+    def markdown(self, name: str) -> str:
+        _check_relative(name)
+        return self._fetch_text(f"md/{name}.md")
+
+    def asset(self, path: str) -> tuple[bytes, str]:
+        _check_relative(path)
+        # Ensure it's under a known category before hitting the network.
+        _resolve_asset(path)
+        cached = self._asset_cache.get(path)
+        try:
+            resp = self._session.get(
+                f"{self._base_url}/{path}", timeout=self._timeout
+            )
+        except requests.RequestException as exc:
+            if cached is not None:
+                logger.warning(
+                    "content asset %s: network error, serving stale: %s",
+                    path, exc,
+                )
+                return cached
+            raise ContentUnavailable(path) from exc
+        if resp.status_code == 404:
+            raise ContentNotFound(path)
+        if not resp.ok:
+            if cached is not None:
+                logger.warning(
+                    "content asset %s: upstream %s, serving stale",
+                    path, resp.status_code,
+                )
+                return cached
+            raise ContentUnavailable(f"{path}: {resp.status_code}")
+        ctype = resp.headers.get("Content-Type")
+        if not ctype:
+            ctype, _ = mimetypes.guess_type(path)
+            ctype = ctype or "application/octet-stream"
+        result = (resp.content, ctype)
+        self._asset_cache[path] = result
+        return result
+
+    def _fetch_text(self, path: str) -> str:
+        cached = self._text_cache.get(path)
+        try:
+            resp = self._session.get(
+                f"{self._base_url}/{path}", timeout=self._timeout
+            )
+        except requests.RequestException as exc:
+            if cached is not None:
+                logger.warning(
+                    "content %s: network error, serving stale: %s", path, exc,
+                )
+                return cached
+            raise ContentUnavailable(path) from exc
+        if resp.status_code == 404:
+            raise ContentNotFound(path)
+        if not resp.ok:
+            if cached is not None:
+                logger.warning(
+                    "content %s: upstream %s, serving stale",
+                    path, resp.status_code,
+                )
+                return cached
+            raise ContentUnavailable(f"{path}: {resp.status_code}")
+        text = resp.text
+        self._text_cache[path] = text
+        return text
 
 
 # src="…" / href="…" with either quoting style. Non-greedy value match

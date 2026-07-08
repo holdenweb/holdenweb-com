@@ -22,6 +22,8 @@ dependencies = [
  "flask-mailman>=1.1.1",
  "flask-paranoid>=0.3.0",
  "alembic>=1.18.5",
+ "requests>=2.32.0",
+ "cachetools>=5.5.0",
 ]
 [[project.authors]]
 name = "Steve Holden"
@@ -35,4 +37,5 @@ build-backend = "uv_build"
 dev = [
     "playwright>=1.54.0",
     "pytest>=9.1.1",
+    "responses>=0.25.0",
 ]

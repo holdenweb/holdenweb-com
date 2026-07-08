@@ -1,7 +1,11 @@
 import pytest
+import responses
+from responses import matchers
 
 from holdenweb.content import (
     ContentNotFound,
+    ContentUnavailable,
+    HTTPContentSource,
     LocalContentSource,
     rewrite_asset_urls,
 )
@@ -95,3 +99,108 @@ def test_asset_route_404_for_missing(client):
 def test_asset_route_404_for_bad_category(client):
     r = client.get("/asset/static/foo.jpg")
     assert r.status_code == 404
+
+
+BASE = "https://content.example"
+AUTH = matchers.header_matcher({"Authorization": "Bearer sekret"})
+
+
+@pytest.fixture
+def http_source():
+    return HTTPContentSource(base_url=BASE, token="sekret", timeout=1.0)
+
+
+@responses.activate
+def test_http_html_ok(http_source):
+    responses.get(
+        f"{BASE}/html/writing/essay.html",
+        body="<p>hi</p>",
+        status=200,
+        match=[AUTH],
+    )
+    assert http_source.html("writing/essay") == "<p>hi</p>"
+
+
+@responses.activate
+def test_http_markdown_ok(http_source):
+    responses.get(
+        f"{BASE}/md/note.md", body="# t", status=200, match=[AUTH],
+    )
+    assert http_source.markdown("note") == "# t"
+
+
+@responses.activate
+def test_http_asset_ok(http_source):
+    responses.get(
+        f"{BASE}/html/writing/images/x.jpg",
+        body=b"\xff\xd8xx",
+        status=200,
+        content_type="image/jpeg",
+        match=[AUTH],
+    )
+    body, ctype = http_source.asset("html/writing/images/x.jpg")
+    assert body == b"\xff\xd8xx"
+    assert ctype == "image/jpeg"
+
+
+@responses.activate
+def test_http_404_raises_not_found(http_source):
+    responses.get(f"{BASE}/html/missing.html", status=404, match=[AUTH])
+    with pytest.raises(ContentNotFound):
+        http_source.html("missing")
+
+
+@responses.activate
+def test_http_5xx_raises_unavailable(http_source):
+    responses.get(f"{BASE}/html/broken.html", status=502, match=[AUTH])
+    with pytest.raises(ContentUnavailable):
+        http_source.html("broken")
+
+
+@responses.activate
+def test_http_timeout_raises_unavailable(http_source):
+    import requests
+
+    responses.get(
+        f"{BASE}/html/slow.html",
+        body=requests.exceptions.Timeout(),
+        match=[AUTH],
+    )
+    with pytest.raises(ContentUnavailable):
+        http_source.html("slow")
+
+
+@responses.activate
+def test_http_stale_on_error(http_source):
+    # First call caches; second sees a 502 and serves stale.
+    responses.get(
+        f"{BASE}/html/page.html", body="fresh", status=200, match=[AUTH],
+    )
+    assert http_source.html("page") == "fresh"
+    responses.replace(
+        responses.GET, f"{BASE}/html/page.html", status=502, match=[AUTH],
+    )
+    assert http_source.html("page") == "fresh"
+
+
+@responses.activate
+def test_http_rejects_traversal(http_source):
+    with pytest.raises(ContentNotFound):
+        http_source.html("../etc/passwd")
+    # And no request should have been made.
+    assert len(responses.calls) == 0
+
+
+def test_startup_fails_when_url_set_without_token(monkeypatch):
+    from holdenweb import create_app
+
+    with pytest.raises(RuntimeError, match="CONTENT_ACCESS_TOKEN"):
+        create_app({
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "SECRET_KEY": "x",
+            "SECURITY_PASSWORD_SALT": "x",
+            "MAIL_BACKEND": "dummy",
+            "CONTENT_BASE_URL": "https://example/content",
+            "CONTENT_ACCESS_TOKEN": None,
+        })
