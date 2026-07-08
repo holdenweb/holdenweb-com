@@ -21,6 +21,44 @@ The first time you point alembic at an existing database, use
 so alembic records the current schema as already applied instead of trying
 to recreate it.
 
+### Content topology
+
+HTML pages (`/page/<name>/`), Markdown notes (`/note/<name>`), and the
+assets they embed are served through the `ContentSource` abstraction in
+[`src/holdenweb/content.py`](src/holdenweb/content.py). Two backends
+share the interface, picked at startup by config:
+
+- **Local (default)**: reads from `src/holdenweb/data/{html,md}-pages/`
+  bundled in the package. Used whenever `CONTENT_BASE_URL` is unset -
+  no extra services needed for dev.
+- **HTTP**: each content directory is deployed as its own Opalstack
+  static app, and Flask fetches from `${CONTENT_BASE_URL}/html/...`
+  and `${CONTENT_BASE_URL}/md/...`. Enabled by setting
+  `CONTENT_BASE_URL` and `CONTENT_ACCESS_TOKEN` together (the app
+  refuses to boot with only one set).
+
+Assets referenced from inside a page (e.g. `<img src="images/x.jpg">`)
+are rewritten server-side to `/asset/html/<page-dir>/images/x.jpg` and
+served by Flask's own `/asset/<path>` route, which in turn goes through
+the same `ContentSource`. Browsers never talk to the content app
+directly -- so it can stay behind a shared-secret Bearer token that
+only Flask knows.
+
+**Access limit.** Every HTTP fetch sends
+`Authorization: Bearer $CONTENT_ACCESS_TOKEN`. Each static app must
+enforce the same token. Nginx sketch:
+
+    location / {
+        if ($http_authorization != "Bearer YOUR_SECRET_HERE") {
+            return 401;
+        }
+        try_files $uri $uri/ =404;
+    }
+
+Rotating the token is a coordinated redeploy: update nginx and the
+Flask app's env in the same window. Zero-downtime rotation would need
+dual-token acceptance, not implemented.
+
 ### Distributing to Opalstack
 
 Check the current release number,
