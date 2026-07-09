@@ -86,7 +86,31 @@ Next,call `release` with the new version number
     Successfully built dist/holdenweb-1.0.0a3.tar.gz
     Successfully built dist/holdenweb-1.0.0a3-py3-none-any.whl
 
-Once you've created the release, it can be deployed to any Python/uWSGI application.
+Once the release is built, deploy it to the target Opalstack app with
+`qs deploy <app-name>`. `qs deploy` bundles the sdist together with
+Opalstack-specific scaffolding it generates on the fly (`start`,
+`stop`, `kill`, `uwsgi.ini`, `wsgi.py`), pushes the tarball, and
+installs it.
+
+The target app must already provide:
+
+- **Python 3.12+**, plus `libexpat1` at runtime (needed by `pyuwsgi`).
+- **Postgres**, migrated to `head` with alembic, reachable via the
+  `SQLALCHEMY_DATABASE_URI` env var.
+- **SMTP** matching the settings hard-coded in `create_app()`
+  (`smtp.gmail.com:465`, SSL, sender `steve@holdenweb.com`); the
+  `MAIL_PASSWORD` env var supplies the credential.
+- Env vars: `SECRET_KEY`, `SECURITY_PASSWORD_SALT`, `MAIL_PASSWORD`,
+  `SQLALCHEMY_DATABASE_URI`, and optionally the `CONTENT_*` set (see
+  "Content topology" above).
+
+The site's identity -- mail sender, brand strings, routing -- is baked
+into the package, so the built wheel is **not** a general-purpose
+Python package; it is not intended for PyPI, external reuse, or
+installation into any environment other than an Opalstack app
+provisioned as above. The wheel is a byproduct of the current
+`release` script rather than a distribution mechanism in its own right;
+an sdist alone would serve `qs deploy` equally well.
 
 
 
