@@ -146,3 +146,4 @@ release-*.tgz
 # podpack per-app data and logs (seeded/created at boot; never committed)
 hostdata/
 hostlogs/
+secrets.env
