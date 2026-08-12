@@ -4,14 +4,10 @@ def test_home_page(client):
     assert b"Holden Web" in response.data
 
 
-def test_missing_note_is_404(client):
-    response = client.get("/note/does-not-exist")
-    assert response.status_code == 404
-
-
-def test_missing_page_is_404(client):
-    response = client.get("/page/does-not-exist/")
-    assert response.status_code == 404
+def test_nav_is_contributed_by_the_installed_apps(client):
+    body = client.get("/").get_data(as_text=True)
+    assert 'href="/"' in body          # Home
+    assert 'href="/python/"' in body   # Python
 
 
 def test_get_my_ip(client):
@@ -25,11 +21,52 @@ def test_config_requires_auth(client):
     assert response.status_code in (302, 401)
 
 
-def test_qrcode_form_get(client):
-    response = client.get("/qrcode/")
+def test_status_reports_all_three_apps(client):
+    apps = client.get("/_status").get_json()["apps"]
+    assert set(apps) == {"main", "pages", "qrcode"}
+
+
+# The installed apps, wearing this site's chrome.
+
+def test_pages_app_serves_seeded_content(client):
+    response = client.get("/pages/test")
     assert response.status_code == 200
+    assert b"Holden Web" in response.data  # the site's own chrome around it
+
+
+def test_missing_page_is_404(client):
+    assert client.get("/pages/does-not-exist").status_code == 404
+
+
+def test_qrcode_form_get(client):
+    assert client.get("/qrcode/").status_code == 200
 
 
 def test_pdf_blueprint_root(client):
-    response = client.get("/pdf/")
-    assert response.status_code == 200
+    assert client.get("/pdf/").status_code == 200
+
+
+# Legacy content addresses redirect permanently to the unified space.
+
+def test_old_note_url_redirects(client):
+    response = client.get("/note/test")
+    assert response.status_code == 301
+    assert response.headers["Location"] == "/pages/test"
+
+
+def test_old_page_url_redirects(client):
+    response = client.get("/page/parts_demo/")
+    assert response.status_code == 301
+    assert response.headers["Location"] == "/pages/parts_demo"
+
+
+def test_old_asset_url_redirects_dropping_the_tree(client):
+    response = client.get("/asset/html/writing/images/x.png")
+    assert response.status_code == 301
+    assert response.headers["Location"] == "/pages/asset/writing/images/x.png"
+
+
+def test_parts_demo_redirects_to_pages(client):
+    response = client.get("/parts/demo")
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/pages/parts_demo"

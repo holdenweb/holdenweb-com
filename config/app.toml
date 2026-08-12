@@ -1,0 +1,17 @@
+# This site's configuration. In a container it is bind-mounted read-only at
+# /etc/holdenweb/app.toml; locally, point PODPACK_CONFIG at it.
+
+[site]
+name = "holdenweb.com"
+environment = "local"
+
+# Installed apps, by *import* name, in installation order: `holdenweb` is the
+# site's own routes and must come first so its front page claims `/`.
+apps = ["holdenweb", "podpack_pages", "podpack_qrcode"]
+
+[database]
+pool_pre_ping = true
+
+# Keyed by each app's own name -- its blueprint's -- not the import name above.
+[apps.pages]
+default_title = "Just another holdenweb note"

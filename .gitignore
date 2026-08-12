@@ -142,3 +142,7 @@ stop
 version.txt
 version.py
 release-*.tgz
+
+# podpack per-app data and logs (seeded/created at boot; never committed)
+hostdata/
+hostlogs/

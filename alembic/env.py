@@ -6,9 +6,16 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Importing holdenweb runs create_app(), which as a side effect calls
-# load_dotenv() -- so SQLALCHEMY_DATABASE_URI is available below.
-from holdenweb import db
+# The metadata alembic compares against is built by importing the models of
+# every app `config/app.toml` lists -- including this site's own user/role
+# tables, since `holdenweb` is itself on the list. No Flask app is built.
+# Autogenerate must therefore run with the FULL app list enabled: with an app
+# missing, alembic faithfully proposes dropping its tables.
+from dotenv import load_dotenv
+
+from podpack.migrations import target_metadata as _target_metadata
+
+load_dotenv()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,7 +32,9 @@ db_url = os.environ.get("SQLALCHEMY_DATABASE_URI")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 
-target_metadata = db.metadata
+target_metadata = _target_metadata(
+    os.environ.get("PODPACK_CONFIG", "config/app.toml")
+)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
