@@ -408,10 +408,10 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "podpack", editable = "/Users/sholden/sites/podpack" },
-    { name = "podpack-pages", editable = "/tmp/podpack-pages" },
-    { name = "podpack-qrcode", editable = "/tmp/podpack-qrcode" },
-    { name = "pp-pdf", editable = "/Users/sholden/sites/pp-pdf" },
+    { name = "podpack", git = "https://github.com/holdenweb/podpack.git" },
+    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git" },
+    { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git" },
+    { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
     { name = "pyuwsgi", specifier = ">=2.0.30" },
@@ -654,8 +654,8 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.2.2"
-source = { editable = "/Users/sholden/sites/podpack" }
+version = "0.3.0"
+source = { git = "https://github.com/holdenweb/podpack.git#0212055b2cbd4afc6a5bb7fe5b7d600e95c3ea5e" }
 dependencies = [
     { name = "alembic" },
     { name = "flask" },
@@ -664,76 +664,30 @@ dependencies = [
     { name = "psycopg2-binary" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.13" },
-    { name = "flask", specifier = ">=3.0" },
-    { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
-    { name = "gunicorn", specifier = ">=22.0" },
-    { name = "psycopg2-binary", specifier = ">=2.9.10" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "pytest", specifier = ">=8.0" },
-]
-
 [[package]]
 name = "podpack-pages"
 version = "0.2.0"
-source = { editable = "/tmp/podpack-pages" }
+source = { git = "https://github.com/holdenweb/podpack-pages.git#c85ad19e0b624005f6607ace8816b58cc546ee67" }
 dependencies = [
     { name = "flask" },
     { name = "markdown" },
     { name = "python-markdown-math" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=3.0" },
-    { name = "markdown", specifier = ">=3.5.2" },
-    { name = "python-markdown-math", specifier = ">=0.8" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "podpack", editable = "/Users/sholden/sites/podpack" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "types-markdown", specifier = ">=3.10.2.20260712" },
-]
-
 [[package]]
 name = "podpack-qrcode"
 version = "0.2.0"
-source = { editable = "/tmp/podpack-qrcode" }
+source = { git = "https://github.com/holdenweb/podpack-qrcode.git#967a9b6f647995dfe1dc00135b215d3e5e425b24" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
     { name = "qrcode", extra = ["pil"] },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=3.0" },
-    { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "qrcode", extras = ["pil"], specifier = ">=7.4.2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "podpack", editable = "/Users/sholden/sites/podpack" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "types-qrcode", specifier = ">=8.2.0.20260518" },
-    { name = "types-wtforms", specifier = ">=3.2.1.20260518" },
-]
-
 [[package]]
 name = "pp-pdf"
 version = "0.2.0"
-source = { editable = "/Users/sholden/sites/pp-pdf" }
+source = { git = "https://github.com/holdenweb/pp-pdf.git#98a11731ad74144680ae8c4209bb81c18950284b" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
@@ -741,18 +695,6 @@ dependencies = [
     { name = "reportlab" },
     { name = "wtforms" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=2.3.3" },
-    { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "pdfrw", specifier = ">=0.4" },
-    { name = "reportlab", specifier = ">=3.6.12" },
-    { name = "wtforms", specifier = ">=3.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "psycopg2-binary"

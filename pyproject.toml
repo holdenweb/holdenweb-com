@@ -28,14 +28,15 @@ email = "steve@holdenweb.com"
 requires = [ "uv_build>=0.8.4,<0.9.0",]
 build-backend = "uv_build"
 
-# Path sources are for local work only: a containerised build has no such
-# paths, so deploying this branch means repointing all three at git remotes
-# and re-running `uv lock` (see podpack's creating-a-site.md, Part 2).
+# Git sources, because a path source cannot survive a container build: the
+# build context has no such path and `uv sync --frozen` fails with "Failed to
+# determine installation plan". Note these resolve to what is *on the remote*,
+# so working locally on any of them means pushing before re-locking here.
 [tool.uv.sources]
-podpack = { path = "/Users/sholden/sites/podpack", editable = true }
-podpack-pages = { path = "/tmp/podpack-pages", editable = true }
-podpack-qrcode = { path = "/tmp/podpack-qrcode", editable = true }
-pp-pdf = { path = "/Users/sholden/sites/pp-pdf", editable = true }
+podpack = { git = "https://github.com/holdenweb/podpack.git" }
+podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git" }
+podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git" }
+pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git" }
 
 [dependency-groups]
 dev = [
