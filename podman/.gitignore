@@ -1,4 +1,0 @@
-# Real configuration and host-mapped storage never belong in the repo.
-.env
-hostdata/
-hostlogs/
