@@ -1,4 +1,4 @@
-name: ${SITE_NAME:-holdenweb-com}
+name: ${SITE_NAME:-podpack}
 
 # The PostgreSQL lab. Same principle as its MongoDB sibling (which stayed in the
 # holdenweb.com working tree when this one moved out): a Flask app plus a
@@ -122,7 +122,7 @@ services:
         # Stamped into the image and reported by /_status, so "is this running
         # my code?" has an exact answer. scripts/up.sh supplies it.
         GIT_SHA: ${GIT_SHA:-unknown}
-    image: localhost/${SITE_NAME:-holdenweb-com}-web:latest
+    image: localhost/${SITE_NAME:-podpack}-web:latest
     restart: "no"
     env_file:
       - .env
@@ -145,7 +145,7 @@ services:
         # Stamped into the image and reported by /_status, so "is this running
         # my code?" has an exact answer. scripts/up.sh supplies it.
         GIT_SHA: ${GIT_SHA:-unknown}
-    image: localhost/${SITE_NAME:-holdenweb-com}-web:latest
+    image: localhost/${SITE_NAME:-podpack}-web:latest
     restart: unless-stopped
     env_file:
       - .env

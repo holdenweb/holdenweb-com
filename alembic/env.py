@@ -1,89 +1,68 @@
+"""Alembic environment for a podpack site.
+
+The one thing worth understanding here: the metadata alembic compares against is
+assembled by importing the models of every app the *site configuration* says is
+installed. Migrations therefore follow the app list, and adding an app to
+`app.toml` is what makes its tables visible to autogenerate.
+
+See `podpack.migrations.target_metadata` for the consequence of that -- namely
+that autogenerate will propose dropping the tables of an app you have disabled.
+"""
+
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
-
-# The metadata alembic compares against is built by importing the models of
-# every app `config/app.toml` lists -- including this site's own user/role
-# tables, since `holdenweb` is itself on the list. No Flask app is built.
-# Autogenerate must therefore run with the FULL app list enabled: with an app
-# missing, alembic faithfully proposes dropping its tables.
-from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 from podpack.migrations import target_metadata as _target_metadata
 
-load_dotenv()
+# A site that keeps its environment in a .env file gets it loaded here too,
+# so host-side alembic runs see the same variables the site does. Guarded:
+# python-dotenv is the site's dependency if it is anyone's, not podpack's.
+try:
+    from dotenv import load_dotenv
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+    load_dotenv()
+except ImportError:
+    pass
+
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Prefer the same env var the app itself uses, so alembic and the app never
-# point at different databases.
+# The same environment variable the application itself uses, so alembic and the
+# running site can never disagree about which database they mean.
 db_url = os.environ.get("SQLALCHEMY_DATABASE_URI")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 
-target_metadata = _target_metadata(
-    os.environ.get("PODPACK_CONFIG", "config/app.toml")
-)
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+# The same default the application uses in development: the site's config file
+# at its conventional in-repo path. In the container, PODPACK_CONFIG is set and
+# points at the mounted copy, exactly as it is for the running site.
+target_metadata = _target_metadata(os.environ.get("PODPACK_CONFIG", "config/app.toml"))
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
 
