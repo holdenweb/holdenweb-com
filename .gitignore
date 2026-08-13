@@ -147,3 +147,9 @@ release-*.tgz
 hostdata/
 hostlogs/
 secrets.env
+
+# Personal working scripts -- experiments, one-off utilities, session notes.
+# Deliberately outside scripts/, which holds only podpack's substrate files:
+# `podpack substrate` walks a manifest and never sweeps a directory, but a
+# mixed directory is still an invitation to a mistake nobody needs.
+scratch/
