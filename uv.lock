@@ -655,7 +655,7 @@ wheels = [
 [[package]]
 name = "podpack"
 version = "0.3.0"
-source = { git = "https://github.com/holdenweb/podpack.git#1ed53565d5d926978a1f84db3c9dc7b15335dbeb" }
+source = { git = "https://github.com/holdenweb/podpack.git#174b5f1af6934d9c5f49d5212c7b143b43fb36bc" }
 dependencies = [
     { name = "alembic" },
     { name = "flask" },
