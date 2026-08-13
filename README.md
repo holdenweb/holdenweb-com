@@ -1,116 +1,92 @@
 # holdenweb.com
 
-The code for the web site.
+A [podpack](https://github.com/holdenweb/podpack) site. The site itself is
+small by design: `config/app.toml` names the installed apps, this package
+supplies the chrome (`templates/`, `static/`) and the site's own routes, and
+podpack supplies the factory, the app registry and the migration wiring.
 
-### Run the site locally
+| Feature | Comes from |
+| --- | --- |
+| front page, `/config`, `/ip`, `/python`, legacy redirects | this package (`src/holdenweb/views.py`, installed as the app `main`) |
+| HTML/Markdown content at `/pages/<name>` | `podpack-pages` |
+| QR code generator at `/qrcode/` | `podpack-qrcode` |
+| PDF booklet maker and page splitter at `/pdf/` | `pp-pdf` |
+| login, mail, session policy | wired by this package's `init` (`_wire`) |
 
-    uv run python wsgi.py
+Content is served from a **single name space**: `/pages/<name>` searches the
+Markdown tree before the HTML tree, so a page's address never says which
+format it is stored in. The old `/note/`, `/page/` and `/asset/` URLs
+redirect permanently.
 
-### Database schema changes
+## Run the site locally
 
-Schema is managed with Alembic against the `Role`/`User` models defined in
-`holdenweb/__init__.py`. `alembic/env.py` reads the DB URL from the
-`SQLALCHEMY_DATABASE_URI` env var (the same one the app itself uses), so
-alembic and the running app can never point at different databases.
+No dev server script: the Flask CLI runs the real factory. Secrets and
+wiring come from the environment (the repo's `.env` holds *container*
+wiring — `HOST_DATA_DIR` is compose's variable, not `PODPACK_DATA_ROOT`, so
+keep the two schemes apart by being explicit):
 
-    uv run alembic revision --autogenerate -m "describe the change"
-    uv run alembic upgrade head
+```bash
+SECRET_KEY=dev-only SECURITY_PASSWORD_SALT=dev-only-salt \
+SQLALCHEMY_DATABASE_URI=sqlite:////tmp/holdenweb-dev.db \
+PODPACK_CONFIG=config/app.toml \
+PODPACK_DATA_ROOT=./hostdata/apps PODPACK_LOG_ROOT=./hostlogs/apps \
+uv run alembic upgrade head
+```
 
-The first time you point alembic at an existing database, use
-`uv run alembic stamp head` after reviewing the generated baseline migration,
-so alembic records the current schema as already applied instead of trying
-to recreate it.
+```bash
+SECRET_KEY=dev-only SECURITY_PASSWORD_SALT=dev-only-salt \
+SQLALCHEMY_DATABASE_URI=sqlite:////tmp/holdenweb-dev.db \
+PODPACK_CONFIG=config/app.toml \
+PODPACK_DATA_ROOT=./hostdata/apps PODPACK_LOG_ROOT=./hostlogs/apps \
+uv run flask --app holdenweb run --port 8460
+```
 
-### Content topology
+The first command is needed once per fresh database: the alembic history
+builds the schema from empty (port 8460 because 8456 is the production
+container's local port). Visit `/_status` to see every installed app, where
+its state lives, and which database the site is actually connected to.
 
-HTML pages (`/page/<name>/`), Markdown notes (`/note/<name>`), and the
-assets they embed are served through the `ContentSource` abstraction in
-[`src/holdenweb/content.py`](src/holdenweb/content.py). Two backends
-share the interface, picked at startup by config:
+## Run the site in containers
 
-- **Local (default)**: reads from `src/holdenweb/data/{html,md}-pages/`
-  bundled in the package. Used whenever `CONTENT_BASE_URL` is unset -
-  no extra services needed for dev.
-- **HTTP**: each content directory is deployed as its own Opalstack
-  static app, and Flask fetches from `${CONTENT_BASE_URL}/html/...`
-  and `${CONTENT_BASE_URL}/md/...`. Enabled by setting
-  `CONTENT_BASE_URL` and `CONTENT_ACCESS_TOKEN` together (the app
-  refuses to boot with only one set).
+The container substrate is podpack's, copied per its creating-a-site guide:
 
-Assets referenced from inside a page (e.g. `<img src="images/x.jpg">`)
-are rewritten server-side to `/asset/html/<page-dir>/images/x.jpg` and
-served by Flask's own `/asset/<path>` route, which in turn goes through
-the same `ContentSource`. Browsers never talk to the content app
-directly -- so it can stay behind a shared-secret Bearer token that
-only Flask knows.
+```bash
+./scripts/prepare-host-dirs.sh   # once: creates .env, secrets.env, host dirs
+./scripts/up.sh                  # always: rebuilds, stamps the commit
+```
 
-**Access limit.** Every HTTP fetch sends
-`Authorization: Bearer $CONTENT_ACCESS_TOKEN`. Each static app must
-enforce the same token. Nginx sketch:
+Uses `podman compose` (the Compose v2 provider — **not** `podman-compose`,
+which ignores the ordering gates this stack relies on). Ports and paths live
+in `.env`; credentials in `secrets.env`, which must be restored verbatim on
+a new host. The `migrate` service applies the alembic history before `web`
+starts.
 
-    location / {
-        if ($http_authorization != "Bearer YOUR_SECRET_HERE") {
-            return 401;
-        }
-        try_files $uri $uri/ =404;
-    }
+Note: building currently requires the three path-sourced dependencies
+(podpack, podpack-pages, podpack-qrcode, pp-pdf) to be repointed at git
+remotes and re-locked — a path source cannot survive a container build.
 
-Rotating the token is a coordinated redeploy: update nginx and the
-Flask app's env in the same window. Zero-downtime rotation would need
-dual-token acceptance, not implemented.
+## Database schema changes
 
-### Distributing to Opalstack
+One alembic history for the whole site. The metadata alembic compares
+against is built by importing the models of every app `config/app.toml`
+lists — including this package's own `User`/`Role` — with no Flask app
+involved. **Always autogenerate with the full app list enabled**: with an
+app missing, alembic faithfully proposes dropping its tables.
 
-Check the current release number,
+```bash
+uv run alembic revision --autogenerate -m "describe the change"
+uv run alembic upgrade head
+```
 
-    sholden@overhead qs-holdenweb.com % release
-    1.0.0-alpha2
+`alembic/env.py` reads `SQLALCHEMY_DATABASE_URI` from the environment (the
+same variable the app uses) so the two can never disagree about which
+database they mean.
 
-Make sure the release is clean (check everything in or stash uncommitted changes).
+## Tests
 
-    sholden@overhead qs-holdenweb.com % git add -u && git commit
-    [main 7e0da7f] mplement a 404 page and add a blue bar at the top.
-    5 files changed, 35 insertions(+), 3 deletions(-)
+```bash
+uv run pytest
+```
 
-Next,call `release` with the new version number
-(_TODO: implement a `--bump` option).
-
-    sholden@overhead qs-holdenweb.com % release 1.0.0-alpha3
-    Starting release process for holdenweb r1.0.0-alpha3
-    Resolved 19 packages in 202ms
-    Updated holdenweb v1.0.0a2 -> v1.0.0a3
-    [main 25e0c73] Release r1.0.0-alpha3
-     3 files changed, 3 insertions(+), 3 deletions(-)
-    Building source distribution...
-    Building wheel from source distribution...
-    Successfully built dist/holdenweb-1.0.0a3.tar.gz
-    Successfully built dist/holdenweb-1.0.0a3-py3-none-any.whl
-
-Once the release is built, deploy it to the target Opalstack app with
-`qs deploy <app-name>`. `qs deploy` bundles the sdist together with
-Opalstack-specific scaffolding it generates on the fly (`start`,
-`stop`, `kill`, `uwsgi.ini`, `wsgi.py`), pushes the tarball, and
-installs it.
-
-The target app must already provide:
-
-- **Python 3.12+**, plus `libexpat1` at runtime (needed by `pyuwsgi`).
-- **Postgres**, migrated to `head` with alembic, reachable via the
-  `SQLALCHEMY_DATABASE_URI` env var.
-- **SMTP** matching the settings hard-coded in `create_app()`
-  (`smtp.gmail.com:465`, SSL, sender `steve@holdenweb.com`); the
-  `MAIL_PASSWORD` env var supplies the credential.
-- Env vars: `SECRET_KEY`, `SECURITY_PASSWORD_SALT`, `MAIL_PASSWORD`,
-  `SQLALCHEMY_DATABASE_URI`, and optionally the `CONTENT_*` set (see
-  "Content topology" above).
-
-The site's identity -- mail sender, brand strings, routing -- is baked
-into the package, so the built wheel is **not** a general-purpose
-Python package; it is not intended for PyPI, external reuse, or
-installation into any environment other than an Opalstack app
-provisioned as above. The wheel is a byproduct of the current
-`release` script rather than a distribution mechanism in its own right;
-an sdist alone would serve `qs deploy` equally well.
-
-
-
+The suite builds the real site from the shipped `config/app.toml`, so it
+exercises the configuration that deploys.
