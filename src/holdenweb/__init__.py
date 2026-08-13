@@ -19,7 +19,6 @@ from flask_security import Security
 import podpack
 
 from .models import user_datastore
-from .pdf import pdf_blueprint
 
 # The registry looks for `site_app` at module level: this package is itself an
 # installed app -- the first name in `[site] apps` -- carrying the site's own
@@ -55,7 +54,7 @@ def create_app(config_overrides=None, **podpack_kwargs):
 
 
 def _wire(app: Flask) -> None:
-    """The site's own extensions: mail, login, session policy, PDF tools.
+    """The site's own extensions: mail, login, session policy.
 
     podpack has already loaded the host config and applied `config_overrides`
     by the time this runs, so every setting here is a `setdefault` -- an
@@ -84,10 +83,6 @@ def _wire(app: Flask) -> None:
 
     mail.init_app(app)
     security.init_app(app, user_datastore)
-
-    # The PDF tools stay site-wired for now: their templates and forms live in
-    # this package, so they are a blueprint rather than an installable app.
-    app.register_blueprint(pdf_blueprint, url_prefix="/pdf/")
 
     app.register_error_handler(404, _handle_404)
 

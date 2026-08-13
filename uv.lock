@@ -384,16 +384,13 @@ dependencies = [
     { name = "flask-mailman" },
     { name = "flask-paranoid" },
     { name = "flask-security" },
-    { name = "flask-wtf" },
-    { name = "markdown" },
-    { name = "pdfrw" },
     { name = "podpack" },
     { name = "podpack-pages" },
     { name = "podpack-qrcode" },
+    { name = "pp-pdf" },
     { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "pyuwsgi" },
-    { name = "reportlab" },
     { name = "werkzeug" },
 ]
 
@@ -411,16 +408,13 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "markdown", specifier = ">=3.5.2" },
-    { name = "pdfrw", specifier = ">=0.4" },
     { name = "podpack", editable = "/Users/sholden/sites/podpack" },
     { name = "podpack-pages", editable = "/tmp/podpack-pages" },
     { name = "podpack-qrcode", editable = "/tmp/podpack-qrcode" },
+    { name = "pp-pdf", editable = "/Users/sholden/sites/pp-pdf" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
     { name = "pyuwsgi", specifier = ">=2.0.30" },
-    { name = "reportlab", specifier = ">=3.6.12" },
     { name = "werkzeug", specifier = ">=2.3.8" },
 ]
 
@@ -687,7 +681,7 @@ dev = [
 
 [[package]]
 name = "podpack-pages"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "/tmp/podpack-pages" }
 dependencies = [
     { name = "flask" },
@@ -712,7 +706,7 @@ dev = [
 
 [[package]]
 name = "podpack-qrcode"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "/tmp/podpack-qrcode" }
 dependencies = [
     { name = "flask" },
@@ -735,6 +729,30 @@ dev = [
     { name = "types-qrcode", specifier = ">=8.2.0.20260518" },
     { name = "types-wtforms", specifier = ">=3.2.1.20260518" },
 ]
+
+[[package]]
+name = "pp-pdf"
+version = "0.2.0"
+source = { editable = "/Users/sholden/sites/pp-pdf" }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-wtf" },
+    { name = "pdfrw" },
+    { name = "reportlab" },
+    { name = "wtforms" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=2.3.3" },
+    { name = "flask-wtf", specifier = ">=1.2.1" },
+    { name = "pdfrw", specifier = ">=0.4" },
+    { name = "reportlab", specifier = ">=3.6.12" },
+    { name = "wtforms", specifier = ">=3.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "psycopg2-binary"

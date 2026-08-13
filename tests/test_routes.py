@@ -21,9 +21,9 @@ def test_config_requires_auth(client):
     assert response.status_code in (302, 401)
 
 
-def test_status_reports_all_three_apps(client):
+def test_status_reports_all_four_apps(client):
     apps = client.get("/_status").get_json()["apps"]
-    assert set(apps) == {"main", "pages", "qrcode"}
+    assert set(apps) == {"main", "pages", "qrcode", "pp_pdf"}
 
 
 # The installed apps, wearing this site's chrome.
@@ -44,6 +44,13 @@ def test_qrcode_form_get(client):
 
 def test_pdf_blueprint_root(client):
     assert client.get("/pdf/").status_code == 200
+
+
+def test_pdf_tools_render_in_site_chrome(client):
+    for path in ("/pdf/booklet", "/pdf/pagezip"):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert b"Holden Web" in response.data  # the site's chrome, not standalone
 
 
 # Legacy content addresses redirect permanently to the unified space.

@@ -7,7 +7,7 @@ environment = "local"
 
 # Installed apps, by *import* name, in installation order: `holdenweb` is the
 # site's own routes and must come first so its front page claims `/`.
-apps = ["holdenweb", "podpack_pages", "podpack_qrcode"]
+apps = ["holdenweb", "podpack_pages", "podpack_qrcode", "pp_pdf"]
 
 [database]
 pool_pre_ping = true
