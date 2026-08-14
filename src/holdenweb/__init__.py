@@ -68,7 +68,8 @@ def _is_admin() -> bool:
     database has neither, so `/_status` answers 404 until somebody sets that
     up, which is the right way round.
     """
-    return bool(current_user.is_authenticated and current_user.has_role("admin"))
+    return bool(current_user.is_authenticated
+                and current_user.has_role(podpack.ADMIN_ROLE))
 
 
 def _wire(app: Flask) -> None:
