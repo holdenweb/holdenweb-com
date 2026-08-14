@@ -153,3 +153,11 @@ secrets.env
 # `podpack substrate` walks a manifest and never sweeps a directory, but a
 # mixed directory is still an invitation to a mistake nobody needs.
 scratch/
+
+# The local, container-free run: dev.env holds a database password, and the
+# roots hold app data written by your own uid. In podpack the seeded
+# .gitignore names these; added by hand because a seeded file is never
+# revisited (ADR-0026).
+dev.env
+devdata/
+devlogs/
