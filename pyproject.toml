@@ -14,7 +14,6 @@ dependencies = [
  "python-dotenv (>=1.0.1,<2.0.0)",
  "psycopg2-binary>=2.9.10",
  "flask-security>=5.6.2",
- "pyuwsgi>=2.0.30",
  "argon2-cffi>=25.1.0",
  "flask-mailman>=1.1.1",
  "flask-paranoid>=0.3.0",
