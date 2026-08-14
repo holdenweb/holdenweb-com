@@ -21,8 +21,13 @@ def test_config_requires_auth(client):
     assert response.status_code in (302, 401)
 
 
-def test_status_reports_all_four_apps(client):
-    apps = client.get("/_status").get_json()["apps"]
+def test_status_is_not_public(client):
+    """It names the database, the role it connects as, and every host path."""
+    assert client.get("/_status").status_code == 404
+
+
+def test_status_reports_all_four_apps_to_an_operator(operator_app):
+    apps = operator_app.test_client().get("/_status").get_json()["apps"]
     assert set(apps) == {"main", "pages", "qrcode", "pp_pdf"}
 
 

@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from flask import Flask, render_template
 from flask_mailman import Mail
 from flask_paranoid import Paranoid
-from flask_security import Security
+from flask_security import Security, current_user
 
 import podpack
 
@@ -45,12 +45,30 @@ def create_app(config_overrides=None, **podpack_kwargs):
     podpack's test entry points (`host_config`, `config_path`, `data_root`,
     `log_root`) through for the same reason.
     """
+    # setdefault rather than a fixed argument, so a caller (a test, an
+    # alternate entry point) can supply its own operator predicate.
+    podpack_kwargs.setdefault("admin", _is_admin)
     return podpack.create_app(
         config_overrides,
         site_package="holdenweb",
         init=_wire,
         **podpack_kwargs,
     )
+
+
+def _is_admin() -> bool:
+    """Who may read `/_status`, which reports this site's own configuration.
+
+    podpack has no login of its own, so it asks the site. Membership of the
+    `admin` role, not merely being signed in: the report names the database,
+    the role it connects as and every host path, which is operator business
+    rather than user business.
+
+    The role has to exist and be granted before anyone qualifies -- a fresh
+    database has neither, so `/_status` answers 404 until somebody sets that
+    up, which is the right way round.
+    """
+    return bool(current_user.is_authenticated and current_user.has_role("admin"))
 
 
 def _wire(app: Flask) -> None:
