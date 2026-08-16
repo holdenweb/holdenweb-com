@@ -9,8 +9,8 @@ behaviour that replaced it.
 import pytest
 from flask_security import hash_password
 
-from holdenweb.models import user_datastore
 from podpack import db
+from podpack.auth import user_datastore
 
 BROKEN = "smtplib.SMTPAuthenticationError(535, b'5.7.8 Username and Password not accepted')"
 

@@ -1,10 +1,10 @@
 """holdenweb.com: a podpack site.
 
-podpack supplies the factory, the app registry and the migration wiring; this
-package supplies the site's chrome (`templates/`, `static/`), its own routes
-(`views.py`, installed as the app named `main`), and the wiring for the
-extensions that belong to the site rather than to any feature -- mail, login,
-session policy. The installed-app list lives in `config/app.toml`.
+podpack supplies the factory, the app registry, the migration wiring and --
+since ADR-0033 -- login. This package supplies the site's chrome
+(`templates/`, `static/`), its own routes (`views.py`, installed as the app
+named `main`), and the wiring for the extensions that are still the site's:
+mail and session policy. The installed-app list lives in `config/app.toml`.
 """
 
 import os
@@ -14,13 +14,11 @@ from dotenv import load_dotenv
 from flask import Flask, render_template
 from flask_mailman import Mail
 from flask_paranoid import Paranoid
-from flask_security import Security, current_user
 
 import podpack
 
 from .commands import mail_commands
 from .mail_util import ReportingMailUtil
-from .models import user_datastore
 
 # The registry looks for `site_app` at module level: this package is itself an
 # installed app -- the first name in `[site] apps` -- carrying the site's own
@@ -33,14 +31,11 @@ basicConfig(format='%(filename)s: %(levelname)s: %(message)s')
 logger = getLogger(__name__)
 
 # Extensions are created unbound and attached to an app in _wire(), so
-# multiple app instances (e.g. one per test) can coexist safely.
+# multiple app instances (e.g. one per test) can coexist safely. Login is not
+# among them any more: podpack installs flask-security itself, including the
+# models, the datastore and the `admin` predicate this file used to supply.
 mail = Mail()
 paranoid = Paranoid()
-# ReportingMailUtil rather than the default: flask-security's views do not
-# catch what the mail backend raises, so a dead SMTP credential made /reset a
-# 500 instead of a message. See mail_util.py. Passed to the constructor and
-# not to init_app, which flask-security deprecated in 5.6.1.
-security = Security(mail_util_cls=ReportingMailUtil)
 
 
 def create_app(config_overrides=None, **podpack_kwargs):
@@ -51,9 +46,6 @@ def create_app(config_overrides=None, **podpack_kwargs):
     podpack's test entry points (`host_config`, `config_path`, `data_root`,
     `log_root`) through for the same reason.
     """
-    # setdefault rather than a fixed argument, so a caller (a test, an
-    # alternate entry point) can supply its own operator predicate.
-    podpack_kwargs.setdefault("admin", _is_admin)
     return podpack.create_app(
         config_overrides,
         site_package="holdenweb",
@@ -62,24 +54,8 @@ def create_app(config_overrides=None, **podpack_kwargs):
     )
 
 
-def _is_admin() -> bool:
-    """Who may read `/_status`, which reports this site's own configuration.
-
-    podpack has no login of its own, so it asks the site. Membership of the
-    `admin` role, not merely being signed in: the report names the database,
-    the role it connects as and every host path, which is operator business
-    rather than user business.
-
-    The role has to exist and be granted before anyone qualifies -- a fresh
-    database has neither, so `/_status` answers 404 until somebody sets that
-    up, which is the right way round.
-    """
-    return bool(current_user.is_authenticated
-                and current_user.has_role(podpack.ADMIN_ROLE))
-
-
 def _wire(app: Flask) -> None:
-    """The site's own extensions: mail, login, session policy.
+    """The site's own extensions: mail and session policy.
 
     podpack has already loaded the host config and applied `config_overrides`
     by the time this runs, so every setting here is a `setdefault` -- an
@@ -103,11 +79,16 @@ def _wire(app: Flask) -> None:
     app.config.setdefault('MAIL_USE_SSL', True)
     app.config.setdefault('MAIL_BACKEND', 'smtp')
 
+    # podpack installs flask-security after this function returns, and passes
+    # this class through to it. Set here rather than there because what happens
+    # when a message cannot be sent is the site's business: podpack neither
+    # knows nor cares which mail server this is.
+    app.config.setdefault('PODPACK_MAIL_UTIL_CLS', ReportingMailUtil)
+
     paranoid.init_app(app)
     paranoid.redirect_view = '/'
 
     mail.init_app(app)
-    security.init_app(app, user_datastore)
 
     app.register_error_handler(404, _handle_404)
     # `flask --app holdenweb mail check`, alongside flask-security's own

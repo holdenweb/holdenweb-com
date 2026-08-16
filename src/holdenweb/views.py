@@ -119,12 +119,9 @@ site_app = SiteApp(
         Section("Home", "main.home_page"),
         Section("Python", "main.python_docs"),
     ),
-    # Not this app's names to choose: `models.py` derives them from
-    # flask-security's mixins, and its datastore, its documentation and its own
-    # join table all assume them. Claiming them says so, and -- the point of a
-    # declaration over a suppression -- records who answers for them, which is
-    # how `roles_users` gets an owner at all: it is built inside flask-security
-    # rather than in this package, so attribution by defining module never saw
-    # it. See podpack ADR-0032.
-    owns_tables=frozenset({"user", "role", "roles_users"}),
+    # No `owns_tables` any more: `user`, `role` and `roles_users` became
+    # podpack's when login did (ADR-0033), and podpack records itself as their
+    # owner. Claiming them here as well would be this app asserting ownership
+    # of the framework's tables, which is the collision the field exists to
+    # make visible rather than a use of it.
 )

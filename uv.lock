@@ -200,15 +200,15 @@ wheels = [
 
 [[package]]
 name = "email-validator"
-version = "2.2.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dnspython" },
     { name = "idna" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/ce/13508a1ec3f8bb981ae4ca79ea40384becc868bfae97fd1c942bb3a001b1/email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7", size = 48967, upload-time = "2024-06-20T11:30:30.034Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/22/900cb125c76b7aaa450ce02fd727f452243f2e91a61af068b40adba60ea9/email_validator-2.3.0.tar.gz", hash = "sha256:9fc05c37f2f6cf439ff414f8fc46d917929974a82244c20eb10231ba60c54426", size = 51238, upload-time = "2025-08-26T13:09:06.831Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/ee/bf0adb559ad3c786f12bcbc9296b3f5675f529199bef03e2df281fa1fadb/email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631", size = 33521, upload-time = "2024-06-20T11:30:28.248Z" },
+    { url = "https://files.pythonhosted.org/packages/de/15/545e2b6cf2e3be84bc1ed85613edd75b8aea69807a71c26f4ca6a9258e82/email_validator-2.3.0-py3-none-any.whl", hash = "sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4", size = 35604, upload-time = "2025-08-26T13:09:05.858Z" },
 ]
 
 [[package]]
@@ -293,6 +293,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/34/3c/81693ff93c35fd9b4ae264262683077820f8afb100c7321658296bb18a5f/flask_security-5.6.2.tar.gz", hash = "sha256:e05a81beab01b06e07d9a4c82cb4c82630d46c78db4e1b799a15c01724698778", size = 698753, upload-time = "2025-05-04T22:09:43.173Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/64/7f/ddd18404d1c0cd47805499c0ec6d0aac4a4b7bd5e0b7c2050e12d21318fb/flask_security-5.6.2-py3-none-any.whl", hash = "sha256:8b7a140805217301cbcb5a7364490184ccf943adb76549dc9df3394cd7bd7b22", size = 438852, upload-time = "2025-05-04T22:09:40.665Z" },
+]
+
+[[package]]
+name = "flask-security-too"
+version = "5.8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "email-validator" },
+    { name = "flask" },
+    { name = "flask-login" },
+    { name = "flask-principal" },
+    { name = "flask-wtf" },
+    { name = "libpass" },
+    { name = "markupsafe" },
+    { name = "wtforms" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/96/ad/3e9120b7fe5ac82aa4cd2926913ead138679af6f2b5bd09466bd0f80d6bd/flask_security_too-5.8.2.tar.gz", hash = "sha256:b4ad7448a83679a9c255700bd28979c685e66f89dd7c2eca7de8f4a52e5bd89f", size = 752712, upload-time = "2026-08-12T00:23:56.512Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/7a/d0553b193d8dcb9f4969012a24edc8461ef8c5da524afbbe7abc1a05ec27/flask_security_too-5.8.2-py3-none-any.whl", hash = "sha256:fb4b97e6161660681ed264ba2fc10faba49580d2da4331d5156ab35004d66086", size = 493118, upload-time = "2026-08-12T00:23:55.044Z" },
 ]
 
 [[package]]
@@ -472,11 +491,11 @@ wheels = [
 
 [[package]]
 name = "libpass"
-version = "1.9.1.post0"
+version = "1.9.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/91/c2/10637ae3311ac98bffa2d365c9b0fb3ef6bfe4fc13997906844b13bdfc91/libpass-1.9.1.post0.tar.gz", hash = "sha256:5a4c3eb4985c6847cf046ae83c1ec1620bc157cf18714facad324650231c457e", size = 672437, upload-time = "2025-05-17T02:50:31.777Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2a/f6/210563eef148773ef835d21c0fa1e8a43c5b10fceb1f63d5d650635b81da/libpass-1.9.3.tar.gz", hash = "sha256:7830b9323d9ba96a841ad698a8dec1d43a2b0b7f1c855c76772e7972c1c6d959", size = 692901, upload-time = "2025-10-09T14:26:28.363Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/50/760777cbc436964ad69ee045e2b8777cafbc3e44a3f1d00613f8d32e83c9/libpass-1.9.1.post0-py3-none-any.whl", hash = "sha256:5bb794bac97042b814ab1eeb187c72a95d128cefbcee3c00c630f062c2da199c", size = 306980, upload-time = "2025-05-17T02:50:30.119Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/a6/ff00d926a9f4ece9e0732bcea1c3e8e9280390f48cec53f237e21f220082/libpass-1.9.3-py3-none-any.whl", hash = "sha256:3cbeb14d22086660e92c30d787ea981973d67394e81c8c870e1a83cfe1c84353", size = 307118, upload-time = "2025-10-09T14:26:25.551Z" },
 ]
 
 [[package]]
@@ -652,11 +671,13 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.4.3"
-source = { git = "https://github.com/holdenweb/podpack.git#4627c6cdd57f6816634c2db544f09bcf8c403197" }
+version = "0.5.0"
+source = { git = "https://github.com/holdenweb/podpack.git#cc577f9d7ac0825953f70ecc4ac149f77b92d2d7" }
 dependencies = [
     { name = "alembic" },
+    { name = "argon2-cffi" },
     { name = "flask" },
+    { name = "flask-security-too" },
     { name = "flask-sqlalchemy" },
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
