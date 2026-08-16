@@ -18,6 +18,7 @@ from flask_security import Security, current_user
 
 import podpack
 
+from .mail_util import ReportingMailUtil
 from .models import user_datastore
 
 # The registry looks for `site_app` at module level: this package is itself an
@@ -34,7 +35,11 @@ logger = getLogger(__name__)
 # multiple app instances (e.g. one per test) can coexist safely.
 mail = Mail()
 paranoid = Paranoid()
-security = Security()
+# ReportingMailUtil rather than the default: flask-security's views do not
+# catch what the mail backend raises, so a dead SMTP credential made /reset a
+# 500 instead of a message. See mail_util.py. Passed to the constructor and
+# not to init_app, which flask-security deprecated in 5.6.1.
+security = Security(mail_util_cls=ReportingMailUtil)
 
 
 def create_app(config_overrides=None, **podpack_kwargs):
