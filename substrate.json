@@ -36,6 +36,7 @@
       "PODPACK_DATA_ROOT",
       "PODPACK_LOG_ROOT",
       "SECRET_KEY",
+      "SECURITY_PASSWORD_SALT",
       "SQLALCHEMY_DATABASE_URI"
     ],
     "secrets.env.example": [
@@ -130,7 +131,7 @@
     "dev.env.example": {
       "class": "config",
       "seeded_by": "0.4.0",
-      "sha256": "ead8a40bbc87ba944f15e09da50d409352634e483f71e850abd585166bac3523"
+      "sha256": "9f19a862ad943f3629bc1cd545acf175a28ecb9c1e22c08c75ef18b15c704697"
     },
     "mongodb-init/01-create-app-user.sh": {
       "class": "verbatim",
@@ -162,6 +163,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.5.1",
+  "podpack_version": "0.5.2",
   "substrate_schema": 1
 }

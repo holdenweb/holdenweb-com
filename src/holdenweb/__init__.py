@@ -63,8 +63,10 @@ def _wire(app: Flask) -> None:
     """
     app.logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
-    for key in ('SECURITY_PASSWORD_SALT', 'MAIL_PASSWORD'):
-        app.config.setdefault(key, os.environ.get(key))
+    # SECURITY_PASSWORD_SALT used to be here too. podpack requires it now and
+    # reads it itself, failing at boot if it is missing rather than letting the
+    # site start and die inside `flask users create`.
+    app.config.setdefault('MAIL_PASSWORD', os.environ.get('MAIL_PASSWORD'))
 
     app.config.setdefault('SECURITY_REGISTERABLE', True)
     app.config.setdefault('SECURITY_RECOVERABLE', True)
