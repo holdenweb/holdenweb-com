@@ -18,6 +18,7 @@ from flask_security import Security, current_user
 
 import podpack
 
+from .commands import mail_commands
 from .mail_util import ReportingMailUtil
 from .models import user_datastore
 
@@ -109,6 +110,10 @@ def _wire(app: Flask) -> None:
     security.init_app(app, user_datastore)
 
     app.register_error_handler(404, _handle_404)
+    # `flask --app holdenweb mail check`, alongside flask-security's own
+    # `users` and `roles` groups. See commands.py for why it is a command
+    # rather than a file under scripts/.
+    app.cli.add_command(mail_commands)
 
 
 def _handle_404(e):
