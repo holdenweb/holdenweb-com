@@ -671,8 +671,8 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.6.0"
-source = { git = "https://github.com/holdenweb/podpack.git#108e06edd28db547038baddf44b5445b6b68c487" }
+version = "0.6.1"
+source = { git = "https://github.com/holdenweb/podpack.git#a98a9ce6a5736c3515f8063dfcc7a197de345928" }
 dependencies = [
     { name = "alembic" },
     { name = "argon2-cffi" },
@@ -695,8 +695,8 @@ dependencies = [
 
 [[package]]
 name = "podpack-qrcode"
-version = "0.2.0"
-source = { git = "https://github.com/holdenweb/podpack-qrcode.git#967a9b6f647995dfe1dc00135b215d3e5e425b24" }
+version = "0.2.1"
+source = { git = "https://github.com/holdenweb/podpack-qrcode.git#fe30c05030c2e9525edd4a10da5410725c08f456" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
