@@ -35,6 +35,11 @@ def _build(monkeypatch, tmp_path, **overrides):
     monkeypatch.setenv("SECRET_KEY", "test-secret-key")
     monkeypatch.setenv("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
     monkeypatch.setenv("SECURITY_PASSWORD_SALT", "test-password-salt")
+    # `[site] secrets` names this one, so podpack requires it at boot. It used
+    # to arrive without being asked for: `load_dotenv()` in the package pulled
+    # it out of a developer's `.env`, and the suite passed because of a file it
+    # never mentions and CI would not have. Supplied here instead.
+    monkeypatch.setenv("MAIL_PASSWORD", "test-mail-password")
     app = create_app(
         {
             "TESTING": True,

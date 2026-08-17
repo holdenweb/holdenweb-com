@@ -9,6 +9,12 @@ environment = "local"
 # site's own routes and must come first so its front page claims `/`.
 apps = ["holdenweb", "podpack_pages", "podpack_qrcode", "pp_pdf"]
 
+# Environment variables this site needs beyond podpack's own three, checked at
+# boot with them. Names here, values in the environment -- the same split as
+# everywhere else. Without this, a missing mail password surfaces when a
+# visitor asks for a password reset rather than when the site starts.
+secrets = ["MAIL_PASSWORD"]
+
 [database]
 pool_pre_ping = true
 
