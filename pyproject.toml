@@ -43,3 +43,14 @@ dev = [
     "pytest-playwright>=0.7.0",
     "pytest>=9.1.1",
 ]
+
+[tool.pytest.ini_options]
+# Where the tests are, so a bare `pytest` does not walk the whole site.
+#
+# Without this it descends into hostdata/, and PostgreSQL insists its data
+# directory is mode 0700 while init-postgres chowns it to the container's
+# postgres uid -- which under rootless podman is a subuid the invoking user
+# cannot read. Collection then aborts with PermissionError before a single test
+# runs. It cannot happen on macOS, where that directory belongs to the user
+# running podman machine, so it appears for the first time on a Linux host.
+testpaths = ["tests"]
