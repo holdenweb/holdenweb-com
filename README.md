@@ -98,17 +98,25 @@ a real browser against a **running** site, and is how a deployment is checked:
 
 ```bash
 uv run playwright install chromium                 # once per machine
-uv run pytest tests/integration --base-url http://localhost:8461
-uv run pytest tests/integration --base-url https://staging.holdenweb.com
+uv run pytest tests/integration
 ```
 
-The same fifteen checks run against the lab, staging or production — a
-deployment is only verified if the thing you check is the thing you deployed.
-Without `--base-url` they skip rather than fail, so `uv run pytest` stays fast
-and safe to run at any time.
+No argument needed: it reads `WEB_HOST_PORT` and `WEB_BIND_ADDR` from the
+site's own `.env` — the file that decided where the site listens in the first
+place — so it is right on every host by construction. Point it elsewhere with
+`--base-url https://staging.holdenweb.com` or `SITE_URL=…`, and the header
+always names what it tested:
 
-They ask each app to do its job rather than merely answer: the QR code app
-generates a code, the PDF tools offer both forms, the pages app renders content
-wearing the site's own stylesheet. A route returning 200 only proves the
-blueprint registered — the QR code app answered 200 for weeks while
+```
+integration target: http://127.0.0.1:8461
+```
+
+Which means a plain `uv run pytest` runs them too when a site is reachable,
+and reports connection failures when it is not. If you want only the fast
+suite, name it: `uv run pytest tests/test_routes.py tests/test_commands.py`.
+
+The suite asks each app to do its job rather than merely answer: the QR code
+app generates a code, the PDF tools offer both forms, the pages app renders
+content wearing the site's own stylesheet. A route returning 200 only proves
+the blueprint registered — the QR code app answered 200 for weeks while
 contributing no navigation entry at all.
