@@ -40,5 +40,6 @@ pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git" }
 [dependency-groups]
 dev = [
     "playwright>=1.54.0",
+    "pytest-playwright>=0.7.0",
     "pytest>=9.1.1",
 ]

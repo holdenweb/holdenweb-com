@@ -90,3 +90,25 @@ uv run pytest
 
 The suite builds the real site from the shipped `config/app.toml`, so it
 exercises the configuration that deploys.
+
+## Verifying a deployment
+
+Unit tests need no server and run in two seconds. The integration suite drives
+a real browser against a **running** site, and is how a deployment is checked:
+
+```bash
+uv run playwright install chromium                 # once per machine
+uv run pytest tests/integration --base-url http://localhost:8461
+uv run pytest tests/integration --base-url https://staging.holdenweb.com
+```
+
+The same fifteen checks run against the lab, staging or production — a
+deployment is only verified if the thing you check is the thing you deployed.
+Without `--base-url` they skip rather than fail, so `uv run pytest` stays fast
+and safe to run at any time.
+
+They ask each app to do its job rather than merely answer: the QR code app
+generates a code, the PDF tools offer both forms, the pages app renders content
+wearing the site's own stylesheet. A route returning 200 only proves the
+blueprint registered — the QR code app answered 200 for weeks while
+contributing no navigation entry at all.
