@@ -161,3 +161,7 @@ scratch/
 dev.env
 devdata/
 devlogs/
+
+# Backups, if BACKUP_ROOT is ever pointed inside the tree. They contain
+# secrets.env in clear.
+backups/
