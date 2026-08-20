@@ -32,10 +32,10 @@ Three facts that determine what is safe:
 | What | Where | Backed up by | If lost |
 | --- | --- | --- | --- |
 | Code, config, migrations | git (`origin`, GitHub) | git | clone again |
-| Database | container, `$HOST_DATA_DIR/postgres/pgdata` | `ops/backup.sh` | users, roles, schema version |
-| Page content, app data | `$HOST_DATA_DIR/apps/` | `ops/backup.sh` | **the site's content** — seeded once, edited live, nowhere else |
-| Credentials and identity | `secrets.env` | `ops/backup.sh` | every password and session, irrecoverably |
-| Per-host wiring | `.env` | `ops/backup.sh` (for reference) | rewrite it; nothing is lost |
+| Database | container, `$HOST_DATA_DIR/postgres/pgdata` | `scripts/backup.sh` | users, roles, schema version |
+| Page content, app data | `$HOST_DATA_DIR/apps/` | `scripts/backup.sh` | **the site's content** — seeded once, edited live, nowhere else |
+| Credentials and identity | `secrets.env` | `scripts/backup.sh` | every password and session, irrecoverably |
+| Per-host wiring | `.env` | `scripts/backup.sh` (for reference) | rewrite it; nothing is lost |
 | Logs | `$HOST_LOG_DIR/` | not backed up, deliberately | history only |
 
 `hostdata/apps` is the one most easily overlooked. An app ships its content and
@@ -98,36 +98,47 @@ correct for a page publishing that, and indistinguishable from a missing route
 ## 4. Backups
 
 ```bash
-./ops/backup.sh
+./scripts/backup.sh
 ```
-✅ Verified: 10,649-byte dump of 4 tables, 1.0 MB of app data, in
-`~/backups/holdenweb-com/2026-08-19T165530Z/`.
+✅ Verified on this site: a 10,649-byte dump of 4 tables, 1.0 MB of content
+across 32 entries, and `secrets.env`, in
+`~/backups/holdenweb-com/20260820T190011Z/`.
 
-It takes the three things a restore needs — the database, `hostdata/apps`, and
-`secrets.env` — into one timestamped directory, then **verifies the dump before
-claiming success**: `pg_restore --list` parses the whole archive, so a truncated
-one fails here rather than during a restore, and an archive containing no table
-data is deleted rather than kept.
+The script is podpack's now, not this site's. It asks `podpack backup plan`
+what this site is made of, so **installing an app changes what a backup
+contains with no edit here** — and a site that later enables MongoDB gets its
+documents dumped because the service catalogue knows how, not because somebody
+remembered.
+
+A backup holds the three things the site cannot be rebuilt without:
+
+| | |
+| --- | --- |
+| `database.pgc` | a `pg_dump`, ownership preserved so the app role still owns its schema |
+| `app-data.tar.gz` | `hostdata/apps` — the live content, which exists nowhere else |
+| `secrets.env`, `env` | the identity; `secrets.env` must come back verbatim |
+| `config.tar.gz`, `plan.json`, `rowcounts.txt`, `manifest.txt` | what the data means and how to check it |
+
+`manifest.txt` records **the commit, the app list and the alembic revision**
+together, because podpack's schema is a function of the app list: one alembic
+history covers whichever apps are enabled, so a dump restored against a
+different list leaves tables no app claims, and the next autogenerate proposes
+dropping them.
 
 | Variable | Default | |
 | --- | --- | --- |
-| `BACKUP_ROOT` | `~/backups/$SITE_NAME` | deliberately **outside** the repository — the directory holds `secrets.env` |
-| `BACKUP_KEEP` | 14 | oldest pruned first |
+| `BACKUP_ROOT` | `~/backups/$SITE_NAME` | outside the tree, and the script refuses to write inside it |
 
-Credentials never appear in the process arguments: the dump runs inside the
-container using the container's own environment, so `ps` shows nothing.
+Credentials never reach the process arguments: each dump runs inside its own
+container using that container's environment, so `ps` shows nothing.
 
 ### Scheduling it
 
 ⚠️ On the host, as the site's own user:
 
-```bash
-crontab -e
-```
-
 ```cron
-17 3 * * * cd ~/apps/second-alma && ./ops/backup.sh >> ~/backups/backup.log 2>&1
-23 4 * * 0 cd ~/apps/second-alma && ./ops/restore-rehearsal.sh >> ~/backups/rehearsal.log 2>&1
+17 3 * * * cd ~/apps/second-alma && ./scripts/backup.sh >> ~/backups/backup.log 2>&1
+23 4 * * * cd ~/apps/second-alma && ./scripts/verify-backup.sh >> ~/backups/verify.log 2>&1
 ```
 
 `loginctl enable-linger` is already required for the containers to survive
@@ -148,26 +159,39 @@ copy.
 ## 5. Proving the backups work
 
 ```bash
-./ops/restore-rehearsal.sh          # the most recent backup
-./ops/restore-rehearsal.sh <dir>    # a named one
+./scripts/verify-backup.sh          # the most recent backup
+./scripts/verify-backup.sh <dir>    # a named one
 ```
-✅ Verified both ways: a good backup restores and reports
-`rehearsal PASSED: 5 rows, 33 data files, secrets present` (exit 0); a
-deliberately truncated dump reports `REHEARSAL FAILED: pg_restore reported an
-error` (exit 1). No scratch database is left behind in either case.
+✅ Verified on this site: `4 tables carry data`, `5 rows across 4 tables`,
+`32 entries`, exit 0.
 
-It restores into a scratch database beside the live one, counts what came back
-from the restored database's own catalogue — so a table added later appears
-without editing the script — and drops the scratch database on the way out,
-including after a failure. The site keeps serving throughout.
+It reads every archive right through — using the same tool that would restore
+it, in the same container — without applying any of it. The site keeps serving
+and nothing it holds is touched. Run it straight after each backup: a truncated
+archive found tonight is a non-event, and the same archive found in six weeks
+is a disaster.
 
-**Rehearse on the laptop where you can.** Copy a backup down and run it against
-the lab stack: that exercises the transfer as well as the archive, and the
-transfer is the half that fails when it matters.
+**Know what this does and does not prove.** It proves the archives are
+readable and non-empty. It does **not** prove they apply. The script this
+replaced (`ops/restore-rehearsal.sh`) went further — it restored into a scratch
+database beside the live one and counted the rows that came back — and the
+podpack version deliberately does not, because "restore into a scratch
+namespace" is not a thing every backing store spells the same way.
 
-`pg_restore --exit-on-error` is doing real work here. Without it pg_restore
-reports every failure and still exits 0, so a rehearsal would pass on an
-archive that restored nothing.
+So the deep check is now `scripts/restore.sh` into a **scratch deployment**,
+and it is the one worth putting in the calendar:
+
+```bash
+git clone <this repo> /tmp/restore-rehearsal && cd /tmp/restore-rehearsal
+# edit .env for a spare port, then:
+./scripts/restore.sh ~/backups/holdenweb-com/<stamp> --yes
+```
+
+That compares every recorded row count and fails on a mismatch. It has been
+exercised end to end on `podpack-demo` — five tables, real uploads, and a
+marker planted after the backup that was gone afterwards — and a deliberately
+tampered `rowcounts.txt` produced `MISMATCH: expected 99, found 5` and exit 1.
+It has **not** yet been run against this site's data.
 
 ## 6. Restoring
 
@@ -256,7 +280,7 @@ honest downtime rather than degraded service:
 
 ```bash
 podman compose stop web                      # old host: stop accepting writes
-./ops/backup.sh                              # old host: the final, authoritative backup
+./scripts/backup.sh                          # old host: the final, authoritative backup
 ```
 
 Copy that backup across, run step 5 of §6 on the new host, and start `web`
@@ -369,7 +393,7 @@ Then: commit, `git push main main`, `./scripts/up.sh` on the host, §3.
 
 **What an app upgrade does not do:** deliver changed content. App data seeds
 once; the host copy is the live one from then on. Content changes are made on
-the host, and are what `ops/backup.sh` archives.
+the host, and are what `scripts/backup.sh` archives.
 
 **Rehearse on the laptop lab first.** `podman compose up -d` locally runs the
 same images from the same lockfile, and a migration that fails there fails
@@ -485,8 +509,8 @@ the one that matters most, and why §5 exists.
 | When | What |
 | --- | --- |
 | Every deployment | §3 — the integration suite, against the real host |
-| Nightly | `ops/backup.sh` |
-| Weekly | `ops/restore-rehearsal.sh`, and eyes on the log |
+| Nightly | `scripts/backup.sh`, then `scripts/verify-backup.sh` |
+| Monthly | `scripts/restore.sh` into a scratch deployment — the only deep check (§5) |
 | Monthly | copy a backup to the laptop and rehearse it *there* (§5) |
 | Monthly | `uv run podpack substrate status`; upgrade if behind |
 | Before any schema change | a backup, and a rehearsal of it |
@@ -510,6 +534,10 @@ Recorded rather than hidden. None is urgent; all are real.
   reads the value but does nothing with it, so nothing is broken; it will
   mislead a reader.
 - **Migrations have no tested downgrade** (§15).
+- **`restore.sh` has never been run against this site's data.** It is
+  proved on `podpack-demo` (§5), and the ordering, the row-count
+  comparison and its failure path are all exercised there — but this
+  site has 1.0 MB of content that no restore has yet put back.
 - **`README.md` is stale** on dependency sources: it warns that four path
   sources need repointing at git remotes, which was done some time ago.
 - **The substrate is a version behind** (§10).

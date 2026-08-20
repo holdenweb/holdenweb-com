@@ -165,3 +165,8 @@ devlogs/
 # Backups, if BACKUP_ROOT is ever pointed inside the tree. They contain
 # secrets.env in clear.
 backups/
+
+# What scripts/restore.sh sets aside before replacing them. secrets.env is
+# among them, in clear, so this matters more than the tidiness suggests.
+# Copied by hand from podpack's seed: seeded files never upgrade (ADR-0026).
+*.superseded-*
