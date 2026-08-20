@@ -24,6 +24,7 @@ drift apart.
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
+| 12 | podpack | ADR-0027 still calls the port profile `dbport` | docs |
 
 ---
 
@@ -178,6 +179,23 @@ not written or tested for it, so the rollback plan for any release carrying a
 schema change is *restore last night's dump*. That is workable and is what
 [`operations.md` §15](../operations.md) says — it is also the reason the backup
 before a schema change is the one that matters most.
+
+### 12. ADR-0027 still calls the port profile `dbport`
+
+**Repo:** podpack
+
+*Evidence.* Three occurrences in
+`adrs/0027-the-database-port-is-published-only-on-request.md` and one in the
+ADR index. `compose.postgres.yaml` has defined it as `postgres-port` since the
+overlay split (ADR-0028).
+
+*Why it matters.* The same staleness as item 5, in the document a reader would
+consult to understand *why* the port is unpublished -- and the command it gives
+does nothing.
+
+*Fix.* An ADR records what was decided when, so the body is arguably history.
+The index summary is navigation and is simply wrong. Decide which, then fix
+that one.
 
 ---
 
