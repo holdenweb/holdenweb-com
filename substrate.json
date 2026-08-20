@@ -85,7 +85,7 @@
     },
     "alembic/env.py": {
       "class": "verbatim",
-      "sha256": "870885c26c68b4bc816f92e1e46b7076bd769256705a9b9d7786afa5905275c4"
+      "sha256": "13259bab0a314b0f94587bfb2d09cc68866edab8940bb6645837ccce80f32550"
     },
     "alembic/script.py.mako": {
       "class": "verbatim",
@@ -141,6 +141,10 @@
       "class": "verbatim",
       "sha256": "a77c518c03c7741773eb2f7edefb62aa1570459dcb3a3f52f687c7485ff666cc"
     },
+    "scripts/configure-host.py": {
+      "class": "verbatim",
+      "sha256": "65204754991225ee9b164a78db347e3764a58ebd0aa62d180da21709e382d211"
+    },
     "scripts/dev.sh": {
       "class": "rendered",
       "sha256": "2e78672b8bd69be5cf0264b103d6675824a7a136a6a7926085850583b5ae7afb"
@@ -167,6 +171,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.7.0",
+  "podpack_version": "0.8.0",
   "substrate_schema": 1
 }

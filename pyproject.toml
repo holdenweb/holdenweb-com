@@ -5,7 +5,7 @@ description = "The holdenweb.com publishable site"
 readme = "README.md"
 requires-python = ">=3.12, <4.0"
 dependencies = [
- "podpack",
+ "podpack>=0.8",
  "podpack-pages",
  "podpack-qrcode",
  "pp-pdf",
@@ -27,12 +27,18 @@ email = "steve@holdenweb.com"
 requires = [ "uv_build>=0.8.4,<0.9.0",]
 build-backend = "uv_build"
 
-# Git sources, because a path source cannot survive a container build: the
-# build context has no such path and `uv sync --frozen` fails with "Failed to
-# determine installation plan". Note these resolve to what is *on the remote*,
-# so working locally on any of them means pushing before re-locking here.
+# podpack is not here any more: it publishes to PyPI on every release tag, so
+# it is an ordinary version specifier above. That is worth having rather than
+# tidiness -- a git source resolves to whatever is on the remote *now*, and uv
+# caches the ref, so moving one forward took `uv lock --upgrade-package X
+# --refresh-package X` and moved silently without it.
+#
+# The three apps stay on git until they have PyPI publishers of their own. A
+# path source is not an option for any of them: the container build context has
+# no such path, and `uv sync --frozen` fails there with "Failed to determine
+# installation plan". These still resolve to what is *on the remote*, so
+# working locally on one means pushing before re-locking here.
 [tool.uv.sources]
-podpack = { git = "https://github.com/holdenweb/podpack.git" }
 podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git" }
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git" }
 pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git" }

@@ -436,7 +436,7 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "podpack", git = "https://github.com/holdenweb/podpack.git" },
+    { name = "podpack", specifier = ">=0.8" },
     { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git" },
@@ -682,8 +682,8 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.7.0"
-source = { git = "https://github.com/holdenweb/podpack.git#fac94e0e31a2738901108faf433b52fc06efb385" }
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
     { name = "argon2-cffi" },
@@ -692,6 +692,10 @@ dependencies = [
     { name = "flask-sqlalchemy" },
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/ab/1435319920d3cbca378245269d7d3edb13a250ae2a8e65ba0970aeb1f753/podpack-0.8.0.tar.gz", hash = "sha256:3d6960cc890905caccf5fbcc585ae3081b6bfefeda8b03b11d8e3f32a110387a", size = 126000, upload-time = "2026-08-19T16:14:33.658Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/6c/4b0a0234ae5daf600f6008fee7485744c2ce732caa5af26eed32f9515e79/podpack-0.8.0-py3-none-any.whl", hash = "sha256:f8ad576fc7fe9f181795e9f3e6a58dd1db45772e17c4628957be8278bb3a3266", size = 128208, upload-time = "2026-08-19T16:14:32.653Z" },
 ]
 
 [[package]]
