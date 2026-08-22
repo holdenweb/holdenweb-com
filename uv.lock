@@ -436,7 +436,7 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "podpack", specifier = ">=0.9.0b1" },
+    { name = "podpack", specifier = ">=0.9.0b2" },
     { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git" },
@@ -682,7 +682,7 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.9.0b1"
+version = "0.9.0b2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -693,9 +693,9 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/3b/b0a13afbd7f3a9f7b36f19ab2831033669763b99afb1875b3472d854292f/podpack-0.9.0b1.tar.gz", hash = "sha256:e8d1a5410ec1ecfe49bb0a9242d78af3168e4966d43af1764b868318cf59304a", size = 144504, upload-time = "2026-08-20T16:18:03.487Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/65/cb6bd051bfdedd2f471dd645421fd52393ac72c74813f36900bc55c2c4f1/podpack-0.9.0b2.tar.gz", hash = "sha256:50156771b832733582eaa8a39cbab64c964df22418838da9d0bf370f0aa2afaa", size = 148539, upload-time = "2026-08-22T10:13:17.967Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/fb/323644191ce1e5de55df816c5a68d0487209d0fda8640dca1481bd53fa05/podpack-0.9.0b1-py3-none-any.whl", hash = "sha256:391affe2ad58d073837420f11ceefcda021ec0b691fb32117631105cf33212e9", size = 148877, upload-time = "2026-08-20T16:18:02.134Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/24/cac8c7d62500b21cef1e18b2d55f7862acb3f08020158c6776a17b53e82e/podpack-0.9.0b2-py3-none-any.whl", hash = "sha256:6a18fecaea371c0acaa69569ed5b733c914410e6f20eb37c7779ea401868a346", size = 152857, upload-time = "2026-08-22T10:13:16.415Z" },
 ]
 
 [[package]]

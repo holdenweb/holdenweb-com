@@ -9,7 +9,13 @@ dependencies = [
  # where the specifier names one, so this opts podpack in and nothing else:
  # a blanket --prerelease=allow would quietly pull beta SQLAlchemy and
  # WTForms in underneath a live site. Measured, not feared.
- "podpack>=0.9.0b1",
+ #
+ # The floor is b2 rather than b1 because this site sets PODPACK_PROXY_HOPS in
+ # its .env, and b1 does not read it -- so an older podpack here would serve
+ # every page perfectly and put http:// links in password-reset mail, which is
+ # exactly the failure the setting exists to prevent. A floor is the only place
+ # that can say so.
+ "podpack>=0.9.0b2",
  "podpack-pages",
  "podpack-qrcode",
  "pp-pdf",

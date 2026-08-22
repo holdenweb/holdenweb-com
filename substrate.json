@@ -183,6 +183,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.9.0b1",
+  "podpack_version": "0.9.0b2",
   "substrate_schema": 1
 }
