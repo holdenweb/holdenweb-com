@@ -22,6 +22,7 @@ drift apart.
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
+| 13 | holdenweb-com | Only the front page renders the site navigation | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered. Struck so far: **2** (substrate now at podpack 0.9.0b1, 2026-08-20),
@@ -175,6 +176,44 @@ not written or tested for it, so the rollback plan for any release carrying a
 schema change is *restore last night's dump*. That is workable and is what
 [`operations.md` §15](../operations.md) says — it is also the reason the backup
 before a schema change is the one that matters most.
+
+---
+
+## Raised since — 2026-08-21
+
+### 13. Only the front page renders the site navigation
+
+**Repo:** holdenweb-com
+
+*Evidence.* `sections` — the navigation podpack assembles from the installed
+apps and puts in front of every template — is referenced in exactly one of this
+site's templates, `src/holdenweb/templates/index.html:14`. In both
+`templates/base.html:60` and `templates/security/base.html:59` the
+`{% block navbar %}` is present and **empty**. podpack's own fallback
+`base.html:32` does render it.
+
+*Why it matters.* A site that writes no `base.html` gets the navigation; this
+site wrote one and silently lost it. So every page other than `/` — the two
+`pp_pdf` forms, everything under `/pages`, all the flask-security pages, and
+404 — offers no route to the other installed apps. The logo links to `/` and
+the bluebar handles login, so nothing is a dead end, but installing an app
+currently adds it to one page's menu rather than to the site's.
+
+*Fix.* Render `sections` in the `navbar` block, with podpack's
+`src/podpack/templates/base.html:32` as the reference for markup and endpoint
+handling.
+
+Two things fall out of the same edit, and are the reason it is not a one-line
+change:
+
+- **`security/base.html` is a drifted copy-paste fork of `base.html`,** not a
+  child of it. It carries Bootstrap 4.1.3 from stackpath where the site
+  otherwise loads 4.6.1 from cdnjs, and no popper — so the login, register and
+  password-reset pages already render against a different framework version
+  than the rest of the site. Editing one base will not reach them.
+- **`templates/security/base.saved.html` is a leftover** beside it, and wants
+  deleting or explaining.
+
 
 ---
 
