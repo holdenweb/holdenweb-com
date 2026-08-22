@@ -508,6 +508,7 @@ the one that matters most, and why §5 exists.
 
 | When | What |
 | --- | --- |
+| Every five minutes | the health poll (§18), unattended |
 | Every deployment | §3 — the integration suite, against the real host |
 | Nightly | `scripts/backup.sh`, then `scripts/verify-backup.sh` |
 | Monthly | `scripts/restore.sh` into a scratch deployment — the only deep check (§5) |
@@ -522,14 +523,15 @@ Recorded rather than hidden. None is urgent; all are real.
 
 - **No maintenance page.** Stopping `web` gives a 502 (§11).
 - **No log rotation.** `hostlogs/` grows without limit.
-- **No monitoring.** Nothing notices that the site is down except a person.
-  `/healthz` already answers `{"database":"ok","status":"ok"}` without
-  authentication — it is what the container healthcheck polls — so an external
-  check has something to ask for and nothing asks it. Note the name: it is
-  `/healthz`, with no underscore, unlike `/_status`.
-- **`base_url` is not set** in `config/app.toml`. Absolute URLs — password-reset
-  links among them — are then built from the request, which is right only as
-  long as the proxy passes the host and scheme faithfully.
+- **No monitoring**, until §18 is actually set up. The procedure exists now;
+  nothing is running it yet, and an unproved monitor is worth what an untested
+  backup is worth.
+- **Password-reset links go out as `http://`**, and will until the site takes a
+  podpack carrying `PODPACK_PROXY_HOPS` (ADR-0036) and `.env` here sets it to
+  `1`. Not `base_url`, which was recorded as the fix for two days and feeds
+  nothing that builds these links. The host in the link is already right and
+  must stay dynamic: Opalstack owns the binding. `ops/backlog.md` item 4 has
+  the whole correction.
 - **`config/app.toml` says `environment = "local"` in production.** podpack
   reads the value but does nothing with it, so nothing is broken; it will
   mislead a reader.
@@ -541,3 +543,47 @@ Recorded rather than hidden. None is urgent; all are real.
 - **`README.md` is stale** on dependency sources: it warns that four path
   sources need repointing at git remotes, which was done some time ago.
 - **The substrate is a version behind** (§10).
+
+---
+
+## 18. Noticing that the site is down
+
+Today a person notices. Everything else in this document assumes somebody
+already knows something is wrong, which makes this the gap that lengthens every
+other procedure.
+
+`/healthz` answers `{"database":"ok","status":"ok"}` without authentication —
+it is what the container healthcheck polls — so there is nothing to build.
+**Note the name: `/healthz`, no underscore.** `/_status` is the other one, it
+is richer, it requires an operator, and it is not what to poll.
+
+### Two checks, because they fail differently
+
+1. **From outside**, against `https://holdenweb.com/healthz`, expecting 200
+   *and* `"status":"ok"` in the body. Matching the body is not fussiness: nginx
+   will happily return 200 from its own error page with the container gone.
+   This is the one that catches DNS, TLS expiry and the proxy itself, none of
+   which anything on the host can see. It needs an account somewhere, so it is
+   the account holder's to set up.
+
+2. **On the host**, which catches the opposite case — a `web` container that is
+   unhealthy behind a proxy still answering convincingly. Five-minutely, and
+   quiet unless it fails:
+
+   ```cron
+   */5 * * * * cd ~/apps/holdenweb && . ./.env && \
+     curl -fsS --max-time 10 "http://${WEB_BIND_ADDR:-127.0.0.1}:${WEB_HOST_PORT}/healthz" \
+     | grep -q '"status":"ok"' \
+     || echo "holdenweb /healthz failed at $(date -Is)" \
+     | mail -s "holdenweb.com unhealthy" steve@holdenweb.com
+   ```
+
+   ⚠️ Not yet installed, and it depends on §8 being done first: the mail it
+   sends goes through the same credential the site does.
+
+### Prove it before believing it
+
+Stop `web`, wait for the interval, and confirm the alert arrives. Then start it
+again. A monitor nobody has seen fire is in exactly the position a backup
+nobody has restored was in before §5 existed — and that comparison is the
+reason this section says so rather than assuming.

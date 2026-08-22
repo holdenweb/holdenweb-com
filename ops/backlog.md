@@ -14,9 +14,7 @@ drift apart.
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
 | 1 | holdenweb-com | `MAIL_PASSWORD` still at the example value in production | **operational** |
-| 2 | holdenweb-com | Substrate pinned at podpack 0.7.0; 0.8.0 is published | operational |
-| 3 | pp-pdf | 29 inherited `r*` tags will fire the publish workflow | release hazard |
-| 4 | holdenweb-com | `base_url` unset, so absolute URLs come from the request | correctness |
+| 4 | holdenweb-com | Reset links go out as `http://`, carrying the token in clear | **security** |
 | 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` | docs |
 | 6 | holdenweb-com | `README.md` stale on dependency sources | docs |
 | 7 | holdenweb-com | `environment = "local"` in the production config | cosmetic |
@@ -24,6 +22,12 @@ drift apart.
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
+
+*Numbers are stable identifiers, so a gap means an item was struck rather than
+renumbered. Struck so far: **2** (substrate now at podpack 0.9.0b1, 2026-08-20),
+**3** (`pp-pdf` now carries one `r*` tag, `r0.2.0`, matching its version, on
+`origin` as well as locally, verified 2026-08-21), and **12** (ADR-0027's stale
+profile name, 2026-08-20).*
 
 ---
 
@@ -47,60 +51,53 @@ which is precisely the case flask-security answers generically.
 `podman compose exec web flask --app holdenweb mail check`, which authenticates
 for real and exits non-zero on failure.
 
-### 2. The substrate is pinned at podpack 0.7.0
+### 4. Reset links go out as `http://`, and `base_url` is not the fix
 
-**Repo:** holdenweb-com
+**Repo:** podpack — **not this site**, which is the correction. This item said
+until 2026-08-21 that the fix was `base_url = "https://holdenweb.com"`. It was
+wrong twice over, and both errors came from reading a setting's name instead of
+following what actually builds the link.
 
-*Evidence.* `substrate.json:170` — `"podpack_version": "0.7.0"`; the installed
-podpack in this checkout is also 0.7.0. podpack 0.8.0 is on PyPI.
+*Evidence.* Steve asked the live site at `os.holdenweb.com` for a password
+reset and received a mail containing `http://os.holdenweb.com/reset/<token>`.
+Reproduced against this site's own factory: with `X-Forwarded-Proto: https`
+present, `url_for(..., _external=True)` still returns an `http://` URL, because
+there is no `ProxyFix` in the stack and `PREFERRED_URL_SCHEME` does not apply
+inside a request context. gunicorn is started from `Containerfile:98` with no
+`--forwarded-allow-ips`, so it defaults to `127.0.0.1` — which under rootless
+podman is not the address the port forwarder presents, so it drops the header
+before Flask sees it.
 
-*Why it matters.* Three things arrived in 0.7.1–0.8.0 that this site does not
-have. `scripts/configure-host.py` is the one that bites: the restore procedure
-in [`operations.md` §6](../operations.md) depends on it, so the documented
-restore cannot currently be followed on this site as it stands. Also missing:
-the `configparser` fix that survives a `%` in a database password, the warning
-about `$` in a value, and applying a substrate from an artefact.
+*Why `base_url` was never the fix.* It feeds exactly one function,
+`podpack.absolute_url`, and **nothing calls it** — not this site, not podpack.
+Flask-Security builds the reset link at `recoverable.py:32` with
+`url_for_security(..., _external=True)`, which is plain Flask `url_for`.
 
-*Fix.* `uv lock --upgrade-package podpack --refresh-package podpack`, `uv sync`,
-`uv run podpack substrate status`, `uv run podpack substrate upgrade`; review any
-`.new` conflicts, commit, deploy.
+*Why the domain is not the fix either.* The host in that link was already
+correct: nginx passes `Host` through, and the URL is built inside the request
+that asked for it. Writing `holdenweb.com` into a committed config file would
+have been actively wrong — the site answers on `os.holdenweb.com`, the binding
+belongs to Opalstack's control panel, and it can change without a redeploy.
 
-### 3. `pp-pdf` carries 29 inherited release tags
+*Why it matters.* nginx answers `http://` with a 301 to `https` and sends HSTS
+for a year, so the link works and has always worked. HSTS protects only a
+browser that has visited before, so a recipient opening the mail on a fresh
+device sends the reset token in the path of a cleartext request before the
+redirect.
 
-**Repo:** pp-pdf
+*Fix.* Done in podpack as `PODPACK_PROXY_HOPS` (ADR-0036, commit `fd26a12`):
+`ProxyFix` applied when the host declares how many proxies are in front of it.
+An environment variable rather than an `app.toml` key because the same
+committed config runs on an unproxied laptop and a proxied host.
 
-*Evidence.* 29 tags matching `r*`, from `r0.10.0` to `r1.6.0`, inherited when
-the package was split out of holdenweb.com. Its own version is `0.2.0`. The
-publish workflow triggers on `.github/workflows/publish.yml:22` —
-`tags: ["r*"]`.
+**Still to do here**, and it needs a podpack release first — the fix is
+committed but unpushed and unpublished:
 
-*Why it matters.* A `git push --tags` in that repository fires the publish
-workflow 29 times. Each run fails its tag-versus-`pyproject` agreement check
-rather than publishing anything wrong, so this is noise and wasted CI rather
-than a data hazard — but it is 29 red crosses and a plausible reason to start
-ignoring the workflow's results.
-
-*Fix.* Either delete the inherited tags from the remote once it is certain
-nothing references them, or narrow the trigger to a pattern the inherited tags
-cannot match. Until then: **push named release tags, never `--tags`.**
-
-### 4. `base_url` is not set
-
-**Repo:** holdenweb-com
-
-*Evidence.* `config/app.toml` has no `base_url` under `[site]`.
-`podpack.urls.base_url()` returns `None`, so `absolute_url()` falls back to the
-request.
-
-*Why it matters.* Absolute URLs — password-reset and confirmation links among
-them — are then built from whatever the request carried. That is correct only
-while the proxy passes host and scheme faithfully; a mis-set
-`X-Forwarded-Proto` produces `http://` links to an `https://` site, and the
-symptom appears in somebody's inbox rather than in a log.
-
-*Fix.* Set `base_url = "https://holdenweb.com"` — the public URL, **no port**.
-podpack refuses to boot on a `base_url` it cannot join to, so a typo fails
-loudly.
+1. Release podpack past 0.9.0b1 and take it here.
+2. Add `PODPACK_PROXY_HOPS=1` to `secrets.env`'s neighbour `.env` on the
+   production host, and `podman compose up -d web`.
+3. Confirm with `/_status`, which now reports `proxy.forwarded_proto` and
+   `proxy.scheme` — no need to mail anybody a reset link to check.
 
 ### 5. `PROJECT-BRIEF.md` names the database-port profile `dbport`
 
