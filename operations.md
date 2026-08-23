@@ -195,66 +195,38 @@ It has **not** yet been run against this site's data.
 
 ## 6. Restoring
 
-Restoring is *rebuild the host, then put the three things back*. In order:
+**The procedure is [`ops/rebuild.md`](ops/rebuild.md)** — numbered, followable,
+and the thing to print. This section is what it deliberately leaves out: why the
+steps are in that order, and what you are choosing between.
 
-⚠️ 1. **Clone, and configure the host.**
+Restoring is *rebuild the host, then put the three things back*: the secrets,
+the app data, the database. Everything else — `config/`, `src/`, the alembic
+history — is in git, and git is its backup.
 
-```bash
-git clone <this repo> && cd holdenweb.com
-python3 scripts/configure-host.py --port <allocated port>
-```
+**The one decision.** `secrets.env` is the site's identity, not merely its
+credentials, so putting it back verbatim is what makes an operation a restore
+rather than a new site on old data. `SECURITY_PASSWORD_SALT` is HMAC'd with
+every password before hashing, so a fresh salt invalidates every stored
+password; `SECRET_KEY` invalidates every session and every outstanding
+reset link. There is no partial answer: either the site keeps its identity and
+everyone can still sign in, or it does not and nobody can.
 
-`configure-host.py` writes `.env` and `secrets.env` at 0600, generating fresh
-secrets, detecting SELinux from `/sys/fs/selinux/enforce`, and checking the
-prerequisites (Compose v2 provider, `podman.socket`, lingering). It **refuses
-to overwrite** either file.
+That choice then decides one other thing, three steps later, which is the only
+place it is easy to get wrong. `db-init` creates `SCHEMA app AUTHORIZATION
+<app role>` and runs **exactly once**, while the postgres data directory is
+still empty. Recreating the database throws that away for good. On a restore
+the dump carries its own ownership and the roles came back with `secrets.env`,
+so it lands correctly; without those roles it cannot, and `pg_restore` needs
+`--no-owner` — which on a restore would hand the schema to the admin and break
+the site with an error that reads like a broken migration.
 
-> **This site does not have that script yet** — its substrate is pinned at
-> podpack 0.7.0 and `configure-host.py` arrived in 0.7.1. See §9.
+**Order, and why.** Secrets before anything starts, because `db-init` reads
+them at first boot. App data before `up.sh`, because the containers drop to
+unprivileged uids and cannot fix ownership afterwards. The database last,
+because the schema has to exist before the dump goes over it.
 
-2. **Replace the generated secrets with the backup's, verbatim.** This is the
-   step that makes it a restore rather than a new site:
-
-```bash
-install -m 600 <backup>/secrets.env ./secrets.env
-```
-
-`.env` and `secrets.env` are independent — `.env` holds no credential — so
-keeping the freshly generated `.env` while restoring `secrets.env` wholesale is
-correct, and leaves the database name, role and password consistent with the
-URI, because all four came from the same file.
-
-3. **Restore the content**, before starting anything:
-
-```bash
-./scripts/prepare-host-dirs.sh
-tar -xzf <backup>/app-data.tar.gz -C ./hostdata
-```
-
-4. **Start the stack.** `db-init` creates the role and database from
-   `secrets.env`; `migrate` builds the schema from the alembic history.
-
-```bash
-./scripts/up.sh
-```
-
-5. **Restore the data over that schema.** The dump carries the same schema, so
-   load it into a database that has one only by dropping and recreating first:
-
-```bash
-podman compose exec -T postgres sh -c \
-  'dropdb -U "$POSTGRES_USER" --force "$POSTGRES_DB" && createdb -U "$POSTGRES_USER" "$POSTGRES_DB"'
-podman compose exec -T postgres sh -c \
-  'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exit-on-error' < <backup>/database.pgc
-podman compose restart web
-```
-
-The dump preserves ownership, and the role it names was recreated by `db-init`
-from the same `secrets.env`, so the objects land owned correctly. If you are
-ever restoring under a *different* role name, add `--no-owner` — and know that
-you have changed the site's database identity.
-
-6. **Verify** with §3.
+**Then verify with §3**, against the host you just built. A suite pointed at the
+old deployment passes and proves nothing.
 
 ## 7. Moving to another server
 
@@ -264,7 +236,8 @@ while the old host serves.
 
 **Phase 1 — build the new host. No downtime, no hurry.**
 
-⚠️ Steps 1–5 of §6 on the new machine, using last night's backup. Then verify
+⚠️ [`ops/rebuild.md`](ops/rebuild.md) Parts 1–4 on the new machine, taking the
+RESTORE branch, using last night's backup. Then verify
 it without exposing it: `WEB_BIND_ADDR=127.0.0.1` keeps it on loopback, and an
 SSH tunnel lets the integration suite reach it.
 
@@ -283,8 +256,8 @@ podman compose stop web                      # old host: stop accepting writes
 ./scripts/backup.sh                          # old host: the final, authoritative backup
 ```
 
-Copy that backup across, run step 5 of §6 on the new host, and start `web`
-there. Then repoint the front end:
+Copy that backup across, run [`ops/rebuild.md`](ops/rebuild.md) 4.2 on the new
+host, and start `web` there. Then repoint the front end:
 
 - **Staying inside Opalstack**: the Nginx Proxy Port application's port
   assignment is the only thing that changes. `WEB_HOST_PORT` in `.env` on the
@@ -393,9 +366,11 @@ Then commit and push, and on the host:
 
 Verify with §3.
 
-> ✅ **This site is behind.** `substrate.json` pins podpack **0.7.0**, and 0.8.0
-> is published. Upgrading brings `scripts/configure-host.py` — which §6 depends
-> on — along with the artefact-sourced substrate and the `$`-in-a-value warning.
+> ✅ **Current as of 2026-08-23**: `substrate.json` records podpack
+> **0.9.0b2**, and `scripts/configure-host.py` is present and was run on the
+> host during rehearsal 1. The note that used to stand here — that the site was
+> pinned at 0.7.0 and lacked that script — was true when written and stayed on
+> the page for four releases after it stopped being.
 
 **What an app upgrade does not do:** deliver changed content. App data seeds
 once; the host copy is the live one from then on. Content changes are made on
@@ -507,7 +482,8 @@ git revert <commit> && git push main main     # then ./scripts/up.sh on the host
 **A schema change does not roll back with the code.** alembic has the
 `downgrade` direction, but the site's revisions are not written or tested for
 it. If a release includes a migration, the rollback plan is *restore last
-night's dump* (§6 step 5) — which is why the backup before a schema change is
+night's dump* ([`ops/rebuild.md`](ops/rebuild.md) 4.2) — which is why the
+backup before a schema change is
 the one that matters most, and why §5 exists.
 
 ## 16. The calendar
