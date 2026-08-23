@@ -572,7 +572,11 @@ would notice by looking at the site.
 PODPACK_PROXY_HOPS=1
 ```
 
-then `podman compose up -d --force-recreate web`.
+then recreate the container so it is read:
+
+```bash
+podman compose up -d --force-recreate web
+```
 
 > This site's `.env.example` is a **seeded** substrate file, so it will never
 > document this variable however far podpack advances — `podpack substrate

@@ -48,9 +48,17 @@ authentication. The site gives no sign of it until a visitor asks for a reset,
 which is precisely the case flask-security answers generically.
 
 *Fix.* [`operations.md` §8](../operations.md): set the real App Password in
-`secrets.env` on the host, `podman compose up -d web`, then
-`podman compose exec web flask --app holdenweb mail check`, which authenticates
-for real and exits non-zero on failure.
+`secrets.env` on the host, then
+
+```bash
+podman compose up -d web
+```
+
+```bash
+podman compose exec web flask --app holdenweb mail check
+```
+
+The second authenticates for real and exits non-zero on failure.
 
 ### 4. Reset links go out as `http://`, and `base_url` is not the fix
 
@@ -96,7 +104,12 @@ committed but unpushed and unpublished:
 
 1. Release podpack past 0.9.0b1 and take it here.
 2. Add `PODPACK_PROXY_HOPS=1` to `secrets.env`'s neighbour `.env` on the
-   production host, and `podman compose up -d web`.
+   production host, then
+
+   ```bash
+   podman compose up -d web
+   ```
+
 3. Confirm with `/_status`, which now reports `proxy.forwarded_proto` and
    `proxy.scheme` — no need to mail anybody a reset link to check.
 

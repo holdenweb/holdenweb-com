@@ -385,7 +385,13 @@ Managed files sync three-way and never clobber a site edit; a genuine conflict
 writes `<file>.new` and exits non-zero. `config/app.toml`, `alembic/versions/`,
 `secrets.env` and the site's own scripts are never written.
 
-Then: commit, `git push main main`, `./scripts/up.sh` on the host, §3.
+Then commit and push, and on the host:
+
+```bash
+./scripts/up.sh
+```
+
+Verify with §3.
 
 > ✅ **This site is behind.** `substrate.json` pins podpack **0.7.0**, and 0.8.0
 > is published. Upgrading brings `scripts/configure-host.py` — which §6 depends
