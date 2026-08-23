@@ -13,8 +13,6 @@ drift apart.
 
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
-| 1 | holdenweb-com | `MAIL_PASSWORD` still at the example value in production | **operational** |
-| 4 | holdenweb-com | Reset links go out as `http://`, carrying the token in clear | **security** |
 | 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` | docs |
 | 6 | holdenweb-com | `README.md` stale on dependency sources | docs |
 | 7 | holdenweb-com | `environment = "local"` in the production config | cosmetic |
@@ -23,95 +21,29 @@ drift apart.
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 13 | holdenweb-com | Only the front page renders the site navigation | correctness |
+| 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
+| 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
+| 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
+| 17 | podpack | A build in one checkout tags another's image | hazard |
+| 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
-renumbered. Struck so far: **2** (substrate now at podpack 0.9.0b1, 2026-08-20),
-**3** (`pp-pdf` now carries one `r*` tag, `r0.2.0`, matching its version, on
-`origin` as well as locally, verified 2026-08-21), and **12** (ADR-0027's stale
-profile name, 2026-08-20).*
+renumbered.*
+
+**Struck:** **1** — `MAIL_PASSWORD` was already correct in production;
+`configure-host.py --check` reported no credential still at its example value
+and `mail check` opened a real SMTP connection (rehearsal 1, 2026-08-23). It had
+been carried as the most urgent open item for four days and was not open.
+**2** — substrate now at podpack 0.9.0b2 (2026-08-20). **3** — `pp-pdf` carries
+one `r*` tag matching its version, on `origin` as well as locally (2026-08-21).
+**4** — reset links now carry `https://`; `/_status` reports
+`proxy.hops_trusted: 1` and `proxy.scheme: "https"`, and a real reset mail was
+read (rehearsal 1, 2026-08-23). **12** — ADR-0027's stale profile name
+(2026-08-20).
 
 ---
 
 ## Tier 1 — found 2026-08-19
-
-### 1. `MAIL_PASSWORD` is still the example value in production
-
-**Repo:** holdenweb-com — **the only item here that means something is broken
-right now.**
-
-*Evidence.* Confirmed by inspection of the host earlier in the same session;
-`config/app.toml:16` declares `MAIL_PASSWORD` under `[site] secrets`, so the
-site boots — the check is that the variable is *set*, not that it is correct.
-
-*Why it matters.* Password reset and every other outbound mail fails
-authentication. The site gives no sign of it until a visitor asks for a reset,
-which is precisely the case flask-security answers generically.
-
-*Fix.* [`operations.md` §8](../operations.md): set the real App Password in
-`secrets.env` on the host, then
-
-```bash
-podman compose up -d web
-```
-
-```bash
-podman compose exec web flask --app holdenweb mail check
-```
-
-The second authenticates for real and exits non-zero on failure.
-
-### 4. Reset links go out as `http://`, and `base_url` is not the fix
-
-**Repo:** podpack — **not this site**, which is the correction. This item said
-until 2026-08-21 that the fix was `base_url = "https://holdenweb.com"`. It was
-wrong twice over, and both errors came from reading a setting's name instead of
-following what actually builds the link.
-
-*Evidence.* Steve asked the live site at `os.holdenweb.com` for a password
-reset and received a mail containing `http://os.holdenweb.com/reset/<token>`.
-Reproduced against this site's own factory: with `X-Forwarded-Proto: https`
-present, `url_for(..., _external=True)` still returns an `http://` URL, because
-there is no `ProxyFix` in the stack and `PREFERRED_URL_SCHEME` does not apply
-inside a request context. gunicorn is started from `Containerfile:98` with no
-`--forwarded-allow-ips`, so it defaults to `127.0.0.1` — which under rootless
-podman is not the address the port forwarder presents, so it drops the header
-before Flask sees it.
-
-*Why `base_url` was never the fix.* It feeds exactly one function,
-`podpack.absolute_url`, and **nothing calls it** — not this site, not podpack.
-Flask-Security builds the reset link at `recoverable.py:32` with
-`url_for_security(..., _external=True)`, which is plain Flask `url_for`.
-
-*Why the domain is not the fix either.* The host in that link was already
-correct: nginx passes `Host` through, and the URL is built inside the request
-that asked for it. Writing `holdenweb.com` into a committed config file would
-have been actively wrong — the site answers on `os.holdenweb.com`, the binding
-belongs to Opalstack's control panel, and it can change without a redeploy.
-
-*Why it matters.* nginx answers `http://` with a 301 to `https` and sends HSTS
-for a year, so the link works and has always worked. HSTS protects only a
-browser that has visited before, so a recipient opening the mail on a fresh
-device sends the reset token in the path of a cleartext request before the
-redirect.
-
-*Fix.* Done in podpack as `PODPACK_PROXY_HOPS` (ADR-0036, commit `fd26a12`):
-`ProxyFix` applied when the host declares how many proxies are in front of it.
-An environment variable rather than an `app.toml` key because the same
-committed config runs on an unproxied laptop and a proxied host.
-
-**Still to do here**, and it needs a podpack release first — the fix is
-committed but unpushed and unpublished:
-
-1. Release podpack past 0.9.0b1 and take it here.
-2. Add `PODPACK_PROXY_HOPS=1` to `secrets.env`'s neighbour `.env` on the
-   production host, then
-
-   ```bash
-   podman compose up -d web
-   ```
-
-3. Confirm with `/_status`, which now reports `proxy.forwarded_proto` and
-   `proxy.scheme` — no need to mail anybody a reset link to check.
 
 ### 5. `PROJECT-BRIEF.md` names the database-port profile `dbport`
 
@@ -226,6 +158,96 @@ change:
   than the rest of the site. Editing one base will not reach them.
 - **`templates/security/base.saved.html` is a leftover** beside it, and wants
   deleting or explaining.
+
+
+---
+
+## Raised 2026-08-23, by the first rebuild rehearsal
+
+*None of these were findable by reading. Each came from running the procedure on
+a real host; the run is kept at [`rehearsal-2026-08-23.md`](rehearsal-2026-08-23.md).*
+
+### 14. `backup.sh`'s working-tree guard fails open
+
+**Repo:** podpack — **the one to fix first.**
+
+*Evidence.* `scripts/backup.sh:54` resolves the destination's parent with
+`$(cd "$(dirname ...)" && pwd)` to check it is outside the site directory. When
+that parent does not exist, `cd` fails, `&& pwd` never runs, the substitution is
+empty, and the comparison is `/` against the site path — no match, no refusal.
+Demonstrated. Rehearsal 1 hit the precondition on its first run:
+`cd: /home/sholden/backups: No such file or directory`, printed and ignored.
+
+*Why it matters.* The guard exists to stop a directory holding a verbatim copy
+of every secret landing inside a git repository — "one careless `git add` away
+from being published", in its own comment. A guard that fails open is worse than
+no guard, because it is trusted.
+
+*Fix.* Create the parent before testing it, or resolve the path without
+requiring it to exist.
+
+### 15. `/_status` reports `stored_files` as top-level files only
+
+**Repo:** podpack
+
+*Evidence.* `src/podpack/core.py:295` — `iterdir()` filtered to `p.is_file()`.
+Production reports `"stored_files": []` for `pages`, which holds 1.0 MB in
+subdirectories.
+
+*Why it matters.* `core.py` says the field sits beside `backs_up` because "an app
+claiming to store nothing while listing files is the contradiction podpack warns
+about at boot". The boot check itself (`registry.py`, `_check_backup_claim`) has
+no such filter and is correct — so `/_status` shows a weaker view than the check
+uses. An app declared stateless on that evidence would drop its content from
+every backup, silently, until somebody tried to restore.
+
+*Fix.* Count directories too, or rename the field for what it actually reports.
+
+### 16. Recreating the database discards `db-init`'s grants permanently
+
+**Repo:** podpack
+
+*Evidence.* `db-init/01-create-app-user.sh` runs only while the postgres data
+directory is still empty. The restore procedure recreates the database, which
+destroys the `SCHEMA app AUTHORIZATION <app role>` and the `CONNECT` grant it
+made, and it will not run again.
+
+*Why it matters.* It works today because the dump restores its own ownership and
+PostgreSQL grants `CONNECT` to `PUBLIC` on a new database. Both are load-bearing
+accidents that nothing records.
+
+*Fix.* Documented for now at [`rebuild.md`](rebuild.md) 4.2. A real fix re-applies
+the grants after a restore, or restores into the existing schema instead.
+
+### 17. A build in one checkout tags another checkout's image
+
+**Repo:** podpack
+
+*Evidence.* Rehearsal 1's `up.sh`, run in a fresh clone with
+`SITE_NAME=holdenweb.com`, tagged both `localhost/holdenweb.com-web:latest` and
+`localhost/holdenweb-com-web:latest`.
+
+*Why it matters.* Two checkouts of one site are separate compose projects — that
+part is sound — but a build in either can replace the image the other runs, so
+`up.sh` can quietly serve the wrong code. Warned about in `rebuild.md` 2.1;
+not understood.
+
+*Fix.* Diagnose first. Worth knowing before it happens during a real move.
+
+### 18. Every podpack site's containers are named after holdenweb
+
+**Repo:** podpack
+
+*Evidence.* `substrate/data/compose.yaml:119-120` hardcodes
+`/var/lib/holdenweb/apps` and `/var/log/holdenweb/apps`, and
+`src/podpack/__init__.py:59-60` defaults to the same. Verified by building a
+site called `mysite` from `creating-a-site.md`: it gets holdenweb's paths.
+
+*Why it matters.* Harmless inside a container, but a new site's `/_status`
+reports another site's name, and a site with no config file is told to look at
+`/etc/holdenweb/app.toml`. The framework carries its first site's identity.
+
+*Fix.* Template the path from the site package, or make it site-neutral.
 
 
 ---
