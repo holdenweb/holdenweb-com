@@ -1,23 +1,57 @@
 # Rebuild: bare host to serving site
 
-**Print this and mark it up.** It is meant to be *followed*. The reasoning lives
-in [`operations.md`](../operations.md) and this links there rather than
-repeating it — one place per fact, or they drift, which is how §6 came to say
-this site lacks a script it has had since 0.7.1.
+**Meant to be followed, not read.** The reasoning lives in
+[`operations.md`](../operations.md) and this links there rather than repeating
+it — one place per fact, or they drift, which is how §6 came to say this site
+lacks a script it has had since 0.7.1.
 
-Every step gives the command and **what you should see**. Where they disagree,
-write what happened and **carry on**. Do not fix as you go: fixing as you go
-means only the steps before the first problem are ever exercised, which is how a
-procedure passes its own rehearsal.
+**Every command below is literal.** Nothing has a placeholder in it: the values
+that change between one rebuild and the next are gathered into the
+configuration block, and every step after that refers to them by name. Fill the
+block in once, paste it into your shell, and the rest is copy-and-run.
+
+Where a command's output disagrees with what is written, record it and **carry
+on**. Do not fix as you go: fixing as you go means only the steps before the
+first problem are ever exercised, which is how a procedure passes its own
+rehearsal.
 
 - **`☐`** — as written; tick and move on.
 - **`✎`** — write what differed.
 
 ---
 
-## Which are you doing?
+## Configuration
 
-**Decide now, and write it here: ______________________**
+Fill in, then paste the whole block into the shell you will work in. Anything
+you cannot know yet is marked with the step that tells you.
+
+```bash
+export SITE_REPO=git@github.com:holdenweb/holdenweb-com.git
+export SITE_DIR=holdenweb.com
+export MODE=RESTORE
+export WEB_PORT=
+export SITE_HOST=
+export BACKUP=
+export ADMIN_EMAIL=
+```
+
+| Variable | Meaning | Known at |
+| --- | --- | --- |
+| `SITE_REPO` | Where the site's git repository lives | now |
+| `SITE_DIR` | Directory to clone into. **Not a second checkout of a site already deployed on this host** — see 2.1 | now |
+| `MODE` | `RESTORE` or `FRESH` — see below | now |
+| `WEB_PORT` | The port the control panel allocated | **1.1** |
+| `SITE_HOST` | The hostname proxied to that port | **1.2** |
+| `BACKUP` | The backup directory to restore from | **3.1** |
+| `ADMIN_EMAIL` | Administrator's address. `FRESH` only | **6.1** |
+
+Check it took, before you rely on it:
+
+```bash
+: "${SITE_REPO:?}" "${SITE_DIR:?}" "${MODE:?}" && echo "configuration loaded"
+```
+
+### `MODE` — the one decision
 
 | | **RESTORE** | **FRESH** |
 | --- | --- | --- |
@@ -33,7 +67,7 @@ not two.
 > branch when it should have. If a step below looks like it assumes the other
 > path, that is a bug in this document; record it.
 
-## Timing
+### Timing
 
 Each part opens with a `date` command. Run it — the timestamps land in your
 terminal transcript, so timing costs no attention, and the total is the single
@@ -53,7 +87,7 @@ date -u +%H:%M:%S
 
 `backup.sh` refuses to write inside the working tree, because the result holds a
 verbatim copy of every secret. That guard resolves the destination's parent, so
-**create it first** — if the parent does not exist the check cannot run:
+create it first — if the parent does not exist the check cannot run:
 
 ```bash
 mkdir -p ~/backups
@@ -98,12 +132,19 @@ example's.
 date -u +%H:%M:%S
 ```
 
-**1.1** In the Opalstack panel, create or confirm the application, and write
-down **the port it allocates**: ______________
+**1.1** In the Opalstack panel, create or confirm the application and note the
+port it allocates. **1.2** Confirm the hostname proxied to that port. These are
+the only two inputs this document cannot derive, so put them in the
+configuration now:
 
-**1.2** Confirm the hostname proxied to that port: ______________
+```bash
+export WEB_PORT=
+export SITE_HOST=
+```
 
-*These are the only two inputs the rest of this document cannot derive.*
+```bash
+: "${WEB_PORT:?}" "${SITE_HOST:?}" && echo "$SITE_HOST -> 127.0.0.1:$WEB_PORT"
+```
 
 `☐` `✎` ______________________________________________
 
@@ -118,11 +159,11 @@ date -u +%H:%M:%S
 **2.1**
 
 ```bash
-git clone git@github.com:holdenweb/holdenweb-com.git holdenweb.com
+git clone "$SITE_REPO" "$SITE_DIR"
 ```
 
 ```bash
-cd holdenweb.com
+cd "$SITE_DIR"
 ```
 
 *Expect:* `config/`, `src/` and `alembic/` present — those are in git, and git
@@ -137,7 +178,7 @@ is their backup. No `.env`, no `secrets.env`, no `hostdata/`.
 **2.2**
 
 ```bash
-python3 scripts/configure-host.py --port <the port from 1.1>
+python3 scripts/configure-host.py --port "$WEB_PORT"
 ```
 
 *Expect:* `wrote .env and secrets.env (0600)`, then the port, the database and
@@ -160,33 +201,37 @@ switched to enforcing, this decision changes and the mounts break.
 date -u +%H:%M:%S
 ```
 
-**3.1 — Get the backup onto this host**, and name it once:
+**3.1 — Name the backup**, once, and let every later step refer to it:
 
 ```bash
-BACKUP=~/backups/holdenweb-com/<the timestamp>
+export BACKUP=
 ```
 
-> Set the variable rather than substituting a path by hand. Written literally,
-> `< <backup>/database.pgc` is a bash syntax error — `< <` is process
-> substitution.
+```bash
+ls -l "${BACKUP:?}/database.pgc" "$BACKUP/app-data.tar.gz" "$BACKUP/secrets.env"
+```
+
+*Expect:* three files. This is also why the variable exists — written literally,
+`< <backup>/database.pgc` is a bash syntax error, because `< <` is process
+substitution.
 
 `☐` `✎` ______________________________________________
 
 ### 3.2 — **BRANCHES**
 
-**RESTORE — put the backup's secrets back.** This is what makes it a restore
-rather than a new site:
+**`MODE=RESTORE` — put the backup's secrets back.** This is what makes it a
+restore rather than a new site:
 
 ```bash
 install -m 600 "$BACKUP/secrets.env" ./secrets.env
 ```
 
-**FRESH — skip it.** Keep the `secrets.env` that 2.2 generated.
+**`MODE=FRESH` — skip it.** Keep the `secrets.env` that 2.2 generated.
 
 > **What the choice decides.** `SECURITY_PASSWORD_SALT` is HMAC'd with every
 > password before it is hashed, so a fresh salt invalidates every stored
 > password; `SECRET_KEY` invalidates sessions and outstanding reset links. On
-> the RESTORE path everyone can still sign in. On FRESH nobody can, and that is
+> `RESTORE` everyone can still sign in. On `FRESH` nobody can, and that is
 > correct rather than broken.
 
 `☐` `✎` ______________________________________________
@@ -201,13 +246,16 @@ install -m 600 "$BACKUP/secrets.env" ./secrets.env
 tar -xzf "$BACKUP/app-data.tar.gz" -C ./hostdata
 ```
 
-*Expect:* `hostdata/apps/pages/` holding roughly 1.0 MB — the site's content, in
-subdirectories. `qrcode/` and `pp_pdf/` are empty, correctly: both are
-stateless.
+```bash
+du -sh hostdata/apps/*
+```
+
+*Expect:* `pages` holding roughly 1.0 MB — the site's content, in
+subdirectories. `qrcode` and `pp_pdf` empty, correctly: both are stateless.
 
 > `/_status` will report `"stored_files": []` for `pages` regardless, because
 > that field lists top-level files only and cannot see a directory. Check the
-> disk, not `/_status`, when you want to know whether content came back.
+> disk, as above, when you want to know whether content came back.
 
 `☐` `✎` ______________________________________________
 
@@ -246,21 +294,21 @@ podman compose exec -T postgres sh -c 'dropdb -U "$POSTGRES_USER" --force "$POST
 > `CONNECT` to `PUBLIC` on a new database. Both are load-bearing and neither is
 > obvious.
 
-**RESTORE — no `--no-owner`.** The roles came back with `secrets.env`, so the
-dump's ownership is correct:
+**`MODE=RESTORE` — no `--no-owner`.** The roles came back with `secrets.env`, so
+the dump's ownership is correct:
 
 ```bash
 podman compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exit-on-error' < "$BACKUP/database.pgc"
 ```
 
-**FRESH — `--no-owner`.** The dump names a role this host does not have:
+**`MODE=FRESH` — `--no-owner`.** The dump names a role this host does not have:
 
 ```bash
 podman compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < "$BACKUP/database.pgc"
 ```
 
 > **Getting this backwards breaks the site three steps later.** `--no-owner` on
-> the RESTORE path makes the *admin* own schema `app`, while the application
+> the `RESTORE` path makes the *admin* own schema `app`, while the application
 > connects as the app role with `search_path = app`. It surfaces as `migrate`
 > failing with what reads like a broken migration. Observed, rehearsal 1.
 
@@ -299,6 +347,14 @@ echo 'PODPACK_PROXY_HOPS=1' >> .env
 podman compose up -d --force-recreate web
 ```
 
+```bash
+podman compose exec web printenv PODPACK_PROXY_HOPS
+```
+
+*Expect:* `1`. Empty means the line went into a different `.env`, or carries an
+`export ` prefix — compose's `env_file` is not a shell and would read the name
+as `export PODPACK_PROXY_HOPS`.
+
 > **This site can never be told this by podpack.** The variable's entire
 > documentation lives in `env.example`, and this site's copy is a *seeded*
 > substrate file — `podpack substrate upgrade` reports every file `ok` and
@@ -312,8 +368,8 @@ boxes sit behind it.
 
 `☐` `✎` ______________________________________________
 
-**5.2 — The mail password.** On RESTORE it came back with `secrets.env`; on
-FRESH it is still the example value and 2.2 said so. Either way, prove it:
+**5.2 — The mail password.** On `RESTORE` it came back with `secrets.env`; on
+`FRESH` it is still the example value and 2.2 said so. Either way, prove it:
 
 ```bash
 podman compose exec web flask --app holdenweb mail check
@@ -334,13 +390,17 @@ date -u +%H:%M:%S
 
 ### 6.1 — **BRANCHES**
 
-**RESTORE — nothing to do.** Your accounts came back with `secrets.env`; sign in
-as yourself.
+**`MODE=RESTORE` — nothing to do.** Your accounts came back with `secrets.env`;
+sign in as yourself.
 
-**FRESH — make an administrator**, or `/_status` answers nobody:
+**`MODE=FRESH` — make an administrator**, or `/_status` answers nobody:
 
 ```bash
-podman compose exec web flask --app holdenweb users create <your real address> --active
+export ADMIN_EMAIL=
+```
+
+```bash
+podman compose exec web flask --app holdenweb users create "${ADMIN_EMAIL:?}" --active
 ```
 
 ```bash
@@ -348,7 +408,7 @@ podman compose exec web flask --app holdenweb roles create admin
 ```
 
 ```bash
-podman compose exec web flask --app holdenweb roles add <your real address> admin
+podman compose exec web flask --app holdenweb roles add "$ADMIN_EMAIL" admin
 ```
 
 > The first **stops and asks for a password**. The address must be able to
@@ -357,10 +417,17 @@ podman compose exec web flask --app holdenweb roles add <your real address> admi
 
 `☐` `✎` ______________________________________________
 
-**6.2 — `/_status`**, signed in as an administrator.
+**6.2 — `/_status`**, signed in as an administrator. Unauthenticated it answers
+404, correctly, so this is a browser step — but the health endpoint is not, and
+answers now:
 
-*Expect:* `proxy.hops_trusted: 1` and `proxy.scheme: "https"`, `build_commit`
-matching what you deployed, and the database and role you configured.
+```bash
+curl -s "http://127.0.0.1:$WEB_PORT/healthz"
+```
+
+*Expect:* `{"database":"ok","status":"ok"}` here, and in the browser
+`proxy.hops_trusted: 1`, `proxy.scheme: "https"`, `build_commit` matching what
+you deployed, and the database and role you configured.
 
 `☐` `✎` ______________________________________________
 
@@ -369,7 +436,7 @@ matching what you deployed, and the database and role you configured.
 answered 200 for weeks while contributing no navigation at all.
 
 ```bash
-uv run pytest tests/integration --base-url https://<the hostname from 1.2>
+uv run pytest tests/integration --base-url "https://$SITE_HOST"
 ```
 
 *Expect:* 15 passed, and a header naming what it tested. **Run it against the
@@ -426,4 +493,7 @@ long the site is down for.
   already knows. That is upstream of this whole document.
 
 *Rehearsal 1's marked-up run is kept at
-[`rehearsal-2026-08-23.md`](rehearsal-2026-08-23.md).*
+[`rehearsal-2026-08-23.md`](rehearsal-2026-08-23.md). A browser version of this
+page, with a copy button on every command, comes from
+`python3 ops/render-rebuild.py > scratch/rebuild.html` — generated, so it cannot
+drift from this file.*
