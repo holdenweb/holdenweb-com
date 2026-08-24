@@ -174,24 +174,26 @@ podman compose down
 `hostdata`, and that is the distinction worth keeping straight: `hostdata` is
 the database and the site's content.
 
-```bash
-podman unshare rm -rf hostdata hostlogs
-```
-
-> **`rm -rf hostdata` will fail, and the reason is not a permissions mistake.**
-> `prepare-host-dirs.sh` ran `podman unshare chown` to hand those directories to
-> the containers' unprivileged uids — 10001 for the app, 999 for postgres. Under
-> rootless podman those live inside your user namespace and surface on the host
-> as subuids from your `/etc/subuid` range, so `ls -l` shows an owner you do not
-> recognise and you cannot delete them. `podman unshare` re-enters that
-> namespace, where they are yours again. `podman unshare ls -la hostdata/apps`
-> to look first.
-
-Then the clone itself, if you are rebuilding into the same path:
+Then remove the checkout entirely — data, logs and clone together — **from its
+parent directory**, which is also where Part 2 wants you:
 
 ```bash
-cd .. && rm -rf "$SITE_DIR"
+cd .. && podman unshare rm -rf "$SITE_DIR"
 ```
+
+> **`rm -rf` without `podman unshare` will fail, and not because of a
+> permissions mistake.** `prepare-host-dirs.sh` ran `podman unshare chown` to
+> hand `hostdata` and `hostlogs` to the containers' unprivileged uids — 10001
+> for the app, 999 for postgres. Under rootless podman those live inside your
+> user namespace and surface on the host as subuids from your `/etc/subuid`
+> range, so `ls -l` shows an owner you do not recognise and you cannot delete
+> them. `podman unshare` re-enters that namespace, where they are yours again.
+> `podman unshare ls -la "$SITE_DIR/hostdata/apps"` to look first.
+>
+> **And mind where you are standing.** `rm -rf` on a path that does not exist
+> succeeds silently, so running this from the wrong directory removes nothing
+> and says nothing — after which the failing `rm` looks like the `unshare` did
+> not work. Observed in rehearsal 3.
 
 `☐` `✎` ______________________________________________
 
