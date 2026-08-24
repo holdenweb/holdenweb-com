@@ -530,9 +530,10 @@ Recorded rather than hidden. None is urgent; all are real.
 - **No monitoring**, until §18 is actually set up. The procedure exists now;
   nothing is running it yet, and an unproved monitor is worth what an untested
   backup is worth.
-- **Password-reset links go out as `http://`**, and will until the site takes a
-  podpack carrying `PODPACK_PROXY_HOPS` (ADR-0036) and `.env` here sets it to
-  `1`. Not `base_url`, which was recorded as the fix for two days and feeds
+- ~~**Password-reset links go out as `http://`.**~~ **Closed 2026-08-24**:
+  `.env` sets `PODPACK_PROXY_HOPS=1`, the container reads it, and `/_status`
+  reports `scheme: https`. Kept here because the reasoning still applies to any
+  rebuild that forgets the line — Not `base_url`, which was recorded as the fix for two days and feeds
   nothing that builds these links. The host in the link is already right and
   must stay dynamic: Opalstack owns the binding. `ops/records/backlog.md` item 4 has
   the whole correction.
@@ -540,13 +541,17 @@ Recorded rather than hidden. None is urgent; all are real.
   reads the value but does nothing with it, so nothing is broken; it will
   mislead a reader.
 - **Migrations have no tested downgrade** (§15).
-- **`restore.sh` has never been run against this site's data.** It is
-  proved on `podpack-demo` (§5), and the ordering, the row-count
-  comparison and its failure path are all exercised there — but this
-  site has 1.0 MB of content that no restore has yet put back.
+- ~~**`restore.sh` has never been run against this site's data.**~~ **Closed
+  2026-08-24.** It has now, on the Opalstack host, from
+  `20260823T170934Z`: `app.alembic_version` 1, `app.role` 1, `app.roles_users`
+  1, `app.user` 2 — every count matching what the backup recorded, and the app
+  data unpacked without error. It took three attempts to get there, and the two
+  that failed were worth more than the one that worked: the first found that
+  `restore.sh` could not run on Linux at all, and the second that a document
+  describing it can be wrong in ways only a real host reveals.
 - **`README.md` is stale** on dependency sources: it warns that four path
   sources need repointing at git remotes, which was done some time ago.
-- **The substrate is a version behind** (§10).
+- ~~**The substrate is a version behind**~~ — now `0.9.0b3` (§10).
 
 ---
 

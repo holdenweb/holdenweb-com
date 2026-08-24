@@ -36,6 +36,7 @@ drift apart.
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
 | 24 | holdenweb-com | *Possible:* admin role did not survive the restore | unconfirmed |
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child | correctness |
+| 26 | podpack | Every `up` builds the same image twice | efficiency |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -431,6 +432,28 @@ at afterwards, which is more than the navigation asked for.
 
 *Also.* `templates/security/base.saved.html` sits beside it, unreferenced. It
 wants deleting or explaining.
+
+
+### 26. Every `up` builds the same image twice
+
+**Repo:** podpack — observed 2026-08-24 in a full rebuild transcript.
+
+*Evidence.* `compose.yaml` gives `web` and `migrate` the same
+`image: localhost/${SITE_NAME}-web:latest` and **both declare `build:`**. So one
+`compose up --build` builds it twice. A rebuild does it four times in all, since
+`restore.sh` runs its own `up -d --build` before `up.sh` runs another.
+
+*Why it matters.* Little, on a warm cache — four cached builds cost about twelve
+seconds. It matters for what it does to the output: roughly four hundred lines
+of `Using cache` between the restore's verification block and the site coming up,
+which is where a reader is looking for whether anything went wrong. On a cold
+cache, or a host that has just been rebuilt from nothing, it is a genuine
+doubling.
+
+*Fix.* `migrate` names the image it needs and does not need to build it —
+`depends_on` already orders it after the build that `web` triggers. Removing its
+`build:` block should be enough, and wants checking on a host with no image
+present at all, since that is the case the duplication was presumably guarding.
 
 
 ---

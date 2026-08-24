@@ -38,6 +38,12 @@ PROXY_HOPS="${PROXY_HOPS:-1}"
 check_only=no
 [[ "${1:-}" == "--check" ]] && check_only=yes
 
+# How long a rebuild takes is the one figure a 3am document most needs and the
+# one nothing has ever recorded: the checklist stamps each part with `date` and
+# this script, which replaced it, quietly dropped that. Three rehearsals have
+# now produced no number at all.
+started="$(date -u +%s)"
+
 say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 die()  { printf '\nFAILED: %s\n' "$*" >&2; exit 1; }
@@ -83,9 +89,12 @@ fi
 # afterwards acts on *that* project -- which is another deployment's if one is
 # running. Backlog #19; until it is fixed, the guard is to have nothing up.
 running="$(podman ps --format '{{.Names}}' 2>/dev/null || true)"
+# Naming the stop command matters: from this directory there is no compose file,
+# so `podman compose down` cannot work and the reader is left hunting. Observed.
 [[ -z "$running" ]] || die "containers are running, and a restore adopts the backup's compose project:
 $(printf '  %s\n' $running)
-  Stop them first, or this may act on the wrong deployment."
+  Stop them by name -- from here there is no compose file, so compose cannot:
+      podman stop $(echo $running | tr '\n' ' ')"
 
 note "target:  $(pwd)/$SITE_DIR"
 note "public:  https://$SITE_HOST -> 127.0.0.1:$WEB_PORT"
@@ -131,10 +140,15 @@ log="$(mktemp)"
 rc=0
 ./scripts/restore.sh "$BACKUP" 2>&1 | tee "$log" || rc="${PIPESTATUS[0]}"
 
-# It ends by curling ${WEB_HOST_PORT} from the .env it just restored -- the old
-# host's port -- so on a host with a different allocation it reports failure
-# with the data correctly in place. That one failure is expected and is
-# repaired below; anything else is not, and the distinction is worth drawing
+# It ends by curling ${WEB_HOST_PORT} from the .env it just restored, which is
+# the *old* host's port. Usually that simply works -- the site really is on that
+# port at that moment, because the restored .env is what brought it up -- and
+# the reconciliation below then moves it. Measured on 2026-08-24: `site healthz:
+# 200 (http://127.0.0.1:3427/)`, the old port, passing.
+#
+# It fails only where that port is unavailable or something else holds it, and
+# then the data is correctly in place and only the check is wrong. That single
+# case is forgiven; anything else is not, and the distinction is worth drawing
 # rather than swallowing. Backlog #19.
 if [[ "$rc" -ne 0 ]]; then
     if grep -q 'the site is not healthy' "$log" && ! grep -q 'MISMATCH' "$log"; then
@@ -188,7 +202,8 @@ public="$(curl -s -o /dev/null -w '%{http_code}' "https://${SITE_HOST}/healthz" 
 note "https://${SITE_HOST}/healthz -> ${public}"
 [[ "$public" == "200" ]] || die "the public address does not reach this site. The proxy mapping is wrong, or DNS has not caught up."
 
-say "rebuilt, and answering on https://${SITE_HOST}"
+elapsed=$(( $(date -u +%s) - started ))
+say "rebuilt in $((elapsed / 60))m $((elapsed % 60))s, and answering on https://${SITE_HOST}"
 
 # Which compose project this checkout now drives, asked of podman rather than
 # derived. restore.sh brings SITE_NAME back from the backup, so a directory
