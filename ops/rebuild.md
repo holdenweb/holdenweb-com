@@ -109,6 +109,22 @@ parent, so create it first — if the parent does not exist the check cannot run
 mkdir -p ~/backups
 ```
 
+**Look at what is already there before adding to it**, and note which one you
+intend to restore from — that is `BACKUP`:
+
+```bash
+ls -lt ~/backups/holdenweb-com/
+```
+
+> **A rehearsal that failed after Part 3 leaves a backup here that verifies
+> clean, and it sorts newest.** The site it archived was *seeded* from the
+> packages rather than restored, so it is within a few bytes and one row of the
+> real thing and nothing available tells them apart —
+> `verify-backup.sh` says `VERIFIED` for both. Since that command with no
+> argument takes `ls | sort | tail -1`, the wrong one is what "the latest
+> backup" means until somebody removes it. Delete any such directory now.
+> Backlog #22.
+
 ```bash
 ./scripts/backup.sh
 ```
@@ -472,6 +488,12 @@ take, and `/_status` says which half — header not sent, or hops not trusted.
 ```bash
 ./scripts/backup.sh && ./scripts/verify-backup.sh
 ```
+
+> **Only meaningful if no STOP step failed.** If one did, the site this just
+> archived is not the restored site, and the archive is now the newest in a
+> directory people reach into for "the latest". `verify-backup.sh` will call it
+> VERIFIED regardless, because it is a valid backup — of the wrong thing.
+> Delete it before you walk away.
 
 `☐` `✎` ______________________________________________
 
