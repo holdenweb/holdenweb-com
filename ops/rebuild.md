@@ -141,6 +141,38 @@ already; on a bare clone it says `not configured yet` and stops.
 
 `☐` `✎` ______________________________________________
 
+**0.3 — Wipe it**, which is the step that makes this a rehearsal rather than a
+reading. Only after 0.1 has produced a backup you have verified.
+
+```bash
+podman compose down
+```
+
+`down` removes the containers and the network. It does **not** remove
+`hostdata`, and that is the distinction worth keeping straight: `hostdata` is
+the database and the site's content.
+
+```bash
+podman unshare rm -rf hostdata hostlogs
+```
+
+> **`rm -rf hostdata` will fail, and the reason is not a permissions mistake.**
+> `prepare-host-dirs.sh` ran `podman unshare chown` to hand those directories to
+> the containers' unprivileged uids — 10001 for the app, 999 for postgres. Under
+> rootless podman those live inside your user namespace and surface on the host
+> as subuids from your `/etc/subuid` range, so `ls -l` shows an owner you do not
+> recognise and you cannot delete them. `podman unshare` re-enters that
+> namespace, where they are yours again. `podman unshare ls -la hostdata/apps`
+> to look first.
+
+Then the clone itself, if you are rebuilding into the same path:
+
+```bash
+cd .. && rm -rf "$SITE_DIR"
+```
+
+`☐` `✎` ______________________________________________
+
 ---
 
 ## Part 1 — the control panel  *(human; nothing in git knows any of it)*
