@@ -27,7 +27,7 @@ drift apart.
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
-| 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
+| 16 | podpack | Recreating the database leaves a site that can never migrate | **operational** |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` | **operational** |
 | 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
@@ -188,21 +188,49 @@ every backup, silently, until somebody tried to restore.
 
 *Fix.* Count directories too, or rename the field for what it actually reports.
 
-### 16. Recreating the database discards `db-init`'s grants permanently
+### 16. Recreating the database leaves a site that can never migrate again
 
-**Repo:** podpack
+**Repo:** podpack — **observed on a real deployment 2026-08-24**, having been
+filed on 2026-08-23 as a milder thing than it is.
 
 *Evidence.* `db-init/01-create-app-user.sh` runs only while the postgres data
-directory is still empty. The restore procedure recreates the database, which
-destroys the `SCHEMA app AUTHORIZATION <app role>` and the `CONNECT` grant it
-made, and it will not run again.
+directory is still empty. It is what creates `SCHEMA app AUTHORIZATION <app
+role>`, and it sets `search_path = app` **on the role**, which is cluster-level
+and outlives any database.
 
-*Why it matters.* It works today because the dump restores its own ownership and
-PostgreSQL grants `CONNECT` to `PUBLIC` on a new database. Both are load-bearing
-accidents that nothing records.
+So `dropdb` takes the schema with the database, `createdb` returns one holding
+only `public`, and `db-init` never runs again. The role is left pointing at a
+schema that no longer exists. Every `CREATE TABLE` then fails, including
+alembic's very first:
 
-*Fix.* Documented for now at [`rebuild.md`](../rebuild.md) 4.2. A real fix re-applies
-the grants after a restore, or restores into the existing schema instead.
+```
+psycopg2.errors.InvalidSchemaName: no schema has been selected to create in
+LINE 2: CREATE TABLE alembic_version (
+```
+
+Confirmed by query on the affected host: `pg_namespace` had **no `app` row at
+all**.
+
+*Why it matters, and it is worse than "grants are discarded".* There is no path
+back. `up.sh` cannot fix it, because the only thing that creates the schema is
+gated on an empty data directory. The site is permanently unable to migrate, and
+the message names neither `app`, nor `db-init`, nor the fact that a bootstrap is
+missing — PostgreSQL is reporting that it walked `search_path` and found nowhere
+it was allowed to create, which is true and unhelpful. Two evenings went to this
+in two different disguises: once as an ownership fault after
+`pg_restore --no-owner`, once as an absent schema.
+
+*Fix.* The narrow one: have `migrate` check, before it does anything, that the
+schema on `search_path` exists, and say what is wrong if it does not — one query
+against a message nobody can act on. The real one: make the bootstrap
+re-runnable, so that recreating a database is recoverable rather than terminal.
+`db-init` is already written to be idempotent in shape; what stops it is the
+image entrypoint's condition, which podpack does not control. A `podpack db
+bootstrap` verb would.
+
+*Meanwhile* `restore.sh` avoids the trap entirely by bringing each store up
+alone so its own bootstrap runs first, which is why the documented restore path
+does not hit this and a hand-run one does.
 
 ### 18. Every podpack site's containers are named after holdenweb
 
