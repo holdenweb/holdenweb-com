@@ -181,7 +181,33 @@ note "https://${SITE_HOST}/healthz -> ${public}"
 [[ "$public" == "200" ]] || die "the public address does not reach this site. The proxy mapping is wrong, or DNS has not caught up."
 
 say "rebuilt, and answering on https://${SITE_HOST}"
+
+# Which compose project this checkout now drives, asked of podman rather than
+# derived. restore.sh brings SITE_NAME back from the backup, so a directory
+# called `-staging` routinely owns a project named for production -- and
+# compose normalises the name besides, stripping dots and keeping dashes. Two
+# transformations between the directory you are standing in and the containers
+# you get, neither of them visible. Rehearsal 4 lost time to exactly this:
+# `podman compose exec web` answered "service web is not running" about a
+# container that was, because it was run one directory away.
+project="$(grep -m1 '^SITE_NAME=' .env | cut -d= -f2-)"
+web_container="$(podman ps --format '{{.Names}}' | grep -- '-web-1$' | head -1)"
+# Only if podman has renamed the container in some way this script does not
+# know about; the health check above has already proved one is serving.
+web_container="${web_container:-${project}-web-1}"
+
 cat <<EOF
+
+   This checkout drives compose project '${project}', and podman is calling its
+   web container '${web_container}'. Run compose commands from here:
+
+        cd $(pwd)
+
+   From anywhere else compose reads a different .env, resolves a different
+   project, and reports "service web is not running" about containers that are.
+   To sidestep that entirely, name the container:
+
+        podman exec ${web_container} flask --app holdenweb roles add <email> admin
 
    Three things this script cannot check, and one of them is the point:
 
