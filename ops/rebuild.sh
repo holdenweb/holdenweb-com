@@ -9,12 +9,20 @@
 # against the address the world actually uses.
 #
 # Run it from the directory that will *contain* the checkout, not from inside
-# one:
+# one. The script itself may live in any checkout -- it works on the directory
+# you are standing in, not the one it was read from:
 #
+#     cd ~/apps/os
 #     export WEB_PORT=15055 SITE_HOST=os.holdenweb.com
 #     export BACKUP=~/backups/holdenweb-com/20260823T170934Z
-#     ~/apps/third-alma/holdenweb-staging/ops/rebuild.sh --check   # preflight
-#     ~/apps/third-alma/holdenweb-staging/ops/rebuild.sh
+#     export SITE_DIR=holdenweb-com
+#     /path/to/any/checkout/ops/rebuild.sh --check     # preflight, changes nothing
+#     /path/to/any/checkout/ops/rebuild.sh
+#
+# Name SITE_DIR after the compose project the site will end up driving, which
+# is whatever SITE_NAME the backup carries -- `holdenweb-com` for this site.
+# Directory and project then agree, and `podman compose` from that directory
+# does what it looks like it does. They diverged once and cost an hour.
 #
 # `--check` validates every precondition and changes nothing, which is worth
 # doing first at any hour and essential at three in the morning.
