@@ -34,14 +34,17 @@ drift apart.
 | 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
 | 22 | podpack | A failed restore leaves a plausible backup that verifies clean | **operational** |
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
-| 24 | holdenweb-com | *Possible:* admin role did not survive the restore | unconfirmed |
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child | correctness |
 | 26 | podpack | Every `up` builds the same image twice | efficiency |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
 
-**Struck:** **13** — the navigation is now on every page, by way of a
+**Struck:** **24** — the admin role did survive: signed in on the rebuilt site,
+`/_status` answers 200 with JSON (2026-08-24). The 404 that raised it was the
+other of the two accounts, exactly as the backup's one role and one membership
+suggested. Filed as *possible* and closed as not-a-bug, which is the right way
+round for something seen once. **13** — the navigation is now on every page, by way of a
 `nav.html` partial the front page, `base.html` and `security/base.html` all
 include (2026-08-24). What made it more than a one-line change is filed as 25.
 **1** — `MAIL_PASSWORD` was already correct in production;
@@ -275,8 +278,25 @@ red exit on exactly the occasion it exists for — moving to a new host. Anyone
 following it under pressure has to know the failure is cosmetic, which is a poor
 thing to have to know.
 
-*Fix.* Either keep the per-host values out of what is restored, or take
-`--port`, or re-read `.env` for `WEB_HOST_PORT` before the health check.
+*Fix, and it is wider than the port.* `operations.md` §0 already draws the line
+this violates: `secrets.env` is the site's identity and must come back verbatim;
+`.env` is "the opposite — ports, paths, **the site name**, SELinux flags … meant
+to be edited, and differs legitimately between hosts". `restore.sh` restores
+both as though both were the site's, and its own comment says otherwise.
+
+So: keep an existing `.env` rather than replacing it, and where there is none —
+a fresh clone — write the backup's but name every value in it that belongs to
+the *old* host and wants checking: `WEB_HOST_PORT`, `WEB_BIND_ADDR`,
+`VOLUME_RW`/`VOLUME_RO`, and `SITE_NAME`. That fixes the port, the bind address
+and the SELinux flags in the same motion, all of which
+[`rebuild.sh`](../rebuild.sh) currently repairs by hand afterwards.
+
+A deliberate rename wants to stay deliberate. `BACKUP_ROOT` defaults to
+`~/backups/${SITE_NAME}`, so changing the name silently moves where backups land
+and orphans the history — `verify-backup.sh` with no argument would then find
+nothing. An explicit `--site-name` is the right shape for that, not a value
+inherited from whichever `.env` happened to win.
+
 Documented meanwhile at [`rebuild.md`](../rebuild.md) Part 3 and `operations.md` §6.
 
 
@@ -376,37 +396,6 @@ stay owned by the developer and the untar works. Every test the script ever had
 ran where the bug cannot appear. It failed the first time it was asked to do the
 job it exists for — and `operations.md` §5 had recommended a monthly restore
 into a scratch deployment all along, which on the host would have found it.
-
-
-### 24. *Possible:* the admin role did not survive the restore
-
-**Repo:** holdenweb-com — **unconfirmed, and quite possibly not a bug at all.**
-Filed so it is not forgotten, not because it is believed.
-
-*What was seen.* After the rebuild of 2026-08-24, `/_status` answered 404 to an
-account believed to hold `admin`. `/_status` requires `current_user.has_role
-("admin")`, so a 404 there means the signed-in account is not a member — it does
-not distinguish a lost grant from a grant that was never on that account.
-
-*Why it is probably not a bug.* The backup's `rowcounts.txt` records
-`app|user|2`, `app|role|1`, `app|roles_users|1` — two accounts, one role, one
-membership. So exactly one of the two held `admin` in production, and signing
-in as the other would produce this exactly. The restore may have been perfect.
-
-*What would settle it.*
-
-```sql
-select u.email, u.active, r.name
-  from app."user" u
-  left join app.roles_users ru on ru.user_id = u.id
-  left join app.role r on r.id = ru.role_id;
-```
-
-One row with a role and one without means the restore was faithful and the
-wrong account was used. Two rows without means the grant genuinely did not come
-back, and *that* would be worth chasing — `roles_users` restored but pointing at
-ids that no longer match would imply a partial restore, which nothing else
-checks for.
 
 
 ### 25. `security/base.html` is a fork of `base.html`, not a child
