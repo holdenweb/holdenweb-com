@@ -25,9 +25,11 @@ drift apart.
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
 | 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
-| 19 | podpack | `restore.sh` replaces `.env`, so a restore onto a different port fails its own check | correctness |
+| 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` | **operational** |
 | 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
 | 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
+| 22 | podpack | A failed restore leaves a plausible backup that verifies clean | **operational** |
+| 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -244,8 +246,16 @@ reports another site's name, and a site with no config file is told to look at
 
 ### 19. `restore.sh` replaces `.env`, so a restore onto a different host fails its own check
 
-**Repo:** podpack — raised 2026-08-23 by reading the script rather than running
-it, so unlike 14–18 this one is inference and wants confirming.
+**Repo:** podpack — inferred 2026-08-23 by reading, **confirmed and made worse
+by rehearsal 2 on 2026-08-24.**
+
+*What the rehearsal added.* It is not only the port. `.env` carries `SITE_NAME`,
+which is the compose project name, so a restore into a checkout called
+`holdenweb-staging` produced containers and a network called `holdenweb-com` —
+the production project — and every later command in that directory acted on it.
+Had production been running, `podman compose up -d --force-recreate web` would
+have recreated *it* from staging's directory. `backup.sh` then wrote staging's
+backup into `~/backups/holdenweb-com/` for the same reason.
 
 *Evidence.* `scripts/restore.sh` keeps the existing `.env` as
 `.superseded-<stamp>` and then installs the backup's over it. Its own comment
@@ -316,6 +326,51 @@ acknowledgement.
 
 *Fix.* Ask the container instead — `podman inspect` can read
 `PODPACK_BUILD_COMMIT` from the running image without any session at all.
+
+
+### 22. A failed restore leaves a plausible backup that verifies clean
+
+**Repo:** podpack — observed 2026-08-24, rehearsal 2.
+
+*Evidence.* After the restore aborted (item 23) the site was brought up anyway,
+so podpack seeded `pages` from what the package ships. `backup.sh` then archived
+that, and — because `SITE_NAME` had come from the restored `.env` (item 19) — it
+wrote into **production's** backup directory:
+
+| | good backup | the one the failed rehearsal left |
+| --- | --- | --- |
+| `app-data.tar.gz` | 1036570 bytes | 1036573 bytes |
+| rowcounts | 5 rows across 4 tables | 4 rows across 4 tables |
+| `verify-backup.sh` | VERIFIED | VERIFIED |
+
+*Why it matters.* Nothing available distinguishes them. The size is within three
+bytes because most of `pages` is shipped and seeded; the row counts differ by
+one user. And `verify-backup.sh` with no argument takes `ls | sort | tail -1`,
+so the newest — this one — is what anybody reaching for "the latest backup"
+gets. A restore from it would produce a site that starts, serves, and has
+quietly lost everything a visitor ever wrote.
+
+*Fix.* `manifest.txt` already records `alembic revision` and `installed apps`;
+it could also record whether the data was seeded or restored, or simply the
+per-app row counts against the previous backup. A weaker but immediate measure:
+`verify-backup.sh` could compare against the previous backup in the same
+directory and say when a count has gone down.
+
+### 23. `restore.sh` could not work on Linux
+
+**Repo:** podpack — **fixed 2026-08-24** in `b5f4577`, recorded because the
+shape of it is worth keeping.
+
+*Evidence.* `restore.sh` ran `prepare-host-dirs.sh`, which on Linux hands the
+app data directories to the containers' uids with `podman unshare chown`, then
+untarred into those directories as the invoking user. Every `mkdir` failed with
+`Permission denied`.
+
+*Why it survived.* The chown is gated on `uname -s`, so on macOS the directories
+stay owned by the developer and the untar works. Every test the script ever had
+ran where the bug cannot appear. It failed the first time it was asked to do the
+job it exists for — and `operations.md` §5 had recommended a monthly restore
+into a scratch deployment all along, which on the host would have found it.
 
 
 ---

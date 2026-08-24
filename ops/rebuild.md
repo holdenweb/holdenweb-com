@@ -15,6 +15,12 @@ on**. Do not fix as you go: fixing as you go means only the steps before the
 first problem are ever exercised, which is how a procedure passes its own
 rehearsal.
 
+> **Except where a step says STOP.** Three steps make everything after them
+> meaningless if they fail, and carrying on past one produces a page of
+> failures that all say the same thing. They are marked where they arrive:
+> **0.1** (no backup, nothing to restore), **Part 3** (no site), and **5.3**
+> (a suite pointed at the wrong host tells you nothing about this one).
+
 - **`☐`** — as written; tick and move on.
 - **`✎`** — write what differed.
 
@@ -41,7 +47,7 @@ export ADMIN_EMAIL=
 | `SITE_DIR` | Directory to clone into. **Not a second checkout of a site already deployed on this host** — see 2.1 | now |
 | `MODE` | `RESTORE` or `FRESH` — see below | now |
 | `WEB_PORT` | The port the control panel allocated | **1.1** |
-| `SITE_HOST` | The hostname proxied to that port | **1.2** |
+| `SITE_HOST` | The **public** hostname visitors use — `os.holdenweb.com`, not the machine's own name | **1.2** |
 | `BACKUP` | The backup directory to restore from. `RESTORE` only | **0.1**, or given |
 | `ADMIN_EMAIL` | Administrator's address. `FRESH` only | **5.1** |
 
@@ -182,7 +188,10 @@ date -u +%H:%M:%S
 ```
 
 **1.1** In the Opalstack panel, create or confirm the application and note the
-port it allocates. **1.2** Confirm the hostname proxied to that port. These are
+port it allocates. **1.2** Confirm the hostname proxied to that port. **The public one** — the
+name in the certificate and in a visitor's address bar. The machine's own
+hostname will resolve, answer, and 404 everything, which looks like a broken
+site rather than a wrong variable. These are
 the only two inputs this document cannot derive, so put them in the
 configuration now:
 
@@ -237,7 +246,7 @@ date -u +%H:%M:%S
 This is where the two modes stop resembling each other. Follow one heading and
 skip the other entirely.
 
-### `MODE=RESTORE` — one command
+### `MODE=RESTORE` — one command  ·  **STOP IF THIS FAILS**
 
 Check the backup is the one you mean, and complete — `restore.sh` refuses on a
 missing file, but reading the names first is cheaper than reading its refusal:
@@ -249,6 +258,13 @@ ls -l "${BACKUP:?}"
 ```bash
 ./scripts/restore.sh "$BACKUP"
 ```
+
+> **If it exits non-zero, stop here and read what it said.** It replaces
+> `.env` and `secrets.env` *before* it unpacks anything, so a failure after
+> that point leaves this checkout carrying the backup's identity — including
+> its `SITE_NAME`, which is the compose project every later command will act
+> on. Continuing means operating on the *backup's* deployment from this
+> directory. Recorded as backlog #19.
 
 That is the whole of it, and it is worth knowing what it is doing rather than
 treating it as magic, because it stops twice to ask you things:
@@ -430,7 +446,7 @@ you deployed, and the database and role you configured.
 
 `☐` `✎` ______________________________________________
 
-**5.3 — The integration suite**, which is the real check
+**5.3 — The integration suite** · **STOP IF THIS FAILS WHOLESALE**, which is the real check
 ([`operations.md` §3](../operations.md)). Never the front page: the QR code app
 answered 200 for weeks while contributing no navigation at all.
 
