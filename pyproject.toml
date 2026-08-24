@@ -10,12 +10,16 @@ dependencies = [
  # a blanket --prerelease=allow would quietly pull beta SQLAlchemy and
  # WTForms in underneath a live site. Measured, not feared.
  #
- # The floor is b2 rather than b1 because this site sets PODPACK_PROXY_HOPS in
- # its .env, and b1 does not read it -- so an older podpack here would serve
- # every page perfectly and put http:// links in password-reset mail, which is
- # exactly the failure the setting exists to prevent. A floor is the only place
- # that can say so.
- "podpack>=0.9.0b2",
+ # The floor moves with each behaviour this deployment depends on, because none
+ # of them changes an API and so nothing else can record the dependency:
+ #
+ #   b2  reads PODPACK_PROXY_HOPS. Without it the site serves every page
+ #       perfectly and puts http:// links in password-reset mail.
+ #   b3  restore.sh unpacks inside the user namespace. Below it, a restore on
+ #       this host fails on every file -- after replacing .env and secrets.env,
+ #       so the checkout is left wearing the backup's identity and holding none
+ #       of its data. Measured on Opalstack, 2026-08-24.
+ "podpack>=0.9.0b3",
  "podpack-pages",
  "podpack-qrcode",
  "pp-pdf",
