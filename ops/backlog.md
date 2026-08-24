@@ -24,7 +24,6 @@ drift apart.
 | 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
 | 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
-| 17 | podpack | A build in one checkout tags another's image | hazard |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore onto a different port fails its own check | correctness |
 | 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
@@ -39,7 +38,12 @@ and `mail check` opened a real SMTP connection (rehearsal 1, 2026-08-23). It had
 been carried as the most urgent open item for four days and was not open.
 **2** — substrate now at podpack 0.9.0b2 (2026-08-20). **3** — `pp-pdf` carries
 one `r*` tag matching its version, on `origin` as well as locally (2026-08-21).
-**4** — reset links now carry `https://`; `/_status` reports
+**17** — a build in one checkout does *not* tag another's image. Measured
+2026-08-23: identical content built under two site names yields one image ID
+with two tags, which is all rehearsal 1's log showed, and podman lists every tag
+on an ID. Build differing content and the tags separate onto different IDs
+correctly. The item was inferred from log output rather than measured, and was
+wrong. **4** — reset links now carry `https://`; `/_status` reports
 `proxy.hops_trusted: 1` and `proxy.scheme: "https"`, and a real reset mail was
 read (rehearsal 1, 2026-08-23). **12** — ADR-0027's stale profile name
 (2026-08-20).
@@ -221,21 +225,6 @@ accidents that nothing records.
 
 *Fix.* Documented for now at [`rebuild.md`](rebuild.md) 4.2. A real fix re-applies
 the grants after a restore, or restores into the existing schema instead.
-
-### 17. A build in one checkout tags another checkout's image
-
-**Repo:** podpack
-
-*Evidence.* Rehearsal 1's `up.sh`, run in a fresh clone with
-`SITE_NAME=holdenweb.com`, tagged both `localhost/holdenweb.com-web:latest` and
-`localhost/holdenweb-com-web:latest`.
-
-*Why it matters.* Two checkouts of one site are separate compose projects — that
-part is sound — but a build in either can replace the image the other runs, so
-`up.sh` can quietly serve the wrong code. Warned about in `rebuild.md` 2.1;
-not understood.
-
-*Fix.* Diagnose first. Worth knowing before it happens during a real move.
 
 ### 18. Every podpack site's containers are named after holdenweb
 

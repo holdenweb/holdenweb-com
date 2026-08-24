@@ -184,9 +184,13 @@ cd "$SITE_DIR"
 *Expect:* `config/`, `src/` and `alembic/` present — those are in git, and git
 is their backup. No `.env`, no `secrets.env`, no `hostdata/`.
 
-> **Do not run compose from any other checkout of this site while you work.**
-> Two directories are separate compose projects, but a build in one tags the
-> other's image name, so the second `up.sh` can quietly serve the first's code.
+> **Know which checkout you are in.** Two checkouts of one site coexist
+> perfectly well provided two things differ: `SITE_NAME` *after compose
+> normalises it* — dots are stripped, dashes kept, so `holdenweb.com` becomes
+> `holdenwebcom` while `holdenweb-com` stays as it is — and `WEB_HOST_PORT`,
+> which is the only genuine bind clash. Images do not collide: measured. What
+> does go wrong is a person forgetting which directory they are in, which is
+> most of what went wrong in rehearsal 1.
 
 `☐` `✎` ______________________________________________
 
