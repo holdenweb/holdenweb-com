@@ -9,13 +9,7 @@
         <header class="pageheader shadow">
             <h1><a href="/">Holden Web</a></h1>
             <div class="tagline">What you'll need to know tomorrow</div>
-            <nav class="pagenav">
-                <ul class="inline_list">
-        {% for section in sections %}
-                    <li><a href="{{ url_for(section.endpoint) }}">{{ section.label }}</a></li>
-        {% endfor %}
-                </ul>
-            </nav>
+            {% include "nav.html" %}
         </header>
         <div class="content">
             <section class="secondary col">

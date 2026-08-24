@@ -20,7 +20,6 @@ drift apart.
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
-| 13 | holdenweb-com | Only the front page renders the site navigation | correctness |
 | 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
 | 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
@@ -30,11 +29,16 @@ drift apart.
 | 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
 | 22 | podpack | A failed restore leaves a plausible backup that verifies clean | **operational** |
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
+| 24 | holdenweb-com | *Possible:* admin role did not survive the restore | unconfirmed |
+| 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
 
-**Struck:** **1** — `MAIL_PASSWORD` was already correct in production;
+**Struck:** **13** — the navigation is now on every page, by way of a
+`nav.html` partial the front page, `base.html` and `security/base.html` all
+include (2026-08-24). What made it more than a one-line change is filed as 25.
+**1** — `MAIL_PASSWORD` was already correct in production;
 `configure-host.py --check` reported no credential still at its example value
 and `mail check` opened a real SMTP connection (rehearsal 1, 2026-08-23). It had
 been carried as the most urgent open item for four days and was not open.
@@ -134,39 +138,6 @@ before a schema change is the one that matters most.
 ---
 
 ## Raised since — 2026-08-21
-
-### 13. Only the front page renders the site navigation
-
-**Repo:** holdenweb-com
-
-*Evidence.* `sections` — the navigation podpack assembles from the installed
-apps and puts in front of every template — is referenced in exactly one of this
-site's templates, `src/holdenweb/templates/index.html:14`. In both
-`templates/base.html:60` and `templates/security/base.html:59` the
-`{% block navbar %}` is present and **empty**. podpack's own fallback
-`base.html:32` does render it.
-
-*Why it matters.* A site that writes no `base.html` gets the navigation; this
-site wrote one and silently lost it. So every page other than `/` — the two
-`pp_pdf` forms, everything under `/pages`, all the flask-security pages, and
-404 — offers no route to the other installed apps. The logo links to `/` and
-the bluebar handles login, so nothing is a dead end, but installing an app
-currently adds it to one page's menu rather than to the site's.
-
-*Fix.* Render `sections` in the `navbar` block, with podpack's
-`src/podpack/templates/base.html:32` as the reference for markup and endpoint
-handling.
-
-Two things fall out of the same edit, and are the reason it is not a one-line
-change:
-
-- **`security/base.html` is a drifted copy-paste fork of `base.html`,** not a
-  child of it. It carries Bootstrap 4.1.3 from stackpath where the site
-  otherwise loads 4.6.1 from cdnjs, and no popper — so the login, register and
-  password-reset pages already render against a different framework version
-  than the rest of the site. Editing one base will not reach them.
-- **`templates/security/base.saved.html` is a leftover** beside it, and wants
-  deleting or explaining.
 
 
 ---
@@ -371,6 +342,62 @@ stay owned by the developer and the untar works. Every test the script ever had
 ran where the bug cannot appear. It failed the first time it was asked to do the
 job it exists for — and `operations.md` §5 had recommended a monthly restore
 into a scratch deployment all along, which on the host would have found it.
+
+
+### 24. *Possible:* the admin role did not survive the restore
+
+**Repo:** holdenweb-com — **unconfirmed, and quite possibly not a bug at all.**
+Filed so it is not forgotten, not because it is believed.
+
+*What was seen.* After the rebuild of 2026-08-24, `/_status` answered 404 to an
+account believed to hold `admin`. `/_status` requires `current_user.has_role
+("admin")`, so a 404 there means the signed-in account is not a member — it does
+not distinguish a lost grant from a grant that was never on that account.
+
+*Why it is probably not a bug.* The backup's `rowcounts.txt` records
+`app|user|2`, `app|role|1`, `app|roles_users|1` — two accounts, one role, one
+membership. So exactly one of the two held `admin` in production, and signing
+in as the other would produce this exactly. The restore may have been perfect.
+
+*What would settle it.*
+
+```sql
+select u.email, u.active, r.name
+  from app."user" u
+  left join app.roles_users ru on ru.user_id = u.id
+  left join app.role r on r.id = ru.role_id;
+```
+
+One row with a role and one without means the restore was faithful and the
+wrong account was used. Two rows without means the grant genuinely did not come
+back, and *that* would be worth chasing — `roles_users` restored but pointing at
+ids that no longer match would imply a partial restore, which nothing else
+checks for.
+
+
+### 25. `security/base.html` is a fork of `base.html`, not a child
+
+**Repo:** holdenweb-com — separated from 13, which is fixed.
+
+*Evidence.* `templates/security/base.html` repeats `base.html` almost entirely
+rather than extending it. It has already drifted: it loads Bootstrap **4.1.3**
+from stackpath where the rest of the site loads **4.6.1** from cdnjs, and it
+omits popper. So the login, register and password-reset pages render against a
+different framework version from every other page on the site.
+
+*Why it matters.* Anything done to one base misses the other unless somebody
+remembers. Fixing the navigation needed the same edit in both files, and the
+only reason that was safe is that the edit was a one-line `include`; the next
+change to the site's chrome will not be.
+
+*Fix.* Make it `{% extends "base.html" %}` with only the blocks flask-security
+genuinely needs overridden. Not attempted here: flask-security's templates
+extend `security/base.html` expecting particular blocks, so the change wants the
+login, register, reset-request and reset-password pages all rendered and looked
+at afterwards, which is more than the navigation asked for.
+
+*Also.* `templates/security/base.saved.html` sits beside it, unreferenced. It
+wants deleting or explaining.
 
 
 ---

@@ -1,0 +1,18 @@
+{# The site's navigation, contributed by the installed apps.
+
+   podpack assembles `sections` from every app's `nav=` and puts it in front of
+   every template, so this is the whole of what an app has to do to appear here
+   (ADR-0022). Kept as a partial rather than written into each base because
+   there are three places that need it -- the front page, the ordinary pages,
+   and flask-security's -- and the last two are separate files that have already
+   drifted apart once.
+
+   `bluebar.html` is the other partial and handles the account menu; this one is
+   only the apps. #}
+<nav class="pagenav">
+    <ul class="inline_list">
+        {% for section in sections %}
+        <li><a href="{{ url_for(section.endpoint) }}">{{ section.label }}</a></li>
+        {% endfor %}
+    </ul>
+</nav>

@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_home_page(client):
     response = client.get("/")
     assert response.status_code == 200
@@ -82,3 +85,31 @@ def test_parts_demo_redirects_to_pages(client):
     response = client.get("/parts/demo")
     assert response.status_code == 302
     assert response.headers["Location"] == "/pages/parts_demo"
+
+
+NAV_BEARING = [
+    ("/", "the front page"),
+    ("/qrcode/", "an installed app"),
+    ("/pdf/booklet", "a page deep inside an app"),
+    ("/login", "flask-security's own chrome"),
+    ("/no-such-page-exists-here", "the site's 404"),
+]
+
+
+@pytest.mark.parametrize("path, what", NAV_BEARING, ids=[p for p, _ in NAV_BEARING])
+def test_every_page_carries_the_site_navigation(client, path, what):
+    """The nav belongs to the site, not to the front page.
+
+    It was on `/` alone for as long as anybody had looked: `base.html` declared
+    `{% block navbar %}` and left it empty, and `index.html` -- which replaces
+    `block body` outright -- carried the only copy of the markup. So installing
+    an app added it to one page's menu rather than to the site.
+
+    `/login` is here deliberately. `templates/security/base.html` is a
+    copy-paste fork of `base.html` rather than a child of it, so anything done
+    to one misses the other unless somebody remembers; this is what remembers.
+    """
+    body = client.get(path).get_data(as_text=True)
+    assert 'class="pagenav"' in body, f"{what} has no navigation"
+    for label in ("Home", "QR codes", "PDF tools"):
+        assert f">{label}</a>" in body, f"{what} omits {label!r}"
