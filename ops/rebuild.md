@@ -1,5 +1,10 @@
 # Rebuild: bare host to serving site
 
+> **Procedure · for whoever is standing at a host with a broken site.** Meant
+> to be executed top to bottom, not read for understanding: the reasoning is in
+> [`../operations.md`](../operations.md). [`rebuild.sh`](rebuild.sh) is the same
+> sequence as a script. Site-specific throughout; nothing here goes to podpack.
+
 **Meant to be followed, not read.** The reasoning lives in
 [`operations.md`](../operations.md) and this links there rather than repeating
 it — one place per fact, or they drift, which is how §6 came to say this site
@@ -531,7 +536,7 @@ long the site is down for.
   already knows. That is upstream of this whole document.
 
 *Rehearsal 1's marked-up run is kept at
-[`rehearsal-2026-08-23.md`](rehearsal-2026-08-23.md). A browser version of this
+[`records/2026-08-23-rehearsal.md`](records/2026-08-23-rehearsal.md). A browser version of this
 page, with a copy button on every command, comes from
 `python3 ops/render-rebuild.py > scratch/rebuild.html` — generated, so it cannot
 drift from this file.*

@@ -1,6 +1,11 @@
 # Rehearsal 1 — 23 August 2026
 
-*The first run of [`rebuild.md`](rebuild.md), followed on `os.holdenweb.com` by
+> **Record · append-only, and finished.** One run of
+> [`../rebuild.md`](../rebuild.md) with its operator's notes in place, kept
+> because a later run that disagrees needs something to disagree with. Not a
+> procedure: do not follow it. Nothing here goes to podpack.
+
+*The first run of [`rebuild.md`](../rebuild.md), followed on `os.holdenweb.com` by
 Steve, with his notes in place. Kept because a second run that disagrees with
 this one needs something to disagree with.*
 
@@ -19,7 +24,7 @@ Written up in *What the Rebuild Found*.
 ---
 
 **Print this and mark it up.** It is meant to be *followed*, not read — the
-reference is [`operations.md`](../operations.md), and this links there rather
+reference is [`operations.md`](../../operations.md), and this links there rather
 than repeating it.
 
 Every step gives the command and **what you should see**. Where they disagree,

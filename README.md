@@ -1,5 +1,8 @@
 # holdenweb.com
 
+> **Introduction · for any reader.** What this site is and what it is made of.
+> Deliberately the one document here that does not pick an audience.
+
 A [podpack](https://github.com/holdenweb/podpack) site. The site itself is
 small by design: `config/app.toml` names the installed apps, this package
 supplies the chrome (`templates/`, `static/`) and the site's own routes, and

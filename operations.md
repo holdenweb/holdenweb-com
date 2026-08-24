@@ -1,5 +1,11 @@
 # Operating holdenweb.com
 
+> **Reference · for whoever is keeping this site running.** Organised by task,
+> to be consulted rather than followed — the procedures it describes live in
+> [`ops/`](ops/) and this explains why they are as they are. Much of it is
+> podpack's rather than this site's and will move there; the paragraphs that
+> name only `podpack`, the substrate or `scripts/` are the ones to take.
+
 *Written 2026-08-19, against podpack 0.8.0 and a site running on `opal17`.*
 
 The procedures a running site needs and the site's own documentation does not
@@ -528,7 +534,7 @@ Recorded rather than hidden. None is urgent; all are real.
   podpack carrying `PODPACK_PROXY_HOPS` (ADR-0036) and `.env` here sets it to
   `1`. Not `base_url`, which was recorded as the fix for two days and feeds
   nothing that builds these links. The host in the link is already right and
-  must stay dynamic: Opalstack owns the binding. `ops/backlog.md` item 4 has
+  must stay dynamic: Opalstack owns the binding. `ops/records/backlog.md` item 4 has
   the whole correction.
 - **`config/app.toml` says `environment = "local"` in production.** podpack
   reads the value but does nothing with it, so nothing is broken; it will

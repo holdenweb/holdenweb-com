@@ -1,6 +1,11 @@
 # Backlog: findings awaiting an issue
 
-*Raised 2026-08-19, while writing [`operations.md`](../operations.md). Held
+> **Record · append-only, for whoever is deciding what to fix next.** Never
+> followed and never rewritten except to strike an item with its evidence. The
+> **Repo** column is the destination: podpack's items become podpack issues, and
+> extracting them is a filter on that column rather than a reading of all 25.
+
+*Raised 2026-08-19, while writing [`operations.md`](../../operations.md). Held
 here for triage into GitHub Issues — both `holdenweb/holdenweb-com` and
 `holdenweb/podpack` have Issues enabled and are currently empty, so nothing has
 been filed yet.*
@@ -8,7 +13,7 @@ been filed yet.*
 Each item names the repository it belongs to, the evidence that it is real, and
 what fixing it involves. **Tier 1** was found while writing the playbook;
 **Tier 2** is the standing known-gaps register from
-[`operations.md` §17](../operations.md), recorded here so the two lists do not
+[`operations.md` §17](../../operations.md), recorded here so the two lists do not
 drift apart.
 
 | # | Repo | Item | Kind |
@@ -132,7 +137,7 @@ a procedure and has never been rehearsed.
 **Repo:** holdenweb-com. alembic has the direction, but the site's revisions are
 not written or tested for it, so the rollback plan for any release carrying a
 schema change is *restore last night's dump*. That is workable and is what
-[`operations.md` §15](../operations.md) says — it is also the reason the backup
+[`operations.md` §15](../../operations.md) says — it is also the reason the backup
 before a schema change is the one that matters most.
 
 ---
@@ -145,7 +150,7 @@ before a schema change is the one that matters most.
 ## Raised 2026-08-23, by the first rebuild rehearsal
 
 *None of these were findable by reading. Each came from running the procedure on
-a real host; the run is kept at [`rehearsal-2026-08-23.md`](rehearsal-2026-08-23.md).*
+a real host; the run is kept at [`2026-08-23-rehearsal.md`](2026-08-23-rehearsal.md).*
 
 ### 14. `backup.sh`'s working-tree guard fails open
 
@@ -196,7 +201,7 @@ made, and it will not run again.
 PostgreSQL grants `CONNECT` to `PUBLIC` on a new database. Both are load-bearing
 accidents that nothing records.
 
-*Fix.* Documented for now at [`rebuild.md`](rebuild.md) 4.2. A real fix re-applies
+*Fix.* Documented for now at [`rebuild.md`](../rebuild.md) 4.2. A real fix re-applies
 the grants after a restore, or restores into the existing schema instead.
 
 ### 18. Every podpack site's containers are named after holdenweb
@@ -243,7 +248,7 @@ thing to have to know.
 
 *Fix.* Either keep the per-host values out of what is restored, or take
 `--port`, or re-read `.env` for `WEB_HOST_PORT` before the health check.
-Documented meanwhile at [`rebuild.md`](rebuild.md) Part 3 and `operations.md` §6.
+Documented meanwhile at [`rebuild.md`](../rebuild.md) Part 3 and `operations.md` §6.
 
 
 ### 20. `backup.sh`'s cross-deployment guard is inert on most sites

@@ -1,5 +1,12 @@
 # Project brief: holdenweb.com as a podpack site
 
+> **Orientation · for somebody meeting this repository for the first time.**
+> Pointers rather than facts wherever possible — every fact repeated here is one
+> that can drift out of step with the document that owns it, which is how its
+> own predecessor came to be wrong. Reference is [`operations.md`](operations.md),
+> procedure is [`ops/`](ops/), and the framework's own documentation is
+> authoritative for anything about podpack.
+
 *Rewritten 2026-08-13, when the conversion described below actually landed.
 The previous version was written on 2026-08-05 to bring a fresh session up to
 speed on a site that had not yet been converted; almost every specific in it
