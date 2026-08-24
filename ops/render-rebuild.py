@@ -171,7 +171,8 @@ def render(text: str) -> str:
 # becomes a real newline inside a string literal, and the whole script dies
 # with a syntax error -- silently, since a page with a broken script still
 # renders perfectly. Every copy button was inert for exactly that reason.
-TEMPLATE = r"""<title>Rebuild Checklist</title>
+TEMPLATE = r"""<meta charset="utf-8">
+<title>Rebuild Checklist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">

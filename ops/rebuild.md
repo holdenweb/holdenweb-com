@@ -88,9 +88,16 @@ date -u +%H:%M:%S
 
 **0.1 — Take the backup you will restore from.**
 
-`backup.sh` refuses to write inside the working tree, because the result holds a
-verbatim copy of every secret. That guard resolves the destination's parent, so
-create it first — if the parent does not exist the check cannot run:
+**The site has to be up for this.** `backup.sh` asks the running `web` service
+what to archive, and refuses without it — which is worth knowing before you need
+it, because in the emergency where the site is down you *cannot take a backup*.
+The last good one is whatever you already have. `verify-backup.sh` needs the
+stack up too: it reads each dump with the store's own tooling, inside the store's
+own container.
+
+`backup.sh` also refuses to write inside the working tree, because the result
+holds a verbatim copy of every secret. That guard resolves the destination's
+parent, so create it first — if the parent does not exist the check cannot run:
 
 ```bash
 mkdir -p ~/backups
@@ -123,7 +130,14 @@ podman compose ps
 ```
 
 *Expect:* `--check` writes nothing, and reports which values are still the
-example's.
+example's plus whether this host can run containers — the Compose v2 provider,
+the podman socket, and lingering. It needs `.env` and `secrets.env` to exist
+already; on a bare clone it says `not configured yet` and stops.
+
+> A backup that fails part way leaves nothing behind: `backup.sh` removes the
+> destination if the plan names no store, if a dump comes out empty, or if a
+> store named in the plan produced no file. So a directory that exists is a
+> directory that got to the end.
 
 `☐` `✎` ______________________________________________
 

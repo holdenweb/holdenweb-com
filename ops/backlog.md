@@ -27,6 +27,8 @@ drift apart.
 | 17 | podpack | A build in one checkout tags another's image | hazard |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore onto a different port fails its own check | correctness |
+| 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
+| 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -272,6 +274,59 @@ thing to have to know.
 *Fix.* Either keep the per-host values out of what is restored, or take
 `--port`, or re-read `.env` for `WEB_HOST_PORT` before the health check.
 Documented meanwhile at [`rebuild.md`](rebuild.md) Part 3 and `operations.md` §6.
+
+
+### 20. `backup.sh`'s cross-deployment guard is inert on most sites
+
+**Repo:** podpack — found 2026-08-23 by reading the script after rehearsal 1.
+
+*Evidence.* The guard inspects the running container's mounts to prove it
+belongs to this directory, and builds the mount path it looks for from the site
+name: `/var/lib/${project%%-*}/apps`. The substrate's `compose.yaml` hardcodes
+`/var/lib/holdenweb/apps` for **every** site (item 18). So the path matches only
+where the site name's first dash-separated segment is literally `holdenweb`:
+
+| `SITE_NAME` | looks for | |
+| --- | --- | --- |
+| `holdenweb-com` | `/var/lib/holdenweb/apps` | matches — guard active |
+| `holdenweb.com` | `/var/lib/holdenweb.com/apps` | no match — guard skipped |
+| `mysite` | `/var/lib/mysite/apps` | no match — guard skipped |
+| `podpack-demo` | `/var/lib/podpack/apps` | no match — guard skipped |
+
+When it finds nothing, `mounted_from` is empty and the `[[ -n "$mounted_from"
+&& ... ]]` test is simply false. No refusal, no warning.
+
+*Why it matters.* Its own comment says pp-testing's copy caught a real
+cross-deployment mixup the first time it ran, and describes the failure it
+prevents: "a backup that dumps one deployment's database beside another's app
+data looks complete, restores without error, and produces a site whose schema
+does not match its content." During rehearsal 1 the guard was **inert in the
+clone**, which used `SITE_NAME=holdenweb.com` — the one deployment where two
+checkouts were live at once is the one where it was not watching.
+
+*Fix.* Derive the mount path from the same place `compose.yaml` gets it, or read
+it from the container rather than reconstructing it. Fixing item 18 first would
+make this straightforward.
+
+### 21. `manifest.txt`'s `running build` can never be populated
+
+**Repo:** podpack
+
+*Evidence.* `backup.sh` reads it with an unauthenticated
+`curl .../_status`, and `/_status` answers 404 to anyone who is not an
+administrator. The `||` fallback therefore always fires, and every manifest ever
+written records `UNKNOWN (not readable when this was taken; /_status wants an
+admin)`.
+
+*Why it matters.* The manifest lists it under "The three facts that must agree
+on restore", and its purpose is real: framework source is baked into the image,
+so a checkout that moved on without a rebuild leaves the site serving an earlier
+commit, and `git commit:` alone would then name the wrong thing to restore onto.
+`verify-backup.sh` does not print the field, which reads like quiet
+acknowledgement.
+
+*Fix.* Ask the container instead — `podman inspect` can read
+`PODPACK_BUILD_COMMIT` from the running image without any session at all.
 
 
 ---
