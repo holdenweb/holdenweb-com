@@ -166,7 +166,12 @@ def render(text: str) -> str:
     return "\n".join(out)
 
 
-TEMPLATE = """<title>Rebuild Checklist</title>
+# Raw, so that a backslash escape in the JavaScript below reaches the browser
+# instead of being interpreted here. Without the `r` prefix `join("\n")`
+# becomes a real newline inside a string literal, and the whole script dies
+# with a syntax error -- silently, since a page with a broken script still
+# renders perfectly. Every copy button was inert for exactly that reason.
+TEMPLATE = r"""<title>Rebuild Checklist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
@@ -243,6 +248,8 @@ button.copy { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em;
   cursor:pointer; transition:background .12s, color .12s; }
 button.copy:hover { background:var(--accent); color:var(--surface); border-color:var(--accent); }
 button.copy.done { color:var(--surface); background:var(--accent-dim); border-color:var(--accent-dim); }
+button.copy.failed { color:var(--warning); border-color:var(--warning); background:none; }
+pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 .block pre { margin:0; padding:.8rem .85rem; overflow-x:auto;
   font-family:var(--mono); font-size:.82rem; line-height:1.6; }
 .block pre code { background:none; padding:0; font-size:inherit; }
@@ -266,38 +273,88 @@ __BODY__
 </div>
 <script>
 (function () {
+  // Copying is attempted three ways, most reliable first, and every outcome
+  // says so on the button. The first version of this used only
+  // navigator.clipboard.writeText() with no rejection handler: inside an
+  // iframe without clipboard-write in its permissions policy that rejects,
+  // and the failure was completely silent -- the button did not even flicker.
+  //
+  // execCommand goes first despite being deprecated, because it must run
+  // inside the click's own task to be allowed, and by the time a rejected
+  // promise brings us back the user gesture may no longer count.
+  function attempt(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0";
+    document.body.appendChild(area);
+    area.select();
+    area.setSelectionRange(0, text.length);
+    var copied = false;
+    try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+    document.body.removeChild(area);
+    return copied;
+  }
+
+  function settle(button, ok, label, hold) {
+    button.textContent = label;
+    button.classList.toggle("done", ok);
+    button.classList.toggle("failed", !ok);
+    setTimeout(function () {
+      button.textContent = "copy";
+      button.classList.remove("done", "failed");
+    }, hold);
+  }
+
+  // Last resort: put the text on the page and select it, so the reader can
+  // press the shortcut themselves. Better than a button that does nothing.
+  function offer(block, button, text) {
+    var pre = block.querySelector("pre");
+    if (!pre) {
+      pre = document.createElement("pre");
+      pre.className = "fallback";
+      pre.textContent = text;
+      block.appendChild(pre);
+    }
+    var range = document.createRange();
+    range.selectNodeContents(pre);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    settle(button, false, "selected \u2014 copy it", 4000);
+  }
+
   function shared(name, value) {
     document.querySelectorAll('input[data-var="' + name + '"]').forEach(function (other) {
       if (other.value !== value) other.value = value;
     });
   }
-  document.querySelectorAll('.fields input').forEach(function (input) {
-    input.addEventListener('input', function () { shared(input.dataset.var, input.value); });
+
+  document.querySelectorAll(".fields input").forEach(function (input) {
+    input.addEventListener("input", function () { shared(input.dataset.var, input.value); });
   });
-  document.querySelectorAll('button.copy').forEach(function (button) {
-    button.addEventListener('click', function () {
-      var block = button.closest('.block');
-      var pre = block.querySelector('pre');
-      var text;
-      if (pre) {
-        text = pre.innerText;
+
+  document.querySelectorAll("button.copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var block = button.closest(".block");
+      var pre = block.querySelector("pre:not(.fallback)");
+      var text = pre
+        ? pre.innerText
+        : Array.prototype.map.call(block.querySelectorAll(".field"), function (field) {
+            return "export " + field.querySelector(".var").textContent +
+                   "=" + field.querySelector("input").value;
+          }).join("\n");
+
+      if (attempt(text)) { settle(button, true, "copied", 1200); return; }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { settle(button, true, "copied", 1200); },
+          function () { offer(block, button, text); }
+        );
       } else {
-        text = Array.prototype.map.call(
-          block.querySelectorAll('.field'),
-          function (field) {
-            return 'export ' + field.querySelector('.var').textContent +
-                   '=' + field.querySelector('input').value;
-          }
-        ).join('\\n');
+        offer(block, button, text);
       }
-      navigator.clipboard.writeText(text).then(function () {
-        button.textContent = 'copied';
-        button.classList.add('done');
-        setTimeout(function () {
-          button.textContent = 'copy';
-          button.classList.remove('done');
-        }, 1200);
-      });
     });
   });
 })();
