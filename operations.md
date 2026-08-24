@@ -195,35 +195,51 @@ It has **not** yet been run against this site's data.
 
 ## 6. Restoring
 
-**The procedure is [`ops/rebuild.md`](ops/rebuild.md)** — numbered, followable,
-and the thing to print. This section is what it deliberately leaves out: why the
-steps are in that order, and what you are choosing between.
+**Run [`scripts/restore.sh`](scripts/restore.sh).** It is the procedure, not a
+helper around it: 279 lines written to be run by somebody who has never seen
+this site, from a checkout and a backup directory and nothing else.
+[`ops/rebuild.md`](ops/rebuild.md) puts it in context — the control panel before
+it, the verification after. This section is the reasoning neither can carry.
 
 Restoring is *rebuild the host, then put the three things back*: the secrets,
 the app data, the database. Everything else — `config/`, `src/`, the alembic
 history — is in git, and git is its backup.
 
-**The one decision.** `secrets.env` is the site's identity, not merely its
-credentials, so putting it back verbatim is what makes an operation a restore
-rather than a new site on old data. `SECURITY_PASSWORD_SALT` is HMAC'd with
-every password before hashing, so a fresh salt invalidates every stored
-password; `SECRET_KEY` invalidates every session and every outstanding
-reset link. There is no partial answer: either the site keeps its identity and
-everyone can still sign in, or it does not and nobody can.
+**Why the script rather than the steps.** The order is not arrangement, it is
+the whole difficulty, and every part of it was paid for:
 
-That choice then decides one other thing, three steps later, which is the only
-place it is easy to get wrong. `db-init` creates `SCHEMA app AUTHORIZATION
-<app role>` and runs **exactly once**, while the postgres data directory is
-still empty. Recreating the database throws that away for good. On a restore
-the dump carries its own ownership and the roles came back with `secrets.env`,
-so it lands correctly; without those roles it cannot, and `pg_restore` needs
-`--no-owner` — which on a restore would hand the schema to the admin and break
-the site with an error that reads like a broken migration.
+- App data is unpacked **before** the first `compose up`, because
+  `init-storage` hands the bind mounts to the containers' unprivileged uids and
+  is gated on `service_completed_successfully` — it does not run twice. Files
+  unpacked after it are files the app cannot read.
+- Each restored app's directory is **removed first**. `tar -xzf` only ever adds,
+  so extracting over a live directory leaves anything created since sitting
+  beside the restored files: a state that never existed, and a file deleted on
+  purpose back from the dead. Measured — a marker planted after a backup
+  survived the restore.
+- Each store comes up **alone** first, so its own first-run bootstrap creates
+  the application role the dump's objects belong to. Bringing the whole stack up
+  first lets `migrate` build an empty schema the restore must then demolish —
+  and demolishing it with `dropdb` discards `db-init`'s grants permanently,
+  since `db-init` runs only while the data directory is empty. That is the trap,
+  and it cost an evening in rehearsal 1 doing this by hand.
+- The rest of the stack comes up **last**, which makes `migrate` a free
+  consistency check: alembic finds the restored revision already at head, or
+  rolls an older backup forward onto newer code.
 
-**Order, and why.** Secrets before anything starts, because `db-init` reads
-them at first boot. App data before `up.sh`, because the containers drop to
-unprivileged uids and cannot fix ownership afterwards. The database last,
-because the schema has to exist before the dump goes over it.
+**The one decision, and it is the script's first question.** `secrets.env` goes
+back verbatim, which is the whole of ADR-0013: `SECURITY_PASSWORD_SALT` is
+HMAC'd with every password before hashing, so a fresh salt makes every stored
+password unverifiable, and a changed database identity leaves the site unable to
+reach its own data. There is no partial answer — either the site keeps its
+identity and everyone can still sign in, or it does not and nobody can.
+
+**Where it needs help: a host whose port differs.** `.env` comes back from the
+backup too, carrying the *old* `WEB_HOST_PORT`, so the script's closing health
+check polls a port nothing is listening on and it exits non-zero with the data
+correctly restored. Fix `WEB_HOST_PORT` and re-run `up.sh`; the `.env` the
+script displaced is kept beside it as `.superseded-<stamp>`. Recorded as
+backlog #19.
 
 **Then verify with §3**, against the host you just built. A suite pointed at the
 old deployment passes and proves nothing.

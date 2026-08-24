@@ -42,8 +42,8 @@ export ADMIN_EMAIL=
 | `MODE` | `RESTORE` or `FRESH` — see below | now |
 | `WEB_PORT` | The port the control panel allocated | **1.1** |
 | `SITE_HOST` | The hostname proxied to that port | **1.2** |
-| `BACKUP` | The backup directory to restore from | **3.1** |
-| `ADMIN_EMAIL` | Administrator's address. `FRESH` only | **6.1** |
+| `BACKUP` | The backup directory to restore from. `RESTORE` only | **0.1**, or given |
+| `ADMIN_EMAIL` | Administrator's address. `FRESH` only | **5.1** |
 
 Check it took, before you rely on it:
 
@@ -59,13 +59,16 @@ Check it took, before you rely on it:
 | Typical cause | The host died; you are putting it back | A new deployment, or a staging copy |
 | Accounts | Everyone can still sign in | Nobody has an account yet |
 
-**Only three steps differ — 3.2, 4.2 and 6.1 — and each says so where it
-arrives.** Everything else is identical, which is why this is one document and
-not two.
+**The modes diverge in Part 3 and nowhere else that matters.** `RESTORE` is a
+single command — `scripts/restore.sh` — because the substrate already ships the
+whole procedure. `FRESH` has no dump, so it configures a host and starts it.
+After Part 3 they rejoin, with one small branch at 5.1 over whether an
+administrator already exists.
 
-> The one defect that cost real time in rehearsal 1 was a step that did *not*
-> branch when it should have. If a step below looks like it assumes the other
-> path, that is a bug in this document; record it.
+> Rehearsal 1's expensive defect was a step that did *not* branch when it
+> should have — and the reason it existed at all was that this document was
+> hand-rolling what `restore.sh` already did, in a worse order. If a step below
+> looks like it assumes the other path, that is a bug here; record it.
 
 ### Timing
 
@@ -150,13 +153,11 @@ export SITE_HOST=
 
 ---
 
-## Part 2 — clone, and configure the host
+## Part 2 — clone
 
 ```bash
 date -u +%H:%M:%S
 ```
-
-**2.1**
 
 ```bash
 git clone "$SITE_REPO" "$SITE_DIR"
@@ -175,7 +176,77 @@ is their backup. No `.env`, no `secrets.env`, no `hostdata/`.
 
 `☐` `✎` ______________________________________________
 
-**2.2**
+---
+
+## Part 3 — **BRANCHES**: bring the site into existence
+
+```bash
+date -u +%H:%M:%S
+```
+
+This is where the two modes stop resembling each other. Follow one heading and
+skip the other entirely.
+
+### `MODE=RESTORE` — one command
+
+Check the backup is the one you mean, and complete — `restore.sh` refuses on a
+missing file, but reading the names first is cheaper than reading its refusal:
+
+```bash
+ls -l "${BACKUP:?}"
+```
+
+```bash
+./scripts/restore.sh "$BACKUP"
+```
+
+That is the whole of it, and it is worth knowing what it is doing rather than
+treating it as magic, because it stops twice to ask you things:
+
+1. **Is this the right backup and the right target?** It prints what it is
+   restoring from and into, and waits for you to type `restore`.
+2. **Does the code match the data?** It compares the backup's commit against
+   this checkout and says which way you are rolling — a newer checkout means
+   alembic rolls the data forward, which is fine; an older one may not know
+   about tables in the dump.
+
+Then, in an order chosen to avoid the two traps that a hand-run restore falls
+into: it puts `secrets.env` and `.env` back, keeping yours as
+`.superseded-<stamp>`; unpacks the app data **before** the first `compose up`,
+because `init-storage` hands the mounts to the containers' uids and does not
+run twice; **removes each restored app's directory first**, because `tar` only
+ever adds and a merge is a state that never existed; brings **each store up
+alone**, so its bootstrap creates the role the dump's objects belong to; then
+the rest of the stack, which makes `migrate` a free consistency check.
+
+Finally it verifies out loud — every table's row count against
+`rowcounts.txt`, and `/healthz` — and **exits non-zero** if either fails.
+
+> **On a host whose port differs from the old one, expect it to fail at the
+> last step, and expect that.** `.env` comes back from the backup carrying the
+> *old* `WEB_HOST_PORT`, so the health check polls a port nothing is listening
+> on. The data is restored correctly; only the last check is wrong. Fix it:
+>
+> ```bash
+> sed -i "s/^WEB_HOST_PORT=.*/WEB_HOST_PORT=$WEB_PORT/" .env
+> ```
+>
+> ```bash
+> ./scripts/up.sh
+> ```
+>
+> Check the other per-host values in `.env` while you are there —
+> `WEB_BIND_ADDR`, and `VOLUME_RW`/`VOLUME_RO` if this host's SELinux differs
+> from the old one's. `python3 scripts/configure-host.py --check` reports them
+> without writing anything.
+
+**Do not run `configure-host.py --port` on this path.** It would generate a
+`.env` and `secrets.env` that `restore.sh` then replaces with the backup's, and
+fresh secrets are the one thing a restore must not have.
+
+`☐` `✎` ______________________________________________
+
+### `MODE=FRESH` — no dump, so no `restore.sh`
 
 ```bash
 python3 scripts/configure-host.py --port "$WEB_PORT"
@@ -186,88 +257,17 @@ role, whether SELinux is enforcing, and that secrets were generated with none
 printed. It **refuses to overwrite** either file, so a second run is safe.
 
 *Watch for:* the SELinux line. `not enforcing` leaves `VOLUME_RW`/`VOLUME_RO`
-empty and is correct on a permissive host; `detected` sets them to `:Z`/`,z`.
-Both are right answers — the wrong answer is the file not saying. A host can be
-*labelled but permissive*, which is what Opalstack is today: if it is ever
-switched to enforcing, this decision changes and the mounts break.
+empty and is right on a permissive host; `detected` sets them to `:Z`/`,z`. A
+host can be *labelled but permissive*, which is what Opalstack is today — if it
+is ever switched to enforcing, this decision changes and the mounts break.
 
-`☐` `✎` ______________________________________________
-
----
-
-## Part 3 — the content and the database
-
-```bash
-date -u +%H:%M:%S
-```
-
-**3.1 — Name the backup**, once, and let every later step refer to it:
-
-```bash
-export BACKUP=
-```
-
-```bash
-ls -l "${BACKUP:?}/database.pgc" "$BACKUP/app-data.tar.gz" "$BACKUP/secrets.env"
-```
-
-*Expect:* three files. This is also why the variable exists — written literally,
-`< <backup>/database.pgc` is a bash syntax error, because `< <` is process
-substitution.
-
-`☐` `✎` ______________________________________________
-
-### 3.2 — **BRANCHES**
-
-**`MODE=RESTORE` — put the backup's secrets back.** This is what makes it a
-restore rather than a new site:
-
-```bash
-install -m 600 "$BACKUP/secrets.env" ./secrets.env
-```
-
-**`MODE=FRESH` — skip it.** Keep the `secrets.env` that 2.2 generated.
-
-> **What the choice decides.** `SECURITY_PASSWORD_SALT` is HMAC'd with every
-> password before it is hashed, so a fresh salt invalidates every stored
-> password; `SECRET_KEY` invalidates sessions and outstanding reset links. On
-> `RESTORE` everyone can still sign in. On `FRESH` nobody can, and that is
-> correct rather than broken.
-
-`☐` `✎` ______________________________________________
-
-**3.3 — Restore the app data**, before starting anything.
+It also names any value still at the example's, which on this path will include
+`MAIL_PASSWORD`. Set it now, in `secrets.env`: sixteen letters, spaces removed,
+and **no `$`**, which compose expands there as well as in `.env`.
 
 ```bash
 ./scripts/prepare-host-dirs.sh
 ```
-
-```bash
-tar -xzf "$BACKUP/app-data.tar.gz" -C ./hostdata
-```
-
-```bash
-du -sh hostdata/apps/*
-```
-
-*Expect:* `pages` holding roughly 1.0 MB — the site's content, in
-subdirectories. `qrcode` and `pp_pdf` empty, correctly: both are stateless.
-
-> `/_status` will report `"stored_files": []` for `pages` regardless, because
-> that field lists top-level files only and cannot see a directory. Check the
-> disk, as above, when you want to know whether content came back.
-
-`☐` `✎` ______________________________________________
-
----
-
-## Part 4 — bring it up
-
-```bash
-date -u +%H:%M:%S
-```
-
-**4.1**
 
 ```bash
 ./scripts/up.sh
@@ -275,69 +275,18 @@ date -u +%H:%M:%S
 
 *Expect:* `postgres` healthy, `migrate` exited cleanly, `web` started.
 
-> **`db-init` runs exactly once** — only while the postgres data directory is
-> still empty. It is what creates `SCHEMA app AUTHORIZATION <app role>` and
-> grants `CONNECT`. That matters in the next step.
-
-`☐` `✎` ______________________________________________
-
-### 4.2 — **BRANCHES**
-
-Drop and recreate first; the dump carries its own schema.
-
-```bash
-podman compose exec -T postgres sh -c 'dropdb -U "$POSTGRES_USER" --force "$POSTGRES_DB" && createdb -U "$POSTGRES_USER" "$POSTGRES_DB"'
-```
-
-> This throws away everything `db-init` did, and `db-init` will not run again.
-> It works because the dump restores its own ownership and PostgreSQL grants
-> `CONNECT` to `PUBLIC` on a new database. Both are load-bearing and neither is
-> obvious.
-
-**`MODE=RESTORE` — no `--no-owner`.** The roles came back with `secrets.env`, so
-the dump's ownership is correct:
-
-```bash
-podman compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exit-on-error' < "$BACKUP/database.pgc"
-```
-
-**`MODE=FRESH` — `--no-owner`.** The dump names a role this host does not have:
-
-```bash
-podman compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < "$BACKUP/database.pgc"
-```
-
-> **Getting this backwards breaks the site three steps later.** `--no-owner` on
-> the `RESTORE` path makes the *admin* own schema `app`, while the application
-> connects as the app role with `search_path = app`. It surfaces as `migrate`
-> failing with what reads like a broken migration. Observed, rehearsal 1.
-
-```bash
-podman compose restart web
-```
-
-`☐` `✎` ______________________________________________
-
-**4.3 — Row counts, against the backup's own record.**
-
-```bash
-cat "$BACKUP/rowcounts.txt"
-```
-
 `☐` `✎` ______________________________________________
 
 ---
 
-## Part 5 — the settings nothing will tell you about
+## Part 4 — the setting nothing will tell you about
 
 ```bash
 date -u +%H:%M:%S
 ```
 
-Both are absent from a freshly configured host, and neither has a symptom you
-would see by looking at the site.
-
-**5.1 — The proxy.**
+Absent however the site got here, and with no symptom you would see by looking
+at it.
 
 ```bash
 echo 'PODPACK_PROXY_HOPS=1' >> .env
@@ -368,8 +317,8 @@ boxes sit behind it.
 
 `☐` `✎` ______________________________________________
 
-**5.2 — The mail password.** On `RESTORE` it came back with `secrets.env`; on
-`FRESH` it is still the example value and 2.2 said so. Either way, prove it:
+**And prove the mail credential**, which came back with `secrets.env` on
+`RESTORE` and was set by hand on `FRESH`:
 
 ```bash
 podman compose exec web flask --app holdenweb mail check
@@ -382,13 +331,13 @@ value — then a real SMTP connection, exit 0.
 
 ---
 
-## Part 6 — verify
+## Part 5 — verify
 
 ```bash
 date -u +%H:%M:%S
 ```
 
-### 6.1 — **BRANCHES**
+### 5.1 — **BRANCHES**
 
 **`MODE=RESTORE` — nothing to do.** Your accounts came back with `secrets.env`;
 sign in as yourself.
@@ -417,7 +366,7 @@ podman compose exec web flask --app holdenweb roles add "$ADMIN_EMAIL" admin
 
 `☐` `✎` ______________________________________________
 
-**6.2 — `/_status`**, signed in as an administrator. Unauthenticated it answers
+**5.2 — `/_status`**, signed in as an administrator. Unauthenticated it answers
 404, correctly, so this is a browser step — but the health endpoint is not, and
 answers now:
 
@@ -431,7 +380,7 @@ you deployed, and the database and role you configured.
 
 `☐` `✎` ______________________________________________
 
-**6.3 — The integration suite**, which is the real check
+**5.3 — The integration suite**, which is the real check
 ([`operations.md` §3](../operations.md)). Never the front page: the QR code app
 answered 200 for weeks while contributing no navigation at all.
 
@@ -445,14 +394,14 @@ nothing, which is how rehearsal 1 left the restore path unverified.
 
 `☐` `✎` ______________________________________________
 
-**6.4 — The one that matters.** Request a password reset, and read the mail.
+**5.4 — The one that matters.** Request a password reset, and read the mail.
 
 *Expect:* a link beginning **`https://`**. An `http://` link means 5.1 did not
 take, and `/_status` says which half — header not sent, or hops not trusted.
 
 `☐` `✎` ______________________________________________
 
-**6.5 — Prove the backup regime on *this* host.**
+**5.5 — Prove the backup regime on *this* host.**
 
 ```bash
 ./scripts/backup.sh && ./scripts/verify-backup.sh
@@ -472,14 +421,13 @@ date -u +%H:%M:%S
 | --- | --- | --- |
 | 0 — before the wipe | ________ | *rehearsal only* |
 | 1 — control panel | ________ | |
-| 2 — clone and configure | ________ | |
-| 3 — content and database | ________ | |
-| 4 — bring it up | ________ | |
-| 5 — the hidden settings | ________ | |
-| 6 — verify | ________ | |
+| 2 — clone | ________ | |
+| 3 — restore, or configure | ________ | |
+| 4 — the proxy setting | ________ | |
+| 5 — verify | ________ | |
 | **finished** | ________ | |
 
-**Parts 1–6 elapsed: ________** — the number to quote when somebody asks how
+**Parts 1–5 elapsed: ________** — the number to quote when somebody asks how
 long the site is down for.
 
 ---

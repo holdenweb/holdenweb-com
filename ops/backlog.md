@@ -26,6 +26,7 @@ drift apart.
 | 16 | podpack | Recreating the database discards `db-init`'s grants | fragility |
 | 17 | podpack | A build in one checkout tags another's image | hazard |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
+| 19 | podpack | `restore.sh` replaces `.env`, so a restore onto a different port fails its own check | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -248,6 +249,29 @@ reports another site's name, and a site with no config file is told to look at
 `/etc/holdenweb/app.toml`. The framework carries its first site's identity.
 
 *Fix.* Template the path from the site package, or make it site-neutral.
+
+
+### 19. `restore.sh` replaces `.env`, so a restore onto a different host fails its own check
+
+**Repo:** podpack — raised 2026-08-23 by reading the script rather than running
+it, so unlike 14–18 this one is inference and wants confirming.
+
+*Evidence.* `scripts/restore.sh` keeps the existing `.env` as
+`.superseded-<stamp>` and then installs the backup's over it. Its own comment
+says the opposite is wanted — ".env is per-host, so a restore onto a *different*
+host wants the existing one kept and edited instead" — but the code does not do
+that. The closing health check then polls `${WEB_HOST_PORT}` from the restored
+file, which is the old host's, and the script exits non-zero.
+
+*Why it matters.* The data is restored correctly and the script reports failure,
+which is the safe direction, but it means the documented recovery path ends in a
+red exit on exactly the occasion it exists for — moving to a new host. Anyone
+following it under pressure has to know the failure is cosmetic, which is a poor
+thing to have to know.
+
+*Fix.* Either keep the per-host values out of what is restored, or take
+`--port`, or re-read `.env` for `WEB_HOST_PORT` before the health check.
+Documented meanwhile at [`rebuild.md`](rebuild.md) Part 3 and `operations.md` §6.
 
 
 ---
