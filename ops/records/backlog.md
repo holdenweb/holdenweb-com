@@ -25,16 +25,16 @@ drift apart.
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
-| 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
+| 14 | podpack | `backup.sh`'s working-tree guard fails open — **fixed** | security |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
 | 16 | podpack | Recreating the database leaves a site that can never migrate — **fixed** | operational |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` — **fixed** | operational |
-| 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
+| 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites — **fixed** | security |
 | 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
 | 22 | podpack | A failed restore leaves a plausible backup that verifies clean — **fixed** | operational |
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
-| 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child | correctness |
+| 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child — **fixed** | correctness |
 | 26 | podpack | Every `up` builds the same image twice | efficiency |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
@@ -158,7 +158,8 @@ a real host; the run is kept at [`2026-08-23-rehearsal.md`](2026-08-23-rehearsal
 
 ### 14. `backup.sh`'s working-tree guard fails open
 
-**Repo:** podpack — **the one to fix first.**
+**Repo:** podpack — was **the one to fix first**. **Fixed 2026-08-25 in
+`442e65e`**, together with item 20: same file, same mistake, one editing session.
 
 *Evidence.* `scripts/backup.sh:54` resolves the destination's parent with
 `$(cd "$(dirname ...)" && pwd)` to check it is outside the site directory. When
@@ -172,8 +173,25 @@ of every secret landing inside a git repository — "one careless `git add` away
 from being published", in its own comment. A guard that fails open is worse than
 no guard, because it is trusted.
 
-*Fix.* Create the parent before testing it, or resolve the path without
-requiring it to exist.
+*What shipped.* `realpath` by python, which answers for a path that does not
+exist — removing the reason `dirname` was there at all — with both values in
+assignments so a failure now aborts instead of passing. That also fixed a second
+defect on the same line, unmentioned above: it resolved `dirname` of the
+destination rather than the destination, so an absolute path naming the site
+directory itself resolved to the site's *parent*, matched nothing, and put the
+backup straight into the tree.
+
+*Worth noting for whoever reads this next.* The exposure was narrower than it
+looks — the seeded `.gitignore`'s line 4 is `secrets.env`, unanchored, which git
+matches at any depth. What the defect actually destroyed was the guarantee
+[`operations.md` §6](../../operations.md) states flat: "outside the tree, and the
+script refuses to write inside it". That sentence is what makes an operator
+willing to aim a backup somewhere unusual, and it was true of the intent and
+false of the code.
+
+*Still open.* podpack's seeded `.gitignore` has no `backups/` entry, so a new
+site has no second line of defence if this guard is ever wrong again.
+holdenweb.com added one by hand.
 
 ### 15. `/_status` reports `stored_files` as top-level files only
 
@@ -324,6 +342,7 @@ Documented meanwhile at [`rebuild.md`](../rebuild.md) Part 3 and `operations.md`
 ### 20. `backup.sh`'s cross-deployment guard is inert on most sites
 
 **Repo:** podpack — found 2026-08-23 by reading the script after rehearsal 1.
+**Fixed 2026-08-25 in `442e65e`.**
 
 *Evidence.* The guard inspects the running container's mounts to prove it
 belongs to this directory, and builds the mount path it looks for from the site
@@ -349,9 +368,20 @@ does not match its content." During rehearsal 1 the guard was **inert in the
 clone**, which used `SITE_NAME=holdenweb.com` — the one deployment where two
 checkouts were live at once is the one where it was not watching.
 
-*Fix.* Derive the mount path from the same place `compose.yaml` gets it, or read
-it from the container rather than reconstructing it. Fixing item 18 first would
-make this straightforward.
+*What shipped*, and it needed neither of those. The check is now made
+source-side: compose says which container is this project's `web` — resolving
+its own project name, so the dotted-name lookup stops mattering — and podman
+says what that container mounts, compared against this directory's own data
+root by python on both sides. No site name and no container-internal path
+appears, so fixing item 18 later cannot break it.
+
+It also fails closed now. pp-testing's original had no `-n "$mounted_from"`
+clause; the substrate port added one along with a `2>/dev/null || true`, and an
+unanswerable question is a refusal again.
+
+*Measured while fixing it.* Of `holdenweb-com`, `holdenweb.com` and `mysite`,
+only the first names a container podman can find at all — so on the other two
+the guard was not merely mismatching a path, it was inspecting nothing.
 
 ### 21. `manifest.txt`'s `running build` can never be populated
 
@@ -449,14 +479,29 @@ remembers. Fixing the navigation needed the same edit in both files, and the
 only reason that was safe is that the edit was a one-line `include`; the next
 change to the site's chrome will not be.
 
-*Fix.* Make it `{% extends "base.html" %}` with only the blocks flask-security
-genuinely needs overridden. Not attempted here: flask-security's templates
-extend `security/base.html` expecting particular blocks, so the change wants the
-login, register, reset-request and reset-password pages all rendered and looked
-at afterwards, which is more than the navigation asked for.
+*Fixed 2026-08-25 in `97a3d7a`.* It needed no block overrides at all: every
+block flask-security's templates use — `content` in 23 of them, `head_scripts`
+in the webauthn four, plus `title`, `navbar`, `styles`, `scripts` and the
+document skeleton — is already defined in `base.html`. The whole file is now a
+comment and one `extends`.
 
-*Also.* `templates/security/base.saved.html` sits beside it, unreferenced. It
-wants deleting or explaining.
+*One thing the entry missed.* The copy carried a maxcdn integrity hash of
+`sha384-h0AbiXch…` against Bootstrap 4.1.3, and `base.saved.html` beside it
+carried the *same* hash against 4.0.0-beta. Two different files cannot share a
+SHA-384, so the version was bumped and the hash left behind — and a browser
+honouring SRI refused to run Bootstrap's JavaScript on these pages entirely.
+The auth pages were not merely a version behind; their JavaScript was dead.
+
+All four pages were rendered from the running site and looked at, with the
+reset token generated in process so no mail was sent.
+
+*Also.* `templates/security/base.saved.html` is deleted. It was the same file
+one Bootstrap version further back, referenced by nothing, and it is in git if
+it is ever wanted.
+
+*Still open, and pre-existing.* flask-security's form markup carries no
+Bootstrap classes, so the inputs and buttons on these pages are unstyled. That
+was equally true of the copy.
 
 
 ### 26. Every `up` builds the same image twice
