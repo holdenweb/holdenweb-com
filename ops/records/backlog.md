@@ -27,12 +27,12 @@ drift apart.
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 14 | podpack | `backup.sh`'s working-tree guard fails open | **security** |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
-| 16 | podpack | Recreating the database leaves a site that can never migrate | **operational** |
+| 16 | podpack | Recreating the database leaves a site that can never migrate — **fixed** | operational |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
-| 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` | **operational** |
+| 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` — **fixed** | operational |
 | 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites | **security** |
 | 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
-| 22 | podpack | A failed restore leaves a plausible backup that verifies clean | **operational** |
+| 22 | podpack | A failed restore leaves a plausible backup that verifies clean — **fixed** | operational |
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child | correctness |
 | 26 | podpack | Every `up` builds the same image twice | efficiency |
@@ -194,8 +194,9 @@ every backup, silently, until somebody tried to restore.
 
 ### 16. Recreating the database leaves a site that can never migrate again
 
-**Repo:** podpack — **observed on a real deployment 2026-08-24**, having been
-filed on 2026-08-23 as a milder thing than it is.
+**Repo:** podpack — observed on a real deployment 2026-08-24, having been filed
+on 2026-08-23 as a milder thing than it is. **Fixed 2026-08-25 in `ac40092`**,
+by the narrow route below.
 
 *Evidence.* `db-init/01-create-app-user.sh` runs only while the postgres data
 directory is still empty. It is what creates `SCHEMA app AUTHORIZATION <app
@@ -224,13 +225,21 @@ it was allowed to create, which is true and unhelpful. Two evenings went to this
 in two different disguises: once as an ownership fault after
 `pg_restore --no-owner`, once as an absent schema.
 
-*Fix.* The narrow one: have `migrate` check, before it does anything, that the
-schema on `search_path` exists, and say what is wrong if it does not — one query
-against a message nobody can act on. The real one: make the bootstrap
-re-runnable, so that recreating a database is recoverable rather than terminal.
-`db-init` is already written to be idempotent in shape; what stops it is the
-image entrypoint's condition, which podpack does not control. A `podpack db
-bootstrap` verb would.
+*What shipped.* The narrow fix: `alembic/env.py` asks `current_schema()` before
+anything touches the database and refuses when it is NULL, naming the
+search_path in force, db-init, the `CREATE SCHEMA` that repairs it, where the
+application role's name is written down, and the fact that `restore.sh` avoids
+the trap. It refuses rather than repairing — creating the schema needs superuser
+rights the migration does not have, and inventing the missing half of a
+bootstrap would hide how the site got here. Reproduced against a real
+PostgreSQL and the three tests fail against the previous env.py.
+
+*Still open, and worth its own item when someone wants it.* The real fix is a
+re-runnable bootstrap, so recreating a database is recoverable rather than
+terminal. `db-init` is already idempotent in shape; what stops it is the image
+entrypoint's condition, which podpack does not control. A `podpack db bootstrap`
+verb would. The site is still down when this fires — `web` is gated on `migrate`
+completing — so all that has changed is that the operator now knows why.
 
 *Meanwhile* `restore.sh` avoids the trap entirely by bringing each store up
 alone so its own bootstrap runs first, which is why the documented restore path
@@ -254,8 +263,8 @@ reports another site's name, and a site with no config file is told to look at
 
 ### 19. `restore.sh` replaces `.env`, so a restore onto a different host fails its own check
 
-**Repo:** podpack — inferred 2026-08-23 by reading, **confirmed and made worse
-by rehearsal 2 on 2026-08-24.**
+**Repo:** podpack — inferred 2026-08-23 by reading, confirmed and made worse by
+rehearsal 2 on 2026-08-24. **Fixed 2026-08-25 in `2835606`.**
 
 *What the rehearsal added.* It is not only the port. `.env` carries `SITE_NAME`,
 which is the compose project name, so a restore into a checkout called
@@ -296,6 +305,18 @@ A deliberate rename wants to stay deliberate. `BACKUP_ROOT` defaults to
 and orphans the history — `verify-backup.sh` with no argument would then find
 nothing. An explicit `--site-name` is the right shape for that, not a value
 inherited from whichever `.env` happened to win.
+
+*What shipped.* An existing `.env` is kept untouched and the backup's is put
+beside it as `.env.from-backup`, with the per-host keys that differ printed. A
+checkout with none still takes the backup's — a site without one cannot start —
+but every value describing the old machine is named on the way past. The closing
+health check now polls this host's port, so a move to a new host no longer ends
+in a red exit the operator had to know was cosmetic.
+
+*Still open.* The explicit `--site-name` above. `BACKUP_ROOT` still defaults to
+`~/backups/${SITE_NAME}`, so a site name changed by hand still moves where
+backups land; keeping `.env` means that can now only happen deliberately, which
+is most of the harm gone but not the sharp edge.
 
 Documented meanwhile at [`rebuild.md`](../rebuild.md) Part 3 and `operations.md` §6.
 
@@ -355,7 +376,8 @@ acknowledgement.
 
 ### 22. A failed restore leaves a plausible backup that verifies clean
 
-**Repo:** podpack — observed 2026-08-24, rehearsal 2.
+**Repo:** podpack — observed 2026-08-24, rehearsal 2. **Fixed 2026-08-25 in
+`2835606`.**
 
 *Evidence.* After the restore aborted (item 23) the site was brought up anyway,
 so podpack seeded `pages` from what the package ships. `backup.sh` then archived
@@ -380,6 +402,20 @@ it could also record whether the data was seeded or restored, or simply the
 per-app row counts against the previous backup. A weaker but immediate measure:
 `verify-backup.sh` could compare against the previous backup in the same
 directory and say when a count has gone down.
+
+*What shipped* is that weaker measure, and one thing the entry missed.
+`verify-backup.sh` now compares row counts with the previous backup in the same
+root and names any table whose count has fallen or which has gone entirely — a
+remark, not a failure, because rows are deleted legitimately and a check that
+cries wolf is one people learn to skip. And the closing summary now prints
+`from host:` and `source directory:`, which were in every manifest already and
+which the regex simply left out: on the two archives above that one field reads
+`/tmp/restore-rehearsal` against the real deployment's path. The fact was
+written down all along and never shown.
+
+*Still open.* `manifest.txt` recording whether the data was seeded or restored,
+which is the strong form and would not depend on there being a previous backup
+to compare with.
 
 ### 23. `restore.sh` could not work on Linux
 
