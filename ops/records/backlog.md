@@ -3,7 +3,8 @@
 > **Record · append-only, for whoever is deciding what to fix next.** Never
 > followed and never rewritten except to strike an item with its evidence. The
 > **Repo** column is the destination: podpack's items become podpack issues, and
-> extracting them is a filter on that column rather than a reading of all 25.
+> extracting them is a filter on that column rather than a reading of the whole
+> list.
 
 *Raised 2026-08-19, while writing [`operations.md`](../../operations.md). Held
 here for triage into GitHub Issues — both `holdenweb/holdenweb-com` and
@@ -148,6 +149,8 @@ before a schema change is the one that matters most.
 
 ## Raised since — 2026-08-21
 
+*Empty. Nothing raised on this date is still open, and every number issued is
+accounted for — either by a section below or by the struck list above.*
 
 ---
 
@@ -277,6 +280,13 @@ reports another site's name, and a site with no config file is told to look at
 `/etc/holdenweb/app.toml`. The framework carries its first site's identity.
 
 *Fix.* Template the path from the site package, or make it site-neutral.
+
+*Less pressing than it was.* Item 20 used to depend on this one — its guard
+rebuilt `/var/lib/${project%%-*}/apps` and so was inert wherever the site name
+did not begin `holdenweb`. That guard now asks compose and podman instead and
+names no container-internal path at all, so nothing waits on this any more. What
+is left is the cosmetic complaint above: a new site's `/_status` reporting
+another site's name.
 
 
 ### 19. `restore.sh` replaces `.env`, so a restore onto a different host fails its own check
@@ -466,7 +476,8 @@ into a scratch deployment all along, which on the host would have found it.
 
 ### 25. `security/base.html` is a fork of `base.html`, not a child
 
-**Repo:** holdenweb-com — separated from 13, which is fixed.
+**Repo:** holdenweb-com — separated from 13, which is fixed. **Fixed 2026-08-25
+in `97a3d7a`.**
 
 *Evidence.* `templates/security/base.html` repeats `base.html` almost entirely
 rather than extending it. It has already drifted: it loads Bootstrap **4.1.3**
@@ -479,7 +490,7 @@ remembers. Fixing the navigation needed the same edit in both files, and the
 only reason that was safe is that the edit was a one-line `include`; the next
 change to the site's chrome will not be.
 
-*Fixed 2026-08-25 in `97a3d7a`.* It needed no block overrides at all: every
+**What shipped.** It needed no block overrides at all: every
 block flask-security's templates use — `content` in 23 of them, `head_scripts`
 in the webauthn four, plus `title`, `navbar`, `styles`, `scripts` and the
 document skeleton — is already defined in `base.html`. The whole file is now a

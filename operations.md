@@ -240,12 +240,21 @@ password unverifiable, and a changed database identity leaves the site unable to
 reach its own data. There is no partial answer — either the site keeps its
 identity and everyone can still sign in, or it does not and nobody can.
 
-**Where it needs help: a host whose port differs.** `.env` comes back from the
-backup too, carrying the *old* `WEB_HOST_PORT`, so the script's closing health
-check polls a port nothing is listening on and it exits non-zero with the data
-correctly restored. Fix `WEB_HOST_PORT` and re-run `up.sh`; the `.env` the
-script displaced is kept beside it as `.superseded-<stamp>`. Recorded as
-backlog #19.
+**Where it needs help: a host whose port differs.** Since podpack 0.9.0b4 this
+turns on what the checkout already has, and the two cases differ.
+
+A checkout carrying its own `.env` keeps it. The backup's is written beside it
+as `.env.from-backup` and the per-host keys that differ are printed, so the
+closing health check polls *this* host's port and passes.
+
+A fresh clone has no `.env` to keep, so the backup's is installed whole — with
+every value in it that describes the old host named on the way past. The health
+check then polls the old `WEB_HOST_PORT`, and the script exits non-zero with the
+data correctly restored. Fix `WEB_HOST_PORT` and re-run `up.sh`.
+
+`secrets.env` is replaced either way and the one displaced is kept as
+`.superseded-<stamp>`; that is ADR-0013 and is not negotiable. Backlog #19,
+struck.
 
 **Then verify with §3**, against the host you just built. A suite pointed at the
 old deployment passes and proves nothing.

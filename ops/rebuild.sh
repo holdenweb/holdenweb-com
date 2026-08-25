@@ -74,7 +74,13 @@ note "        $(grep -m1 '^alembic revision:' "$BACKUP/manifest.txt")"
 # A backup taken from a *seeded* site looks almost identical to a real one --
 # same size to within a few bytes, one row different, and verify-backup.sh
 # calls both VERIFIED. Saying the row count out loud is the cheapest defence
-# there is until podpack records which it was. Backlog #22.
+# there is until podpack records which it was.
+#
+# Backlog #22 is fixed in podpack 0.9.0b4: verify-backup.sh now compares
+# each table against the previous backup in the same root and says when a
+# count has fallen. This stays because it fires earlier -- before the restore,
+# on the backup you are about to trust -- and because it asks a question only
+# a person can answer.
 if [[ -s "$BACKUP/rowcounts.txt" ]]; then
     rows="$(awk -F'|' '{s += $3} END {print s + 0}' "$BACKUP/rowcounts.txt")"
     tables="$(wc -l < "$BACKUP/rowcounts.txt" | tr -d ' ')"
@@ -85,9 +91,16 @@ fi
 [[ "$(basename "$(pwd)")" == "$SITE_DIR" ]] && \
     die "run this from the directory that will contain $SITE_DIR, not from inside it"
 
-# restore.sh takes SITE_NAME from the backup's .env, so every compose command
-# afterwards acts on *that* project -- which is another deployment's if one is
-# running. Backlog #19; until it is fixed, the guard is to have nothing up.
+# restore.sh installs the backup's .env -- and with it SITE_NAME, the compose
+# project name -- whenever the checkout has none of its own. That is exactly this
+# script's case, because it clones fresh a few lines below. So every compose
+# command afterwards still acts on the *backup's* project, which is another
+# deployment's if one is running.
+#
+# Backlog #19 is fixed in podpack 0.9.0b4, and this guard is NOT obsolete.
+# The fix makes restore.sh keep an .env that already exists; a fresh clone has
+# none, so the rebuild path is the one case where the old behaviour still
+# applies. Do not remove this on the strength of the item being struck.
 running="$(podman ps --format '{{.Names}}' 2>/dev/null || true)"
 # Naming the stop command matters: from this directory there is no compose file,
 # so `podman compose down` cannot work and the reader is left hunting. Observed.
@@ -149,7 +162,12 @@ rc=0
 # It fails only where that port is unavailable or something else holds it, and
 # then the data is correctly in place and only the check is wrong. That single
 # case is forgiven; anything else is not, and the distinction is worth drawing
-# rather than swallowing. Backlog #19.
+# rather than swallowing.
+#
+# Backlog #19's fix does not remove this either, for the reason given at the
+# nothing-running guard above: it keeps an existing .env, and a fresh clone has
+# none. Restoring into a checkout that already has its own .env now polls this
+# host's port and passes, so this branch simply stops firing there.
 if [[ "$rc" -ne 0 ]]; then
     if grep -q 'the site is not healthy' "$log" && ! grep -q 'MISMATCH' "$log"; then
         note "restore.sh reported the site unhealthy on the *old* port; expected here."

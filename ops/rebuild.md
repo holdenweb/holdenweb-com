@@ -128,7 +128,11 @@ ls -lt ~/backups/holdenweb-com/
 > `verify-backup.sh` says `VERIFIED` for both. Since that command with no
 > argument takes `ls | sort | tail -1`, the wrong one is what "the latest
 > backup" means until somebody removes it. Delete any such directory now.
-> Backlog #22.
+> Backlog #22 is fixed in podpack 0.9.0b4 — `verify-backup.sh` now names any
+> table whose count has fallen since the previous backup, and prints the
+> `source directory:` that every manifest has recorded all along. This step
+> stays: it fires *before* the restore, on the backup you are about to trust,
+> and whether a directory should be deleted is a judgement only you can make.
 
 ```bash
 ./scripts/backup.sh
@@ -282,12 +286,15 @@ ls -l "${BACKUP:?}"
 ./scripts/restore.sh "$BACKUP"
 ```
 
-> **If it exits non-zero, stop here and read what it said.** It replaces
-> `.env` and `secrets.env` *before* it unpacks anything, so a failure after
-> that point leaves this checkout carrying the backup's identity — including
-> its `SITE_NAME`, which is the compose project every later command will act
-> on. Continuing means operating on the *backup's* deployment from this
-> directory. Recorded as backlog #19.
+> **If it exits non-zero, stop here and read what it said.** This checkout is a
+> fresh clone, so it has no `.env` of its own and `restore.sh` installs the
+> backup's — including its `SITE_NAME`, which is the compose project every later
+> command will act on. Both files go in *before* anything is unpacked, so a
+> failure after that point leaves this directory carrying the backup's identity,
+> and continuing means operating on the *backup's* deployment from here.
+>
+> Backlog #19 is struck as of podpack 0.9.0b4 and this warning still stands: the
+> fix keeps an `.env` that already exists, and a fresh clone has none.
 
 That is the whole of it, and it is worth knowing what it is doing rather than
 treating it as magic, because it stops twice to ask you things:
@@ -300,8 +307,10 @@ treating it as magic, because it stops twice to ask you things:
    about tables in the dump.
 
 Then, in an order chosen to avoid the two traps that a hand-run restore falls
-into: it puts `secrets.env` and `.env` back, keeping yours as
-`.superseded-<stamp>`; unpacks the app data **before** the first `compose up`,
+into: it puts `secrets.env` back, keeping yours as `.superseded-<stamp>`, and either
+keeps your `.env` or — as here, in a fresh clone — installs the backup's and
+names every per-host value in it; unpacks the app data **before** the first
+`compose up`,
 because `init-storage` hands the mounts to the containers' uids and does not
 run twice; **removes each restored app's directory first**, because `tar` only
 ever adds and a merge is a state that never existed; brings **each store up
@@ -312,9 +321,10 @@ Finally it verifies out loud — every table's row count against
 `rowcounts.txt`, and `/healthz` — and **exits non-zero** if either fails.
 
 > **On a host whose port differs from the old one, expect it to fail at the
-> last step, and expect that.** `.env` comes back from the backup carrying the
-> *old* `WEB_HOST_PORT`, so the health check polls a port nothing is listening
-> on. The data is restored correctly; only the last check is wrong. Fix it:
+> last step, and expect that.** This is a fresh clone, so `.env` comes from the
+> backup carrying the *old* `WEB_HOST_PORT`, and the health check polls a port
+> nothing is listening on. (Restoring into a checkout that already has an `.env`
+> keeps it, and this does not arise.) The data is restored correctly; only the last check is wrong. Fix it:
 >
 > ```bash
 > sed -i "s/^WEB_HOST_PORT=.*/WEB_HOST_PORT=$WEB_PORT/" .env
