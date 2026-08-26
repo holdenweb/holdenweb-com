@@ -27,7 +27,7 @@ drift apart.
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 14 | podpack | `backup.sh`'s working-tree guard fails open — **fixed** | security |
-| 15 | podpack | `/_status` `stored_files` cannot see a directory | correctness |
+| 15 | podpack | `/_status` `stored_files` cannot see a directory — **fixed** | correctness |
 | 16 | podpack | Recreating the database leaves a site that can never migrate — **fixed** | operational |
 | 18 | podpack | Container paths name holdenweb for every site | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` — **fixed** | operational |
@@ -247,7 +247,7 @@ holdenweb.com added one by hand.
 
 ### 15. `/_status` reports `stored_files` as top-level files only
 
-**Repo:** podpack
+**Repo:** podpack — **fixed 2026-08-26 in `c3d2c0c`.**
 
 *Evidence.* `src/podpack/core.py:295` — `iterdir()` filtered to `p.is_file()`.
 Production reports `"stored_files": []` for `pages`, which holds 1.0 MB in
@@ -260,7 +260,27 @@ no such filter and is correct — so `/_status` shows a weaker view than the che
 uses. An app declared stateless on that evidence would drop its content from
 every backup, silently, until somebody tried to restore.
 
-*Fix.* Count directories too, or rename the field for what it actually reports.
+*What shipped was both.* The filter is gone and the field is `site_content`,
+renamed with the fix rather than after it — "files" was the word that made the
+filter look correct. Files and directories are listed together with no
+distinction drawn: the question the field answers is "is there anything here?",
+which is what a backup asks of the directory as a whole.
+
+*The measurement.* `hostdata/apps/pages` on this site holds three directories,
+**zero** top-level files and 1.2 MB. The old field reported `[]` for that.
+
+*Corrected while fixing it.* Nothing is dropped from any backup by this today,
+and the entry can be read as saying otherwise. `_check_backup_claim` never had
+the filter, so a stateless claim contradicted by a subdirectory is still warned
+about at every boot, and `backup.sh` still writes `SKIPPED, declared stateless`
+into the manifest. Two independent notices would have had to go unread before
+data actually went missing. What the defect did was make the *authoring*
+decision harder than it needed to be — podpack disagreed with itself, and the
+weaker answer was the one on the page people read.
+
+*Left open deliberately.* The listing raises `FileNotFoundError` if the data
+directory is missing, where `data_dir_writable` beside it degrades to `false`.
+The directory is created at startup, so getting there takes something unusual.
 
 ### 16. Recreating the database leaves a site that can never migrate again
 
