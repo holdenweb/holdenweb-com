@@ -29,14 +29,14 @@ drift apart.
 | 14 | podpack | `backup.sh`'s working-tree guard fails open — **fixed** | security |
 | 15 | podpack | `/_status` `stored_files` cannot see a directory — **fixed** | correctness |
 | 16 | podpack | Recreating the database leaves a site that can never migrate — **fixed** | operational |
-| 18 | podpack | Container paths name holdenweb for every site | cosmetic |
+| 18 | podpack | Container paths name holdenweb for every site — **fixed** | cosmetic |
 | 19 | podpack | `restore.sh` replaces `.env`, so a restore gives the checkout the backup's `SITE_NAME` — **fixed** | operational |
 | 20 | podpack | `backup.sh`'s cross-deployment guard is inert on most sites — **fixed** | security |
-| 21 | podpack | `manifest.txt`'s `running build` can never be populated | correctness |
+| 21 | podpack | `manifest.txt`'s `running build` can never be populated — **fixed** | correctness |
 | 22 | podpack | A failed restore leaves a plausible backup that verifies clean — **fixed** | operational |
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child — **fixed** | correctness |
-| 26 | podpack | Every `up` builds the same image twice | efficiency |
+| 26 | podpack | Every `up` builds the same image twice — **fixed** | efficiency |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -337,7 +337,7 @@ does not hit this and a hand-run one does.
 
 ### 18. Every podpack site's containers are named after holdenweb
 
-**Repo:** podpack
+**Repo:** podpack — **fixed 2026-08-26 in `77aefce`.**
 
 *Evidence.* `substrate/data/compose.yaml:119-120` hardcodes
 `/var/lib/holdenweb/apps` and `/var/log/holdenweb/apps`, and
@@ -348,7 +348,20 @@ site called `mysite` from `creating-a-site.md`: it gets holdenweb's paths.
 reports another site's name, and a site with no config file is told to look at
 `/etc/holdenweb/app.toml`. The framework carries its first site's identity.
 
-*Fix.* Template the path from the site package, or make it site-neutral.
+*What shipped is the second of those, and it is the better one.* The paths are
+`/var/lib/podpack/apps`, `/var/log/podpack/apps` and `/etc/podpack/app.toml` —
+the framework's own name, identical in every deployment, which is what they
+always were in substance. Templating them per site would have made every
+deployment's container layout different for no gain.
+
+Not a data migration: the mount destination and `PODPACK_DATA_ROOT` change
+together in one file and the host side of each mount is untouched, so a site
+takes it through `substrate upgrade` and the next `up.sh` and finds its content
+where it left it. That "together" is the risk, and there is now a test that
+parses both halves out of `compose.yaml` and compares them.
+
+*Left alone.* ADRs 0004 and 0018 cite `/etc/holdenweb/app.toml` in passing. They
+record decisions as they were made and the path was incidental to both.
 
 *Less pressing than it was.* Item 20 used to depend on this one — its guard
 rebuilt `/var/lib/${project%%-*}/apps` and so was inert wherever the site name
@@ -464,7 +477,7 @@ the guard was not merely mismatching a path, it was inspecting nothing.
 
 ### 21. `manifest.txt`'s `running build` can never be populated
 
-**Repo:** podpack
+**Repo:** podpack — **fixed 2026-08-26 in `185b0f9`.**
 
 *Evidence.* `backup.sh` reads it with an unauthenticated
 `curl .../_status`, and `/_status` answers 404 to anyone who is not an
@@ -479,8 +492,18 @@ commit, and `git commit:` alone would then name the wrong thing to restore onto.
 `verify-backup.sh` does not print the field, which reads like quiet
 acknowledgement.
 
-*Fix.* Ask the container instead — `podman inspect` can read
-`PODPACK_BUILD_COMMIT` from the running image without any session at all.
+*What shipped* is exactly that, reusing the container id `backup.sh` already
+resolves by asking compose — so it survives a normalised project name too.
+Measured side by side against the running site: the new expression returned
+`edfff24`, the old one its UNKNOWN fallback.
+
+*Overstated, and worth correcting.* `restore.sh:80-89` already compares the
+manifest's `git commit:` with the checkout and resolves the *direction* with
+`git merge-base --is-ancestor`, so a code-versus-data check did exist. The hole
+this field now covers is the case where the image's commit is not an ancestor of
+the recorded HEAD — a `-dirty` build, or a checkout that moved on without one.
+That case was live while this was being fixed: the running image was stamped
+`0047d6b-dirty` against a HEAD of `edfff24`.
 
 
 ### 22. A failed restore leaves a plausible backup that verifies clean
@@ -586,7 +609,7 @@ was equally true of the copy.
 
 ### 26. Every `up` builds the same image twice
 
-**Repo:** podpack — observed 2026-08-24 in a full rebuild transcript.
+**Repo:** podpack — **fixed 2026-08-26 in `185b0f9`.** — observed 2026-08-24 in a full rebuild transcript.
 
 *Evidence.* `compose.yaml` gives `web` and `migrate` the same
 `image: localhost/${SITE_NAME}-web:latest` and **both declare `build:`**. So one
@@ -600,10 +623,20 @@ which is where a reader is looking for whether anything went wrong. On a cold
 cache, or a host that has just been rebuilt from nothing, it is a genuine
 doubling.
 
-*Fix.* `migrate` names the image it needs and does not need to build it —
-`depends_on` already orders it after the build that `web` triggers. Removing its
-`build:` block should be enough, and wants checking on a host with no image
-present at all, since that is the case the duplication was presumably guarding.
+*What shipped* is that, and the check was done rather than assumed. The image
+was removed outright and `up.sh` run against nothing: one build pass instead of
+two, 19s, `holdenweb-com-migrate-1` Created / Started / Exited against the image
+`web`'s build had just produced, `/healthz` 200 with `database: ok`, and 15
+integration tests passing.
+
+*The measurement.* One cached build pass is 8.3s of the 91s an `up` took warm.
+The duplication was two passes per `up` and four per rebuild, since `restore.sh`
+runs its own `up -d --build` first.
+
+*What it relies on.* A build being asked for at all. `up.sh` and `restore.sh`
+both pass `--build`; a bare `podman compose up` on a host with no image would
+try to *pull* the tag and fail — which it would equally have done for `web`
+before, so nothing new is exposed.
 
 
 ---
