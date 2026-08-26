@@ -21,7 +21,7 @@ drift apart.
 | --- | --- | --- | --- |
 | 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` — **fixed** | docs |
 | 6 | holdenweb-com | `README.md` stale on dependency sources — **fixed** | docs |
-| 7 | holdenweb-com | `environment = "local"` in the production config | cosmetic |
+| 7 | holdenweb-com | `environment = "local"` in the production config — **fixed** | cosmetic |
 | 8 | holdenweb-com | Nothing polls `/healthz` | gap |
 | 9 | holdenweb-com | No log rotation | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
@@ -119,9 +119,16 @@ dependency comes from, and says it in a form that cannot go stale.
 
 **Repo:** holdenweb-com
 
+**Fixed 2026-08-26** in podpack `ec3a58e`, and here by removing the key.
+
 *Evidence.* `config/app.toml:6`. The file is bind-mounted read-only from git,
-so production reads the same value the laptop does. podpack reads `environment`
-and does nothing with it.
+so production reads the same value the laptop does.
+
+*Two things this entry got wrong*, both found when it came to be fixed. podpack
+did **not** read `environment` — nothing in `src/podpack/` referenced the key at
+all. And `/_status` did not report it, so the "next person to read it" would
+have had to open `app.toml` on the host to see it. The item was real and its
+consequences were smaller than recorded.
 
 *Why it matters.* Nothing is broken. But `/_status` on the production host says
 the site thinks it is local, and the next person to read it will spend time
@@ -129,6 +136,31 @@ establishing that this is harmless.
 
 *Fix.* Either make the value meaningful (per-host, which means it stops being a
 committed file's business) or remove it. Removing it is the smaller lie.
+
+*What shipped is the first of those.* `PODPACK_ENVIRONMENT` now lives in `.env`,
+per deployment, and the key is gone from `app.toml`.
+
+It decides one thing, and less than was hoped. Compose reads `.env` directly for
+its bind mounts and cannot branch on a variable, so this can never *derive*
+`HOST_DATA_DIR` and `HOST_LOG_DIR` — only be checked against them.
+`prepare-host-dirs.sh` now refuses when a deployment that is not a lab is about
+to keep its data inside the checkout, which every deployment created from
+`env.example` does: it ships `./hostdata` and `./hostlogs`, and shows
+`/srv/<site>/data` only in a comment. The directories are gitignored, so nothing
+risks being committed — the data risks a `git clean -fdx`, a fresh clone, or
+[`rebuild.sh`](../rebuild.sh), which removes the site directory outright.
+
+Unrecognised values count as **not** local, so a typo refuses rather than
+quietly demoting a real deployment to a lab. Unset means local, so no existing
+site breaks before its next `substrate upgrade` delivers the line.
+
+*A side finding worth more than this item.* ADR-0037 argues that `.env.example`
+must retire because it is a seeded file that can never deliver a new variable to
+an existing site. It is not seeded — it has been CONFIG since the substrate
+first shipped, with append-only delivery into the live `.env` from the same day.
+Measured: `substrate status` on a real site reports `new variables pending:
+PODPACK_ENVIRONMENT`. The ADR is still Proposed and decision 4 wants revisiting
+on that basis.
 
 ---
 
