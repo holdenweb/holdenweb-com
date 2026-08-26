@@ -100,10 +100,20 @@ from, and which database and role it is actually connected as.
 
 **The database publishes no port.** Nothing inside the suite needs one, and
 it was the only number two sites still had to coordinate — which duly
-clashed with podpack-demo. `podman compose --profile dbport up -d dbport`
-forwards one when a host-side `psql` or `alembic revision --autogenerate`
-wants it, on a number nominatable per invocation
-([ADR-0027](../podpack/adrs/0027-the-database-port-is-published-only-on-request.md)).
+clashed with podpack-demo. Forward one when a host-side `psql` or
+`alembic revision --autogenerate` wants it, on a number nominatable per
+invocation
+([ADR-0027](../podpack/adrs/0027-the-database-port-is-published-only-on-request.md)):
+
+```bash
+podman compose --profile postgres-port up -d postgres-port
+```
+
+Or on a port of your choosing, which is the point of it:
+
+```bash
+POSTGRES_HOST_PORT=5439 podman compose --profile postgres-port up -d postgres-port
+```
 
 ## 4. Things specific to this site worth knowing
 

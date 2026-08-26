@@ -19,8 +19,8 @@ drift apart.
 
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
-| 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` | docs |
-| 6 | holdenweb-com | `README.md` stale on dependency sources | docs |
+| 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` — **fixed** | docs |
+| 6 | holdenweb-com | `README.md` stale on dependency sources — **fixed** | docs |
 | 7 | holdenweb-com | `environment = "local"` in the production config | cosmetic |
 | 8 | holdenweb-com | Nothing polls `/healthz` | gap |
 | 9 | holdenweb-com | No log rotation | gap |
@@ -72,24 +72,34 @@ read (rehearsal 1, 2026-08-23). **12** — ADR-0027's stale profile name
 
 **Repo:** holdenweb-com
 
-*Evidence.* `PROJECT-BRIEF.md:96` gives
-`podman compose --profile dbport up -d dbport`. `compose.postgres.yaml` defines
-the service as `postgres-port` with `profiles: ["postgres-port"]`. The brief
-predates the rename.
+**Fixed 2026-08-26.**
+
+*Evidence.* `PROJECT-BRIEF.md:103` — the entry said 96, which had drifted —
+gave `podman compose --profile dbport up -d dbport`. `compose.postgres.yaml`
+defines the service as `postgres-port` with `profiles: ["postgres-port"]`. The
+brief predates the rename.
 
 *Why it matters.* The command as written does nothing and says nothing useful,
 in a document whose purpose is briefing somebody who does not already know.
 
-*Fix.* One-line correction, both occurrences on that line.
+*What shipped, and it was three places rather than one.* The brief's command,
+corrected and moved into a fenced block of its own — it was inline in a sentence
+that ended with a full stop, which is how a stray `.` reached a live host once
+before. `operations.md` §13 carried a note recording this very discrepancy,
+which goes with it. And `compose.postgres.yaml:73` still said "see the `dbport`
+service below": that file is VERBATIM substrate, so it was fixed in podpack
+(`c9c6dfb`) and reaches this site on the next `substrate upgrade`.
 
 ### 6. `README.md` is stale on dependency sources
 
 **Repo:** holdenweb-com
 
-*Evidence.* `README.md:64` — "building currently requires the three
-path-sourced dependencies (podpack, podpack-pages, podpack-qrcode, pp-pdf) to be
-repointed at git remotes and re-locked". They are already git-sourced
-(`pyproject.toml:34-38`), and there are four of them, not three.
+**Fixed 2026-08-26.**
+
+*Evidence.* `README.md` — "building currently requires the three path-sourced
+dependencies (podpack, podpack-pages, podpack-qrcode, pp-pdf) to be repointed at
+git remotes and re-locked". They were already git-sourced, and there were four
+of them, not three.
 
 *Why it matters.* It describes a blocker that no longer exists, and miscounts
 what it lists — so a reader either does unnecessary work or stops trusting the
@@ -97,6 +107,13 @@ document.
 
 *Fix.* Delete the note. It becomes wrong again shortly, when the git sources
 are retired in favour of PyPI version specs.
+
+*And it had.* By the time this was struck the note was wrong a third way:
+podpack is a PyPI version spec (`podpack>=0.9.0b4`), while podpack-pages,
+podpack-qrcode and pp-pdf are still git-sourced under `[tool.uv.sources]`. Three
+readings of one sentence, all of them wrong, which is the argument for deleting
+rather than re-writing it. Nothing replaces it: `pyproject.toml` says where each
+dependency comes from, and says it in a form that cannot go stale.
 
 ### 7. `environment = "local"` in the production configuration
 

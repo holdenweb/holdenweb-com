@@ -64,9 +64,6 @@ in `.env`; credentials in `secrets.env`, which must be restored verbatim on
 a new host. The `migrate` service applies the alembic history before `web`
 starts.
 
-Note: building currently requires the three path-sourced dependencies
-(podpack, podpack-pages, podpack-qrcode, pp-pdf) to be repointed at git
-remotes and re-locked — a path source cannot survive a container build.
 
 ## Database schema changes
 

@@ -482,9 +482,6 @@ no restart of anything else. Most of the time no port is wanted at all:
 podman compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 ```
 
-> `PROJECT-BRIEF.md` §3 still calls this profile `dbport`. It is
-> `postgres-port`, in both the profile and the service name — the brief predates
-> the rename.
 
 ## 14. When it will not come up
 
