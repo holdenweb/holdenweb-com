@@ -403,7 +403,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.8.1b1"
+version = "1.8.1b2"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
@@ -436,7 +436,7 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "podpack", specifier = ">=0.9.0b4" },
+    { name = "podpack", directory = "../podpack" },
     { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git" },
@@ -682,8 +682,8 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.9.0b4"
-source = { registry = "https://pypi.org/simple" }
+version = "0.9.0b5"
+source = { directory = "../podpack" }
 dependencies = [
     { name = "alembic" },
     { name = "argon2-cffi" },
@@ -693,9 +693,24 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/ae/37eacf41101b8d5ef7a96eecc28c6213e3b8e677026cc7d14b181c1aa44f/podpack-0.9.0b4.tar.gz", hash = "sha256:f35c45a2bce9d9c99b142ac6362ce16e3498290e8ce701789e1ac807aacee4d3", size = 154475, upload-time = "2026-08-25T19:51:22.747Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/ed/e160ad134c7e81f7f42c878e9bcd652922bd1effad0d448c5757c5a0c7b9/podpack-0.9.0b4-py3-none-any.whl", hash = "sha256:12f3e25d300389d393b884d3b106a7050255fe66551cb529af343410596f9772", size = 157575, upload-time = "2026-08-25T19:51:21.456Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "argon2-cffi", specifier = ">=25.1.0" },
+    { name = "flask", specifier = ">=3.0" },
+    { name = "flask-security-too", specifier = ">=5.6.2" },
+    { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
+    { name = "gunicorn", specifier = ">=22.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "pymongo", marker = "extra == 'mongodb'", specifier = ">=4.8" },
+]
+provides-extras = ["mongodb"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8.0" },
 ]
 
 [[package]]

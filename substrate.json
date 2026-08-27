@@ -8,6 +8,7 @@
       "HOST_LOG_DIR",
       "MAIL_PASSWORD",
       "OPALSTACK_TOKEN",
+      "PODPACK_ENVIRONMENT",
       "POSTGRES_BIND_ADDR",
       "POSTGRES_HOST_PORT",
       "POSTGRES_PASSWORD",
@@ -26,6 +27,7 @@
       "GUNICORN_WORKERS",
       "HOST_DATA_DIR",
       "HOST_LOG_DIR",
+      "PODPACK_ENVIRONMENT",
       "POSTGRES_BIND_ADDR",
       "POSTGRES_HOST_PORT",
       "SITE_NAME",
@@ -63,7 +65,7 @@
     ".env.example": {
       "class": "config",
       "seeded_by": "pre-existing",
-      "sha256": "f22e472d6f1e59a6c86988d4fd2526b5f2061e017639af80a5f978846f96639a"
+      "sha256": "bf4c721b6d0df40e564ab6c269b77d9d1b99845503035c5cdfb012fc0c690552"
     },
     ".gitignore": {
       "class": "seeded",
@@ -102,11 +104,11 @@
     },
     "compose.postgres.yaml": {
       "class": "verbatim",
-      "sha256": "7eca502f18bd375e7d4c29f385fee52765ce6e9de45e01dedf3e5e93bfe9c057"
+      "sha256": "768832bd0880cc17c62c103729ebee846b3000286e15fb362c994f0c14209cdc"
     },
     "compose.yaml": {
       "class": "verbatim",
-      "sha256": "395b2c013bbc3752a3606d29f370dc60dc4972772c7458f1d3fc9e3aeefff3ee"
+      "sha256": "712c4295ca33f58fef777c570fda9b80f8ba24b9b304b46d82d4c194c4bb1350"
     },
     "config/mongod.conf": {
       "class": "verbatim",
@@ -143,7 +145,7 @@
     },
     "scripts/backup.sh": {
       "class": "verbatim",
-      "sha256": "26b936783827f84bf03bdfd8b0b548c3578b4131be8d40ebefcf6280bba44876"
+      "sha256": "58721b291d822321ba29dbf0eef6b54405250f4ee439bb427f45019edc9cb626"
     },
     "scripts/configure-host.py": {
       "class": "verbatim",
@@ -155,11 +157,11 @@
     },
     "scripts/prepare-host-dirs.sh": {
       "class": "verbatim",
-      "sha256": "d39f88f28560a9538e7ca159a4995c2a39480c50f7eb676c71655bd417b33b86"
+      "sha256": "e3e0a3eca714caf363f4374f7eea4eadb8ad077f4cc61db2cdb4c1c11432acc8"
     },
     "scripts/restore.sh": {
       "class": "verbatim",
-      "sha256": "f3b6ff38ccc554951526b92c6a4b8c7049486ca6162210e19371e882cccf01a3"
+      "sha256": "842fe39c4c95f24e26595d566784dac99dd18278ebcb650697dd7510ea0b5785"
     },
     "scripts/up.sh": {
       "class": "verbatim",
@@ -183,6 +185,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.9.0b4",
+  "podpack_version": "0.9.0b5",
   "substrate_schema": 1
 }
