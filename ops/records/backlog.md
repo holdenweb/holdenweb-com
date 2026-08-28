@@ -37,6 +37,7 @@ drift apart.
 | 23 | podpack | `restore.sh` could not work on Linux — **fixed** | operational |
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child — **fixed** | correctness |
 | 26 | podpack | Every `up` builds the same image twice — **fixed** | efficiency |
+| 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -638,6 +639,51 @@ both pass `--build`; a bare `podman compose up` on a host with no image would
 try to *pull* the tag and fail — which it would equally have done for `web`
 before, so nothing new is exposed.
 
+
+---
+
+## Raised 2026-08-26, while adding the navigation
+
+### 27. Navigation is one level deep, so an app's pages hang off the root
+
+**Repo:** podpack
+
+*Evidence.* `nav.Section` is a frozen dataclass of exactly two fields, `label`
+and `endpoint`. The registry keeps `state.nav` as a flat `list[Section]`
+(`registry.py:289`) and extends it with each app's entries as it installs
+(`registry.py:425`). `templates/nav.html` renders one `<ul>` of one `<li>` per
+entry. There is nowhere for a child to go at any of the three levels.
+
+*Why it matters.* An app with more than one page has no way to group them, so
+every function it offers must either claim a top-level slot or be reachable only
+from the app's own landing page. `pp_pdf` is the case in hand: its individual
+tools link from the root page because the chrome cannot nest them. The nav is
+the site's map, and an app that does several things cannot say so on it.
+
+Not urgent — the site works, and the workaround costs a click.
+
+*Fix, and the requirement that shapes it.* `Section` gains children, the
+registry keeps whatever tree the apps declare, and the chrome renders it. Two
+kinds of graceful degradation are wanted, and the first matters more:
+
+  **At the API.** A `Section` carrying children must still render correctly in
+  chrome that knows nothing about them — as its own top-level link. Otherwise
+  every site's `nav.html`, and every custom chrome anyone has written, breaks on
+  the release that adds this. `nav.html` is a site file, so podpack cannot fix
+  them by upgrading.
+
+  **In the browser.** A nested menu that needs JavaScript or hover to reach a
+  child is a menu that fails on a phone and for anyone using a keyboard. Plain
+  nested `<ul>`s remain usable as a list when nothing else runs.
+
+`_check_nav` (`registry.py:503`) refuses to boot when an entry names an endpoint
+no view provides, and must keep doing so for children — that check is why a bad
+nav entry is a startup failure rather than `BuildError` on every page of the
+site.
+
+ADR-0022 decided nav is contributed by apps and addressed by endpoint, and
+nothing here disturbs that; this is the same idea one level further down. Worth
+checking whether it wants an ADR of its own or an amendment to that one.
 
 ---
 
