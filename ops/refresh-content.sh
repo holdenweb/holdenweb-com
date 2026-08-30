@@ -96,9 +96,26 @@ if [[ "$mode" == "--mirror" ]]; then
 fi
 
 inside_namespace mkdir -p "$target"
-# `cp -a` inside the namespace, from a staging directory you own. The copy runs
+# Copied inside the namespace, from a staging directory you own: the copy runs
 # as root *in that namespace*, so it can write where your shell cannot.
-inside_namespace cp -a "${staged}/." "${target}/"
+#
+# `-R` and not `-a`. `-a` implies `--preserve=all`, which includes xattrs and
+# the SELinux context, and opal17 refuses to set those on the destination:
+#
+#     cp: preserving permissions for '.../python-classes/.': Invalid argument
+#
+# The copy itself had already succeeded when that fired, but `set -e` then
+# aborted before the chown below -- so the files were there and owned by the
+# wrong uid, which is the state this script exists to avoid.
+#
+# Nothing is lost by not preserving. Modes and ownership are set deterministically
+# two lines down, which is what you want for content generated on another host:
+# whatever umask produced it there has no business deciding what a web server
+# can read here. Timestamps are not preserved either; the app does not use them.
+inside_namespace cp -R "${staged}/." "${target}/"
+
+# Deterministic, and before the chown: directories 0755, files 0644.
+inside_namespace chmod -R "u=rwX,go=rX" "$target"
 
 # Ownership last, and to the app's uid rather than the namespace's root: the
 # container runs as 10001, and a tree left owned by namespace-root reads back
