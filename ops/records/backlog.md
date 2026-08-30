@@ -9,7 +9,8 @@
 *Raised 2026-08-19, while writing [`operations.md`](../../operations.md). Held
 here for triage into GitHub Issues — both `holdenweb/holdenweb-com` and
 `holdenweb/podpack` have Issues enabled and are currently empty, so nothing has
-been filed yet.*
+been filed yet. Items 28 and 29 belong to a third repository,
+`holdenweb/podpack-pages`, whose Issues have not been checked.*
 
 Each item names the repository it belongs to, the evidence that it is real, and
 what fixing it involves. **Tier 1** was found while writing the playbook;
@@ -38,6 +39,8 @@ drift apart.
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child — **fixed** | correctness |
 | 26 | podpack | Every `up` builds the same image twice — **fixed** | efficiency |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
+| 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
+| 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -684,6 +687,72 @@ site.
 ADR-0022 decided nav is contributed by apps and addressed by endpoint, and
 nothing here disturbs that; this is the same idea one level further down. Worth
 checking whether it wants an ADR of its own or an amendment to that one.
+
+### 28. A link between pages is rewritten to the asset route, losing the site
+
+**Repo:** podpack-pages — found 2026-08-26 while publishing a generated tree of
+class notes.
+
+*Evidence.* `content.rewrite_asset_urls` sends **every** relative `src` or
+`href` through `url_for("pages.asset", ...)`. It cannot distinguish a link to a
+page from a link to an image, because nothing tells it which is which. Measured
+against the shipped function, for a page served at `/pages/python-classes/index`:
+
+| in the HTML | becomes |
+| --- | --- |
+| `python2/index.html` | `/pages/asset/python-classes/python2/index.html` |
+| `style.css` | `/pages/asset/python-classes/style.css` |
+| `/pages/python2/index` | unchanged — `/` is in `_ABSOLUTE_PREFIXES` |
+
+The second row is right. The first is not, and the difference is visible:
+
+| | status | site chrome |
+| --- | --- | --- |
+| `/pages/bsars` | 200 | present |
+| `/pages/asset/bsars.html` | 200 | **absent** |
+
+*Why it matters.* A tree of linked HTML — which is what a generator produces —
+cannot be published as a set of pages. Follow a relative link and the target
+renders as a raw file: no navigation, no chrome, no way back. Follow a
+root-relative one and it 404s. The only form that reaches another *rendered*
+page is an absolute path naming the page route in full,
+`/pages/python-classes/python2/index`, which means the content has to know where
+the site mounted the app — the thing ADR-0022 went to trouble to avoid for nav.
+
+*Fix, and the question in it.* A reference to something inside the content trees
+that is *itself a page* — `.html` or `.md` — should be rewritten to the page
+route with the extension dropped; everything else to the asset route as now.
+That is a small change with one real question behind it: whether a `.html` file
+in a content tree is ever legitimately an asset rather than a page. If it is,
+the split needs saying rather than inferring — a marker directory, a
+declaration, or a convention.
+
+Worth doing with 29, since a tree of pages that link to each other also wants
+its directories to be landable.
+
+### 29. A directory has no index, so it cannot be landed on
+
+**Repo:** podpack-pages
+
+*Evidence.* `content.find_page` tries exactly two candidates and stops:
+`md-pages/<name>.md`, then `html-pages/<name>.html`. So
+`/pages/python-classes` raises `ContentNotFound` even when
+`html-pages/python-classes/` holds a hundred files, and the root of a published
+tree can only be reached by naming its index page explicitly —
+`/pages/python-classes/index`.
+
+*Why it matters.* Every generated site has a front door and this one cannot be
+opened. It also makes a link to a directory — the ordinary way to write "up" or
+"contents" — unresolvable.
+
+*Fix.* Two more candidates after the existing two: `<name>/index.md` and
+`<name>/index.html`. Worth settling whether the index name is fixed or
+configurable, and whether `/pages/x` and `/pages/x/` should both resolve —
+Flask's `<path:name>` captures them differently and only one of them is what a
+relative link in the served page will be resolved against.
+
+Pairs with 27: a navigation that can nest wants directories that can be landed
+on.
 
 ---
 
