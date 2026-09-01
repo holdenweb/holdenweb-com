@@ -68,7 +68,12 @@ def _wire(app: Flask) -> None:
     # site start and die inside `flask users create`.
     app.config.setdefault('MAIL_PASSWORD', os.environ.get('MAIL_PASSWORD'))
 
-    app.config.setdefault('SECURITY_REGISTERABLE', True)
+    # Closed on purpose: the site has no public account feature, and open
+    # self-registration -- with SECURITY_CONFIRMABLE unset, so a new account is
+    # usable at once -- was the way in to /config's whole-config dump. The admin
+    # user is created with `flask users create`; SECURITY_RECOVERABLE below
+    # still lets them reset their own password.
+    app.config.setdefault('SECURITY_REGISTERABLE', False)
     app.config.setdefault('SECURITY_RECOVERABLE', True)
     app.config.setdefault('REMEMBER_COOKIE_SAMESITE', 'strict')
     app.config.setdefault('SESSION_COOKIE_SAMESITE', 'strict')

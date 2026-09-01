@@ -19,9 +19,16 @@ def test_get_my_ip(client):
     assert "ip" in response.get_json()
 
 
-def test_config_requires_auth(client):
-    response = client.get("/config")
-    assert response.status_code in (302, 401)
+def test_config_is_not_public(client):
+    """It serialises the whole Flask config -- SECRET_KEY, the database URI and
+    MAIL_PASSWORD among it -- so it answers only an operator and 404s to
+    everyone else, exactly as /_status does."""
+    assert client.get("/config").status_code == 404
+
+
+def test_config_is_readable_by_an_operator(operator_app):
+    report = operator_app.test_client().get("/config").get_json()
+    assert report["config"], "the operator's config report is empty"
 
 
 def test_status_is_not_public(client):

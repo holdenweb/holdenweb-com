@@ -17,7 +17,6 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask_security import auth_required
 
 from podpack import Section, SiteApp
 
@@ -55,12 +54,24 @@ def home_page():
 
 ######## /config ########
 @blueprint.route("/config")
-@auth_required('session')
 def get_version():
+    # Operator-only, guarded exactly as podpack guards /_status: through the
+    # site's configured admin predicate (ADR-0033), which defaults to
+    # membership of the `admin` role. 404 rather than 403 to everyone else --
+    # this route serialises the whole Flask config, SECRET_KEY, the database
+    # URI and MAIL_PASSWORD among it, so its very existence is not something to
+    # hand a merely-authenticated session.
+    admin = current_app.extensions["podpack"].admin
+    try:
+        allowed = admin is not None and admin()
+    except Exception:  # noqa: BLE001 -- a broken guard denies, it does not admit
+        allowed = False
+    if not allowed:
+        abort(404)
     return {
         "server_version": __version__,
         "site_map": site_map(current_app),
-        "config": {k: str(v) for (k, v) in current_app.config.items()}
+        "config": {k: str(v) for (k, v) in current_app.config.items()},
     }
 
 
