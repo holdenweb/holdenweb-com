@@ -1,0 +1,20 @@
+# Nightly backups for the podpack site, on the Opalstack host.
+#
+# Install with `crontab ops/backup.cron` (or paste into `crontab -e`) as the
+# site's own user. loginctl enable-linger is already required for the
+# containers to survive logout; the same setting is what lets these run.
+#
+# $HOME is set by cron, so no username is hard-coded. Paths are the STAGING
+# host's (app `os`); for production, change `os` to that app's directory.
+# backup.sh reads the site's .env, so SITE_NAME -- and therefore BACKUP_ROOT
+# (~/backups/$SITE_NAME) -- comes from there; nothing to set here.
+#
+# Prove it once before trusting it: run backup.sh by hand, then restore.sh into
+# a scratch deployment (operations.md sections 5 and 6). A backup nobody has
+# restored is not yet a backup.
+
+# 03:17 -- take the backup
+17 3 * * * cd $HOME/apps/os/site && ./scripts/backup.sh >> $HOME/backups/backup.log 2>&1
+# 04:23 -- read every archive back through the tool that would restore it; a
+# non-zero exit (logged) is the thing to notice.
+23 4 * * * cd $HOME/apps/os/site && ./scripts/verify-backup.sh >> $HOME/backups/verify.log 2>&1
