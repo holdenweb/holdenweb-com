@@ -41,6 +41,7 @@ drift apart.
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
+| 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
