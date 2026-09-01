@@ -19,7 +19,7 @@ dependencies = [
  #       this host fails on every file -- after replacing .env and secrets.env,
  #       so the checkout is left wearing the backup's identity and holding none
  #       of its data. Measured on Opalstack, 2026-08-24.
- "podpack>=0.9.0b4",
+ "podpack==0.9.0b6",
  "podpack-pages",
  "podpack-qrcode",
  "pp-pdf",
@@ -53,7 +53,6 @@ build-backend = "uv_build"
 # installation plan". These still resolve to what is *on the remote*, so
 # working locally on one means pushing before re-locking here.
 [tool.uv.sources]
-podpack = { path = "../podpack" }
 podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git" }
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git" }
 pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git" }
