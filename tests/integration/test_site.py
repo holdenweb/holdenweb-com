@@ -5,6 +5,8 @@ a pass means the thing that is serving works -- not that the code that built it
 would have.
 """
 
+import os
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -72,4 +74,40 @@ def test_the_login_form_is_usable(page: Page, base_url: str) -> None:
 
     expect(page.get_by_role("textbox", name="Email Address")).to_be_visible()
     expect(page.get_by_label("Password", exact=True)).to_be_visible()
+    expect(page.get_by_role("button", name="Login")).to_be_visible()
+
+
+# An account that exists, so a submit reaches the validation code rather than
+# short-circuiting on "no such user". Its email is not a secret; override per
+# target with SMOKE_LOGIN_EMAIL. No password is carried -- the point is to fail.
+SMOKE_LOGIN_EMAIL = os.environ.get("SMOKE_LOGIN_EMAIL", "steve@holdenweb.com")
+
+
+def test_submitting_the_login_form_does_not_error(page: Page, base_url: str) -> None:
+    """Submit the login form and assert it *rejects* cleanly, not 500s.
+
+    The sibling test above only GETs the form, which is why two separate
+    breakages reached production unseen: a migration that never built the `user`
+    table (500 on the lookup), and two flask_security packages colliding so the
+    login form called `is_locked` on a User that lacked it (500 in validation).
+    Both showed only on POST, and only for an account that exists -- so this
+    submits a real account's email with a deliberately wrong password, carrying
+    no credential, purely to drive that path and confirm it ends in a civil
+    "wrong password", never an Internal Server Error.
+    """
+    page.goto(f"{base_url}/login")
+    page.get_by_role("textbox", name="Email Address").fill(SMOKE_LOGIN_EMAIL)
+    page.get_by_label("Password", exact=True).fill("deliberately-wrong-password")
+
+    with page.expect_response(
+        lambda r: r.request.method == "POST" and r.url.rstrip("/").endswith("/login")
+    ) as posted:
+        page.get_by_role("button", name="Login").click()
+
+    assert posted.value.status < 500, (
+        f"POST /login returned {posted.value.status} -- the login path is broken "
+        "on the deployment (a missing table, a bad dependency, a dead mail path)"
+    )
+    # And it must have *handled* the bad login, not merely avoided a 500: the
+    # form comes back for another try. A crash page would not carry it.
     expect(page.get_by_role("button", name="Login")).to_be_visible()
