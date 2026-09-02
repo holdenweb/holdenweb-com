@@ -47,11 +47,15 @@ case "$url" in
   *)   echo "remote '$target' is not an scp-style host:path URL: $url" >&2; exit 1 ;;
 esac
 
-# Deploy committed code. up.sh stamps -dirty for an unclean tree, but that is a
-# safety net for accidents, not a way to ship uncommitted work. Skipped for a
-# dry run, which only ever prints.
-if [ "$dry" -eq 0 ] && [ "$allow_dirty" -eq 0 ] && [ -n "$(git status --porcelain)" ]; then
-  echo "working tree is dirty; commit first, or pass --allow-dirty." >&2; exit 1
+# Deploy committed code. --untracked-files=no so a stray untracked file (a local
+# README.pdf, a scratch note) does not count: it is never pushed. What must not
+# ship silently is an uncommitted change to a *tracked* file, since only commits
+# are pushed. up.sh's -dirty stamp is the accident safety net; this is the
+# intent. Skipped for a dry run, which only ever prints.
+if [ "$dry" -eq 0 ] && [ "$allow_dirty" -eq 0 ] \
+   && [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "uncommitted changes to tracked files; commit first, or pass --allow-dirty." >&2
+  exit 1
 fi
 
 sha="$(git rev-parse --short HEAD)"
