@@ -179,6 +179,33 @@ container healthcheck uses — so external monitoring has something to ask and
 nothing asks it. Today the site being down is noticed by a person. *(Note the
 name: `/healthz`, no underscore, unlike `/_status`.)*
 
+*Progress 2026-09-02, parked here to revisit before there are paying customers.*
+The **asking half now exists**: [`ops/poll-health.sh`](../poll-health.sh)
+(committed, pushed) fetches `HEALTH_URL` (default `https://os.holdenweb.com/healthz`)
+and asserts the body carries `"status":"ok"` rather than trusting the status
+code — nginx answers 200 from its own error page with the container gone, so a
+200 alone is not health. A non-2xx, a hang past `--max-time`, or a bad TLS
+certificate all count as failure; it is silent on success, so a scheduler only
+ever fires on a real fault, and `ALERT_CMD` routes the failure message wherever
+it is pointed. What is **still outstanding**:
+
+- **A home that is neither the host nor a sleeping laptop.** The poll sees only
+  what it sees from where it runs, and a laptop asleep at the polling minute is a
+  blind monitor whose silence is indistinguishable from health. An always-on
+  vantage is wanted; a hosted uptime service is the strong form, because it also
+  alerts when the poll *itself* stops — a dead-man's-switch a self-run cron
+  cannot manage.
+- **An alert channel wired into `ALERT_CMD`** (ntfy, Pushover, mail) so a 3am
+  failure reaches a phone rather than a logfile nobody is reading.
+- **A schedule on that machine**, after the host's 03:17/04:23 backup window.
+- **The proof the plan asks for:** stop `web`, watch the alert fire, restart,
+  watch recovery. Until that has been done once, the poll is a claim.
+- **The production `HEALTH_URL`** once a production deployment exists; the
+  default targets staging `os.holdenweb.com`.
+
+Rehearsing the fire-and-recover loop from the laptop proves the mechanism; it is
+the *standing* home that wants to be always-on.
+
 ### 9. No log rotation
 
 **Repo:** holdenweb-com. `hostlogs/` grows without limit; the laptop lab's
