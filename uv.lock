@@ -403,7 +403,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.8.1b4"
+version = "1.8.1b5"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
@@ -436,7 +436,7 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security", specifier = ">=5.6.2" },
-    { name = "podpack", specifier = "==0.9.0b6" },
+    { name = "podpack", specifier = ">=0.9.0b6" },
     { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git" },
