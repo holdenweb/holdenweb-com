@@ -617,3 +617,19 @@ Stop `web`, wait for the interval, and confirm the alert arrives. Then start it
 again. A monitor nobody has seen fire is in exactly the position a backup
 nobody has restored was in before §5 existed — and that comparison is the
 reason this section says so rather than assuming.
+
+## 19. Troubleshooting: what a message means
+
+When a line prints that you do not recognise, look it up rather than guess.
+[`ops/messages.html`](ops/messages.html) — **The 3am Almanac** (published at
+https://claude.ai/code/artifact/c51a17b1-44f9-4d85-be38-155e1745543d) — is a
+searchable catalogue of every message this system is likely to emit: from the
+deploy and backup scripts, the app at boot, PostgreSQL, and the
+`git`/`uv`/`podman` tools. Paste the line you are staring at and it narrows to
+the entry, telling you where it comes from, how serious it is, and what to do —
+filterable by severity, and by whether it fires on the laptop or the host.
+
+On the host, where there is no browser, the same catalogue is
+[`ops/MESSAGES.md`](ops/MESSAGES.md) — grep it. Both are generated from
+`ops/messages.json` by `ops/build-messages.py`; edit the JSON and re-run to keep
+them current.
