@@ -50,12 +50,14 @@ build-backend = "uv_build"
 # The three apps stay on git until they have PyPI publishers of their own. A
 # path source is not an option for any of them: the container build context has
 # no such path, and `uv sync --frozen` fails there with "Failed to determine
-# installation plan". These still resolve to what is *on the remote*, so
-# working locally on one means pushing before re-locking here.
+# installation plan". Each is pinned to an immutable commit, so a re-lock
+# follows the remote only when the rev here changes on purpose -- not silently
+# on whatever the branch has moved to. These are the commits currently locked
+# and deployed; bump a rev deliberately, and push it before re-locking here.
 [tool.uv.sources]
-podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git" }
-podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git" }
-pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git" }
+podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "c85ad19e0b624005f6607ace8816b58cc546ee67" }
+podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "fe30c05030c2e9525edd4a10da5410725c08f456" }
+pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git", rev = "98a11731ad74144680ae8c4209bb81c18950284b" }
 
 [dependency-groups]
 dev = [
