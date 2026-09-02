@@ -14,7 +14,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_from_directory,
     url_for,
 )
 
@@ -90,12 +89,23 @@ def parts_demo(number: str):
     return redirect(url_for("pages.page", name="parts_demo"))
 
 
-######## /python ########
-# The default lets url_for build the nav entry without arguments.
-@blueprint.route("/python/", defaults={"path": "index.html"})
+######## /python -> the pages app's python-classes ########
+# The experimental static/python/web tree is retired; that content lives in the
+# pages app now, at /pages/python-classes, where it can be improved along with
+# the site. Kept as a permanent redirect -- exactly like the legacy routes below
+# -- so the nav entry and any old bookmark land on the maintained tree; every
+# old sub-path collapses onto the one page.
+#
+# The nav cannot address /pages/python-classes directly: a Section is
+# (label, endpoint) and the chrome resolves it with url_for and no arguments
+# (nav.py), so it cannot carry the `name` that pages.page needs. So the nav
+# points here and this hop does the rest. The `defaults` is what lets
+# url_for("main.python_docs") build /python/ with no arguments; `path` is
+# otherwise ignored.
+@blueprint.route("/python/", defaults={"path": ""})
 @blueprint.route("/python/<path:path>")
 def python_docs(path: str):
-    return send_from_directory("static/python/web", path)
+    return redirect(url_for("pages.page", name="python-classes"), 301)
 
 
 ######## Legacy content URLs ########

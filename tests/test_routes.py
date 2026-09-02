@@ -94,6 +94,19 @@ def test_parts_demo_redirects_to_pages(client):
     assert response.headers["Location"] == "/pages/parts_demo"
 
 
+def test_old_python_url_redirects_to_pages(client):
+    """/python retired its experimental static tree; it now permanently
+    redirects to the pages app's python-classes content, and every old
+    sub-path collapses onto that one page."""
+    response = client.get("/python/")
+    assert response.status_code == 301
+    assert response.headers["Location"] == "/pages/python-classes"
+
+    deep = client.get("/python/tutorial/index.html")
+    assert deep.status_code == 301
+    assert deep.headers["Location"] == "/pages/python-classes"
+
+
 NAV_BEARING = [
     ("/", "the front page"),
     ("/qrcode/", "an installed app"),
