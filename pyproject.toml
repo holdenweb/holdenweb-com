@@ -27,7 +27,11 @@ dependencies = [
  "flask (>=2.3.3)",
  "python-dotenv (>=1.0.1,<2.0.0)",
  "psycopg2-binary>=2.9.10",
- "flask-security>=5.6.2",
+ # flask-security-too, NOT flask-security: both ship the `flask_security` import
+ # package, and podpack already depends on -too (login is core, ADR-0033).
+ # Declaring the other one too installs both into one namespace; their classes
+ # collide and login dies with AttributeError: 'User' object has no 'is_locked'.
+ "flask-security-too>=5.6.2",
  "argon2-cffi>=25.1.0",
  "flask-mailman>=1.1.1",
  "flask-paranoid>=0.3.0",
