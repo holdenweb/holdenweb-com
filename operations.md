@@ -51,19 +51,21 @@ An app upgrade will not overwrite it — and will not restore it either.
 
 ## 2. Deploying a change
 
-```bash
-git push main main
-```
-
-⚠️ Then, **on the host**, in the site directory:
+From the laptop, to staging or production:
 
 ```bash
-./scripts/up.sh
+./ops/deploy.sh staging
 ```
 
-`up.sh` always rebuilds and stamps the commit into the image, so `/_status`
-answers "is this running the code I am looking at?" exactly. A `-dirty` suffix
-in `build_commit` means the image was built from an uncommitted tree.
+It pushes the current commit to that target's receiving checkout
+(`~/apps/<app>/site`, `receive.denyCurrentBranch=updateInstead`), runs
+`scripts/up.sh` there, and polls `/healthz`. [`ops/DEPLOY.md`](ops/DEPLOY.md)
+has the one-time per-target setup and the production target.
+
+Push-and-rebuild rather than rsync so the target is a real checkout at the
+pushed commit: `up.sh` stamps that commit into the image, so `/_status` answers
+"is this running the code I am looking at?" exactly. A `-dirty` suffix in
+`build_commit` means the image was built from an uncommitted tree.
 
 Ordering is enforced by the stack, not by the operator:
 `init-storage` → `postgres` (healthy) → `migrate` → `web`. A schema change is
@@ -71,11 +73,10 @@ applied by `migrate` before `web` starts; if `migrate` fails, `web` never
 starts against the stale schema, which is the intended behaviour and not a
 fault to work around.
 
-> **Unverified from here:** whether the `main` remote (`opal17:apps/second-alma`)
-> is bare with a checkout beside it, or takes pushes into a live worktree via
-> `receive.denyCurrentBranch=updateInstead`, and whether a `post-receive` hook
-> already runs `up.sh`. Confirm once and write the answer in here — it is the
-> single most-repeated procedure in the document.
+Settled, since this note asked: `deploy.sh` pushes into a live worktree via
+`receive.denyCurrentBranch=updateInstead` on the host and runs `up.sh` over
+ssh — no bare repo, no `post-receive` hook. Staging is `~/apps/os/site`;
+production is its own `~/apps/<app>/site`.
 
 ## 3. Verifying a deployment
 
@@ -83,7 +84,7 @@ Never by looking at the front page. The QR code app answered 200 for weeks
 while contributing no navigation at all.
 
 ```bash
-uv run pytest tests/integration --base-url https://holdenweb.com
+uv run pytest tests/integration --base-url https://os.holdenweb.com
 ```
 
 Fifteen tests, driving a real browser, asking each app to do its job — generate
@@ -140,23 +141,32 @@ container using that container's environment, so `ps` shows nothing.
 
 ### Scheduling it
 
-⚠️ On the host, as the site's own user:
+On the host, as the site's own user, install [`ops/backup.cron`](ops/backup.cron):
 
-```cron
-17 3 * * * cd ~/apps/second-alma && ./scripts/backup.sh >> ~/backups/backup.log 2>&1
-23 4 * * * cd ~/apps/second-alma && ./scripts/verify-backup.sh >> ~/backups/verify.log 2>&1
+```bash
+crontab ops/backup.cron
 ```
+
+That schedules `backup.sh` (03:17) and `verify-backup.sh` (04:23), both logged
+under `~/backups/`. The fragment runs in `$HOME/apps/os/site`; for production,
+point it at that app's directory. It exists now but is not running until
+installed.
 
 `loginctl enable-linger` is already required for the containers to survive
 logout; the same setting is what lets these run.
 
 ### Off the machine
 
-A backup on the machine it protects is not a backup. ⚠️ From the laptop:
+A backup on the machine it protects is not a backup. From the laptop:
 
 ```bash
-rsync -a --delete opal17:backups/holdenweb-com/ ~/backups/holdenweb-com-remote/
+./ops/pull-backups.sh
 ```
+
+It rsyncs `opal17:backups/os-holdenweb-com/` to
+`~/backups/os-holdenweb-com-remote/` (created 0700, source modes preserved).
+[Its header](ops/pull-backups.sh) has the crontab line and the production
+variable.
 
 That directory contains `secrets.env` in clear. Keep it at 0700 on a disk you
 would be willing to lose in the same sentence as your laptop, or encrypt the
@@ -504,7 +514,7 @@ podman compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 A deployment is a commit and an image, so a rollback is both:
 
 ```bash
-git revert <commit> && git push main main     # then ./scripts/up.sh on the host
+git revert <commit> && ./ops/deploy.sh staging     # push, rebuild, health-check
 ```
 
 **A schema change does not roll back with the code.** alembic has the
@@ -532,7 +542,10 @@ the one that matters most, and why §5 exists.
 Recorded rather than hidden. None is urgent; all are real.
 
 - **No maintenance page.** Stopping `web` gives a 502 (§11).
-- **No log rotation.** `hostlogs/` grows without limit.
+- ~~**No log rotation.**~~ **Closed:** `config/postgresql.conf` rotates on
+  day-of-week filenames with truncation, so Postgres logs are bounded to a week
+  (seven files). Reaches os on the next deploy plus a postgres restart; podpack's
+  substrate carries the same change to other sites on their next upgrade.
 - **No monitoring**, until §18 is actually set up. The procedure exists now;
   nothing is running it yet, and an unproved monitor is worth what an untested
   backup is worth.
@@ -574,19 +587,21 @@ is richer, it requires an operator, and it is not what to poll.
 
 ### Two checks, because they fail differently
 
-1. **From outside**, against `https://holdenweb.com/healthz`, expecting 200
+1. **From outside**, against `https://os.holdenweb.com/healthz`, expecting 200
    *and* `"status":"ok"` in the body. Matching the body is not fussiness: nginx
    will happily return 200 from its own error page with the container gone.
-   This is the one that catches DNS, TLS expiry and the proxy itself, none of
-   which anything on the host can see. It needs an account somewhere, so it is
-   the account holder's to set up.
+   This is the one that catches DNS, the proxy and a broken certificate, none of
+   which anything on the host can see. It is
+   [`ops/poll-health.sh`](ops/poll-health.sh), run from the laptop or another
+   machine (its header has the crontab line and the target variable); a hosted
+   uptime service would do the same, independently of your own machines.
 
 2. **On the host**, which catches the opposite case — a `web` container that is
    unhealthy behind a proxy still answering convincingly. Five-minutely, and
    quiet unless it fails:
 
    ```cron
-   */5 * * * * cd ~/apps/holdenweb && . ./.env && \
+   */5 * * * * cd ~/apps/os/site && . ./.env && \
      curl -fsS --max-time 10 "http://${WEB_BIND_ADDR:-127.0.0.1}:${WEB_HOST_PORT}/healthz" \
      | grep -q '"status":"ok"' \
      || echo "holdenweb /healthz failed at $(date -Is)" \
