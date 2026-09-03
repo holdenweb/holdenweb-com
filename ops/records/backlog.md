@@ -43,6 +43,9 @@ drift apart.
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
+| 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
+| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
+| 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name | security |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -837,6 +840,87 @@ repo-root and packaged copies in step.
 and opal17 carries the manual `containers.conf` pin, so this host is covered;
 item 31 is the durable, every-deployment form. The pin also closes deploy.sh
 without touching it, because it is PATH-independent.
+
+### 32. `PODPACK_PROXY_HOPS` should be derived from the environment, not set by hand
+
+**Repo:** podpack
+
+*Evidence.* `PODPACK_PROXY_HOPS` is carried as a standalone value every
+deployment must set and keep correct, and it is the one variable podpack cannot
+deliver: its documentation lives in `env.example`, a seeded file
+`podpack substrate upgrade` never rewrites (SUB-1). The result is manual handling
+wherever it matters -- `rebuild.sh` reconciles it by hand (step 3, default 1),
+`rebuild.md` Part 4 echoes `PODPACK_PROXY_HOPS=1` into `.env` by hand, and a
+fresh site that misses it serves every `_external` URL as `http://`, first
+visible in a password-reset mail. That `http://` reset link is the fault this
+whole framework exercise began with.
+
+*Why it matters.* The value is not really free -- it is a function of how the
+site is deployed. A site reached directly in development sits behind no proxy
+(0 hops); a site behind Opalstack's nginx sits behind exactly one (1 hop). And
+podpack already knows which it is: Phase-0 item 7 put `PODPACK_ENVIRONMENT` in
+`.env` per deployment (`local` vs not-local, unrecognised counting as
+not-local). So the hop count is derivable, and a derived value cannot be
+forgotten, cannot go undelivered, and cannot drift from the deployment it
+describes.
+
+*Fix.* Derive the trusted-hops count from `PODPACK_ENVIRONMENT`: **0 for
+`local`, 1 for `staging` or `production`.** Read it where the app configures its
+ProxyFix (or equivalent), so `PODPACK_PROXY_HOPS` becomes a computed default
+rather than a hand-set variable -- keep an explicit override for the unusual
+topology (two proxies, say), but make the common case automatic. Retire the
+manual `PODPACK_PROXY_HOPS` handling in `rebuild.sh` and `rebuild.md` once it is
+derived, which also removes most of SUB-1's motivation (the undeliverable
+commented var). Fits ADR-0037, which already has `configure-host.py` own the
+variable set and names the deployment type explicitly.
+
+### 33. The `web` healthcheck pings every 10s -- too often for a quiet site
+
+**Repo:** podpack
+
+*Evidence.* `compose.yaml:160` sets the `web` service healthcheck to
+`interval: 10s` (`test: python /app/healthcheck.py`, timeout 5s, retries 6,
+start_period 10s), so a site with no users yet health-pings `/healthz` six times
+a minute around the clock -- overhead and access-log noise (see LOG-1) out of
+all proportion to the traffic. The postgres healthcheck at 5s
+(`compose.postgres.yaml:78`) is the startup gate and a separate matter; leave it.
+
+*Fix.* Widen the `web` healthcheck `interval` to **150s** for now, and tighten it
+again when the site is busy enough to want fast liveness detection. `compose.yaml`
+is byte-identical substrate (podpack canonical + the rendered `holdenweb.com`
+copy + the root), so change them together. Nothing currently acts on `web` being
+unhealthy -- podman does not auto-restart on it -- so the only cost is how
+quickly `podman ps` reflects a wedged container; consider trimming `retries`
+too, since 6 x 150s is a 15-minute window to "unhealthy". Fuller form, and it
+fits item 32: make the interval a function of `PODPACK_ENVIRONMENT` -- loose for
+a quiet or dev site, tight for production -- rather than one hardcoded default.
+
+### 34. `/config` dumps every secret in the Flask config, even to an admin
+
+**Repo:** holdenweb-com
+
+*Evidence.* `src/holdenweb/views.py:71-75` (`get_version`) returns
+`{"config": {k: str(v) for (k, v) in current_app.config.items()}}` -- the entire
+Flask config unredacted, which includes `SECRET_KEY`, `SECURITY_PASSWORD_SALT`,
+`MAIL_PASSWORD` and `SQLALCHEMY_DATABASE_URI` (the database password is in it).
+SEC-1 closed the route to non-admins (it now 404s), but the *content* is still
+every secret the site holds, handed to any admin session in clear.
+
+*Why it matters.* Defence in depth. The route's guard is the only thing between
+these values and the world, and it has regressed once already -- that was SEC-1.
+A redacted body means a future guard slip cannot leak the secrets, and an admin
+reading `/config` in a browser is not shoulder-surfing them or dropping them into
+a screenshot or a support log. It is the principle the codebase applies
+everywhere else: report a secret's shape, never its value.
+
+*Fix.* Redact the sensitive keys before serialising -- match on name
+(`*SECRET*`, `*PASSWORD*`, `*SALT*`, `*TOKEN*`, `*KEY*`, and
+`SQLALCHEMY_DATABASE_URI`) and replace the value with a placeholder or its
+length/shape rather than the string. Simplest is a denylist yielding
+`<redacted>`; better is the shape indicator the secret tests already use.
+podpack's `/_status` is the reference for how much a diagnostic endpoint should
+say -- `/config` should not say more. Small and self-contained; a good
+first-thing-next-session change.
 
 ---
 
