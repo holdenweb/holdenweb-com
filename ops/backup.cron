@@ -1,8 +1,30 @@
 # Nightly backups for the podpack site, on the Opalstack host.
 #
 # Install with `crontab ops/backup.cron` (or paste into `crontab -e`) as the
-# site's own user. loginctl enable-linger is already required for the
-# containers to survive logout; the same setting is what lets these run.
+# site's own user, and RE-INSTALL after editing this file -- crontab keeps its
+# own copy and does not read this one.
+#
+# Cron runs with a minimal environment, and rootless podman needs three things
+# from it that an interactive login shell supplies and cron does not. The first
+# scheduled run found none of them: it reported both stores down while
+# `podman compose ps` showed them Up 20 hours -- the containers were fine, cron
+# simply could not see them, and backup.sh/verify-backup.sh rightly refused.
+#
+#   1. loginctl enable-linger (once, as this user): keeps /run/user/<uid> alive
+#      while you are logged out -- both what lets the containers outlive logout
+#      and what makes the rootless socket under it reachable at 3am.
+#   2. $HOME/bin on PATH: `podman compose` shells out to the compose provider at
+#      ~/bin/docker-compose, which cron's /usr/bin:/bin PATH does not include.
+#   3. XDG_RUNTIME_DIR: where podman finds the rootless socket and its container
+#      state. Unset, it looks elsewhere and sees nothing. If podman still cannot
+#      connect, also export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus".
+#
+# 2 and 3 are exported on each line below; 1 is a one-off you run by hand.
+#
+# The `date` header stamps each run with an ISO-8601 instant, so a failure says
+# exactly WHEN it fired. Its percent signs are backslash-escaped because cron
+# turns an unescaped % into a newline and sends the rest to stdin -- which would
+# otherwise eat the timestamp silently.
 #
 # $HOME is set by cron, so no username is hard-coded. Paths are the STAGING
 # host's (app `os`); for production, change `os` to that app's directory.
@@ -13,8 +35,8 @@
 # a scratch deployment (operations.md sections 5 and 6). A backup nobody has
 # restored is not yet a backup.
 
-# 03:17 -- take the backup
-17 3 * * * cd $HOME/apps/os/site && ./scripts/backup.sh >> $HOME/backups/backup.log 2>&1
+# 03:17 -- take the backup.
+17 3 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/os/site && { date -u +'---- \%FT\%TZ backup ----'; ./scripts/backup.sh; } >> $HOME/backups/backup.log 2>&1
 # 04:23 -- read every archive back through the tool that would restore it; a
 # non-zero exit (logged) is the thing to notice.
-23 4 * * * cd $HOME/apps/os/site && ./scripts/verify-backup.sh >> $HOME/backups/verify.log 2>&1
+23 4 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/os/site && { date -u +'---- \%FT\%TZ verify ----'; ./scripts/verify-backup.sh; } >> $HOME/backups/verify.log 2>&1
