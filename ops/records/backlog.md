@@ -45,7 +45,7 @@ drift apart.
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
-| 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name | security |
+| 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -899,6 +899,11 @@ a quiet or dev site, tight for production -- rather than one hardcoded default.
 
 **Repo:** holdenweb-com
 
+**Fixed 2026-09-03** in `src/holdenweb/views.py`: a shape-only `_redacted()`
+covering `SECRET`/`PASSWORD`/`SALT`/`TOKEN`/`KEY` names and the database URI,
+reported as `<redacted, N chars>`, with a `test_config_redacts_secret_values`
+guard. Keys still show, values do not.
+
 *Evidence.* `src/holdenweb/views.py:71-75` (`get_version`) returns
 `{"config": {k: str(v) for (k, v) in current_app.config.items()}}` -- the entire
 Flask config unredacted, which includes `SECRET_KEY`, `SECURITY_PASSWORD_SALT`,
@@ -919,8 +924,7 @@ everywhere else: report a secret's shape, never its value.
 length/shape rather than the string. Simplest is a denylist yielding
 `<redacted>`; better is the shape indicator the secret tests already use.
 podpack's `/_status` is the reference for how much a diagnostic endpoint should
-say -- `/config` should not say more. Small and self-contained; a good
-first-thing-next-session change.
+say -- `/config` should not say more.
 
 ---
 

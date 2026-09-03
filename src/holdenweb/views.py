@@ -52,14 +52,28 @@ def home_page():
 
 
 ######## /config ########
+# Config keys whose *value* is a secret: any name carrying one of these markers,
+# plus the database URI, whose name does not advertise the password embedded in
+# it. Reported as shape, never value -- the house rule for secrets everywhere.
+_SECRET_MARKERS = ("SECRET", "PASSWORD", "SALT", "TOKEN", "KEY")
+
+
+def _redacted(key, value):
+    name = key.upper()
+    if name == "SQLALCHEMY_DATABASE_URI" or any(m in name for m in _SECRET_MARKERS):
+        return f"<redacted, {len(str(value))} chars>"
+    return str(value)
+
+
 @blueprint.route("/config")
 def get_version():
     # Operator-only, guarded exactly as podpack guards /_status: through the
     # site's configured admin predicate (ADR-0033), which defaults to
-    # membership of the `admin` role. 404 rather than 403 to everyone else --
-    # this route serialises the whole Flask config, SECRET_KEY, the database
-    # URI and MAIL_PASSWORD among it, so its very existence is not something to
-    # hand a merely-authenticated session.
+    # membership of the `admin` role. 404 rather than 403 to everyone else.
+    # And the secret *values* are redacted below regardless -- SECRET_KEY, the
+    # database URI, MAIL_PASSWORD and friends -- so a slip in that guard, of
+    # which there has been one, cannot leak them: the guard defends the config's
+    # shape, the redaction defends its secrets.
     admin = current_app.extensions["podpack"].admin
     try:
         allowed = admin is not None and admin()
@@ -70,7 +84,7 @@ def get_version():
     return {
         "server_version": __version__,
         "site_map": site_map(current_app),
-        "config": {k: str(v) for (k, v) in current_app.config.items()},
+        "config": {k: _redacted(k, v) for (k, v) in current_app.config.items()},
     }
 
 

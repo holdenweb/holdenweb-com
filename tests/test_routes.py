@@ -31,6 +31,17 @@ def test_config_is_readable_by_an_operator(operator_app):
     assert report["config"], "the operator's config report is empty"
 
 
+def test_config_redacts_secret_values(operator_app):
+    """An operator sees which settings exist, never their secret values --
+    defence in depth, so a slip in the /config guard cannot leak them."""
+    cfg = operator_app.test_client().get("/config").get_json()["config"]
+    for key in ("SECRET_KEY", "SECURITY_PASSWORD_SALT", "SQLALCHEMY_DATABASE_URI"):
+        assert str(operator_app.config[key]) not in cfg[key], f"{key} leaked its value"
+        assert "redacted" in cfg[key].lower()
+    # A non-secret setting still shows, so this redacts rather than blanks it:
+    assert cfg["APPLICATION_ROOT"] == "/"
+
+
 def test_status_is_not_public(client):
     """It names the database, the role it connects as, and every host path."""
     assert client.get("/_status").status_code == 404
