@@ -42,6 +42,7 @@ drift apart.
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
+| 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -781,6 +782,61 @@ relative link in the served page will be resolved against.
 
 Pairs with 27: a navigation that can nest wants directories that can be landed
 on.
+
+---
+
+## Raised 2026-09-03, chasing the backup-cron failure
+
+### 31. `configure-host.py` should pin the compose provider, not just warn
+
+**Repo:** podpack
+
+*Evidence.* `podman compose` is a shim that picks an external provider from
+`containers.conf`'s `[engine] compose_providers`; with no such file on the host
+(none is shipped or written), podman's built-in default list applies --
+docker-compose first, `podman-compose` last -- and **PATH is the only tiebreak**.
+An interactive login shell has `~/bin` first and gets `~/bin/docker-compose`
+(Compose v2); any stripped or non-login environment cannot resolve
+`docker-compose` and falls through to `/usr/bin/podman-compose` -- the Python
+tool that rejects `ps --status running --services` and, per gotcha 4 and
+ADR-0016, silently ignores `depends_on` ordering gates. None of the substrate
+scripts set PATH or a provider (`up.sh:32`, `restore.sh`, `backup.sh`,
+`verify-backup.sh` all call a bare `podman compose`), so the provider is decided
+entirely by each caller's environment. `configure-host.py:86-96` already runs
+`podman compose version` and detects a non-"Docker Compose" provider -- but only
+appends a warning string, and only ever sees the interactive environment, so a
+green `configure-host.py` says nothing about cron or an ssh deploy.
+
+*Why it matters.* Two unattended paths hit the fallback. The nightly backup cron
+did -- now fixed in `holdenweb.com/ops/backup.cron` by prepending `$HOME/bin`,
+and by a manual `~/.config/containers/containers.conf` pin on opal17
+(2026-09-03). The one still unhardened in-repo is the routine deploy:
+`holdenweb.com/ops/deploy.sh:82` runs `ssh host "cd ~/… && ./scripts/up.sh"`, a
+non-login shell whose PATH need not include `~/bin` -- and `up.sh:32` runs
+`podman compose up -d --build`, which is exactly where the ordering gates live.
+If it resolves `podman-compose`, every deploy silently skips init-storage →
+postgres-healthy → migrate → web. That is the "failure mode is silence" ADR-0016
+flags as unaddressed, on the routine path.
+
+*Fix.* Turn `configure-host.py`'s detection into prevention: write (or merge)
+`[engine] compose_providers = ["<abs path to docker-compose>"]` -- a single
+absolute path found via `shutil.which("docker-compose")` (default
+`~/bin/docker-compose`), with **no** `podman-compose` entry so a missing provider
+fails loudly rather than degrading -- into the rootless user's
+`~/.config/containers/containers.conf` (merging, or a `.d` drop-in; verify
+user-level drop-in support on the host). Not the rendered site tree -- podman
+never reads it. Add `compose_warning_logs = false` there too, to silence the
+`>>>> Executing external compose provider …` banner. And correct
+`configure-host.py:95`'s advice, which names a `PODMAN_COMPOSE_PROVIDER`
+environment variable that does not appear to exist -- the real override is
+`containers.conf`; confirm on the host before rewriting. Being substrate-shipped,
+this makes every deployment safe by construction; keep the byte-identical
+repo-root and packaged copies in step.
+
+*Interim, in place now.* `ops/backup.cron` prepends `$HOME/bin` (belt-and-braces)
+and opal17 carries the manual `containers.conf` pin, so this host is covered;
+item 31 is the durable, every-deployment form. The pin also closes deploy.sh
+without touching it, because it is PATH-independent.
 
 ---
 
