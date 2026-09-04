@@ -417,9 +417,9 @@ requires-dist = [
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.0b6" },
-    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=c85ad19e0b624005f6607ace8816b58cc546ee67" },
-    { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git?rev=fe30c05030c2e9525edd4a10da5410725c08f456" },
-    { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git?rev=98a11731ad74144680ae8c4209bb81c18950284b" },
+    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda" },
+    { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305" },
+    { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
     { name = "werkzeug", specifier = ">=2.3.8" },
@@ -671,8 +671,8 @@ wheels = [
 
 [[package]]
 name = "podpack-pages"
-version = "0.2.0"
-source = { git = "https://github.com/holdenweb/podpack-pages.git?rev=c85ad19e0b624005f6607ace8816b58cc546ee67#c85ad19e0b624005f6607ace8816b58cc546ee67" }
+version = "0.2.2"
+source = { git = "https://github.com/holdenweb/podpack-pages.git?rev=6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda#6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda" }
 dependencies = [
     { name = "flask" },
     { name = "markdown" },
@@ -681,8 +681,8 @@ dependencies = [
 
 [[package]]
 name = "podpack-qrcode"
-version = "0.2.1"
-source = { git = "https://github.com/holdenweb/podpack-qrcode.git?rev=fe30c05030c2e9525edd4a10da5410725c08f456#fe30c05030c2e9525edd4a10da5410725c08f456" }
+version = "0.2.2"
+source = { git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305#b4a644ef8d63cbc92020320968ded80c95055305" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
@@ -691,8 +691,8 @@ dependencies = [
 
 [[package]]
 name = "pp-pdf"
-version = "0.2.0"
-source = { git = "https://github.com/holdenweb/pp-pdf.git?rev=98a11731ad74144680ae8c4209bb81c18950284b#98a11731ad74144680ae8c4209bb81c18950284b" }
+version = "0.2.1"
+source = { git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5#a996b1f30222d169d2b3f9e6431b563f73a643a5" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
