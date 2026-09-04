@@ -42,6 +42,15 @@ def test_config_redacts_secret_values(operator_app):
     assert cfg["APPLICATION_ROOT"] == "/"
 
 
+def test_registration_is_open_but_confirmed(app, client):
+    """Public sign-up is on -- /register serves its form -- but gated by email
+    confirmation, so a new account gets no session until it follows a mailed
+    link. Both halves are asserted so neither silently regresses: an open
+    register with confirmation off would restore SEC-1's instant-account hole."""
+    assert client.get("/register").status_code == 200
+    assert app.config["SECURITY_CONFIRMABLE"] is True
+
+
 def test_status_is_not_public(client):
     """It names the database, the role it connects as, and every host path."""
     assert client.get("/_status").status_code == 404

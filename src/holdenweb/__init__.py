@@ -68,12 +68,17 @@ def _wire(app: Flask) -> None:
     # site start and die inside `flask users create`.
     app.config.setdefault('MAIL_PASSWORD', os.environ.get('MAIL_PASSWORD'))
 
-    # Closed on purpose: the site has no public account feature, and open
-    # self-registration -- with SECURITY_CONFIRMABLE unset, so a new account is
-    # usable at once -- was the way in to /config's whole-config dump. The admin
-    # user is created with `flask users create`; SECURITY_RECOVERABLE below
-    # still lets them reset their own password.
-    app.config.setdefault('SECURITY_REGISTERABLE', False)
+    # Public sign-up, gated by email confirmation. SECURITY_CONFIRMABLE means a
+    # registrant gets no session until they follow a link mailed to the address
+    # they gave, so registration cannot hand a bot or a stranger an instant
+    # authenticated account -- which, with confirmation off, it once did, and
+    # which was half of SEC-1's finding. The other half -- that such an account
+    # could then read /config -- is closed independently: /config and /_status
+    # answer only the admin predicate, and a confirmed non-admin reaches nothing
+    # an anonymous visitor does not, bar its own name in the nav.
+    # SECURITY_RECOVERABLE lets anyone reset their own password.
+    app.config.setdefault('SECURITY_REGISTERABLE', True)
+    app.config.setdefault('SECURITY_CONFIRMABLE', True)
     app.config.setdefault('SECURITY_RECOVERABLE', True)
     app.config.setdefault('REMEMBER_COOKIE_SAMESITE', 'strict')
     app.config.setdefault('SESSION_COOKIE_SAMESITE', 'strict')

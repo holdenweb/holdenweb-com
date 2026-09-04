@@ -6,6 +6,8 @@ answered 500 with a traceback: flask-security calls `send_mail` from inside
 behaviour that replaced it.
 """
 
+from datetime import datetime, timezone
+
 import pytest
 from flask_security import hash_password
 
@@ -27,8 +29,14 @@ def registered(app):
     """
     app.config["SECURITY_EMAIL_VALIDATOR_ARGS"] = {"check_deliverability": False}
     with app.app_context():
+        # confirmed_at, because SECURITY_CONFIRMABLE is on now: flask-security
+        # will not send a reset to an unconfirmed account, so send_mail -- the
+        # path these tests exercise -- is reached only for a confirmed user.
         user_datastore.create_user(
-            email="someone@example.com", password=hash_password("x" * 12), active=True
+            email="someone@example.com",
+            password=hash_password("x" * 12),
+            active=True,
+            confirmed_at=datetime.now(timezone.utc),
         )
         db.session.commit()
     return "someone@example.com"
