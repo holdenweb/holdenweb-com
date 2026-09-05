@@ -468,10 +468,13 @@ sign in. Membership of `admin` is what `/_status` requires.
 
 Public registration is on and gated by email confirmation
 (`SECURITY_CONFIRMABLE`): a registrant gets no session until they follow the
-`https://` link mailed to them. So `--active` above is no longer enough on its
-own -- flask-security also refuses an account whose `confirmed_at` is unset, and
-`users create` does not set it. An admin made by hand, and every account that
-predates confirmation, must be confirmed before it can sign in.
+`https://` link mailed to them, and flask-security refuses login to any account
+whose `confirmed_at` is unset. A public registrant reaches it by the mailed link;
+an account left without one for any other reason cannot sign in until it is set.
+So before trusting login on the deploy that first turns confirmation on, check
+that no existing account was left behind -- on the 2026-09-03 deploy every one
+already carried a `confirmed_at`, but the check costs nothing and the failure it
+guards is a locked-out admin.
 
 See who lacks it:
 
@@ -480,10 +483,14 @@ podman compose exec -T web flask --app holdenweb shell <<'PY'
 from podpack.auth import user_datastore
 for u in user_datastore.user_model.query.all():
     print(u.email, "confirmed" if u.confirmed_at else "UNCONFIRMED")
+
 PY
 ```
 
-Confirm them -- grandfathering accounts made before there was a step to follow:
+If any read UNCONFIRMED, set a timestamp -- grandfathering accounts made before
+there was a step to follow. Mind the blank line after the loop: `flask shell` is
+a REPL, so the loop needs one to close before the dedented `db.session.commit()`,
+or it stops with an IndentationError:
 
 ```bash
 podman compose exec -T web flask --app holdenweb shell <<'PY'
@@ -494,14 +501,14 @@ n = 0
 for u in user_datastore.user_model.query.filter(user_datastore.user_model.confirmed_at.is_(None)):
     u.confirmed_at = datetime.now(timezone.utc)
     n += 1
+
 db.session.commit()
 print(f"confirmed {n} account(s)")
 PY
 ```
 
-**Run this on the deploy that first turns confirmation on**, before relying on
-login, or every existing account -- the admin included -- is locked out the
-moment it lands.
+It is idempotent -- an account that already has a `confirmed_at` is not in the
+loop -- so re-running it is safe.
 
 ## 13. Logs, disk, and reaching the database
 
