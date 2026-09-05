@@ -464,6 +464,45 @@ podman compose exec web flask --app holdenweb roles add you@example.com admin
 `--active` is the one to remember: without it the account exists and cannot
 sign in. Membership of `admin` is what `/_status` requires.
 
+### Confirming accounts, now that sign-up is public
+
+Public registration is on and gated by email confirmation
+(`SECURITY_CONFIRMABLE`): a registrant gets no session until they follow the
+`https://` link mailed to them. So `--active` above is no longer enough on its
+own -- flask-security also refuses an account whose `confirmed_at` is unset, and
+`users create` does not set it. An admin made by hand, and every account that
+predates confirmation, must be confirmed before it can sign in.
+
+See who lacks it:
+
+```bash
+podman compose exec -T web flask --app holdenweb shell <<'PY'
+from podpack.auth import user_datastore
+for u in user_datastore.user_model.query.all():
+    print(u.email, "confirmed" if u.confirmed_at else "UNCONFIRMED")
+PY
+```
+
+Confirm them -- grandfathering accounts made before there was a step to follow:
+
+```bash
+podman compose exec -T web flask --app holdenweb shell <<'PY'
+from datetime import datetime, timezone
+from podpack import db
+from podpack.auth import user_datastore
+n = 0
+for u in user_datastore.user_model.query.filter(user_datastore.user_model.confirmed_at.is_(None)):
+    u.confirmed_at = datetime.now(timezone.utc)
+    n += 1
+db.session.commit()
+print(f"confirmed {n} account(s)")
+PY
+```
+
+**Run this on the deploy that first turns confirmation on**, before relying on
+login, or every existing account -- the admin included -- is locked out the
+moment it lands.
+
 ## 13. Logs, disk, and reaching the database
 
 ```bash
