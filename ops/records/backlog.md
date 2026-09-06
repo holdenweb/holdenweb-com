@@ -46,6 +46,7 @@ drift apart.
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
+| 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -925,6 +926,20 @@ length/shape rather than the string. Simplest is a denylist yielding
 `<redacted>`; better is the shape indicator the secret tests already use.
 podpack's `/_status` is the reference for how much a diagnostic endpoint should
 say -- `/config` should not say more.
+
+### 35. Does the `os` stack auto-start after an Opalstack host reboot?
+
+**Repo:** holdenweb-com. Opalstack reboots the shared host for their own
+maintenance, on their schedule and not ours -- and whether `os` comes back
+without a human depends on `loginctl enable-linger` (so the user's containers run
+with no login session) plus `restart: unless-stopped` in `compose.yaml`. Neither
+has been seen through an actual host reboot; a rebooted laptop proves nothing,
+since the site runs on opal17. If it ever failed, the site would sit down until
+someone noticed -- precisely the silence **MON-1** (the external `/healthz` poll)
+exists to break. So this pairs with MON-1: confirm the stack returns unattended
+after the next host reboot (`podman ps` clean with no manual `up.sh`), keep
+linger enabled, and have MON-1 live so a failure to return is caught rather than
+stumbled on.
 
 ---
 
