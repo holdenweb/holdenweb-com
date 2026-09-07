@@ -78,6 +78,29 @@ Settled, since this note asked: `deploy.sh` pushes into a live worktree via
 ssh — no bare repo, no `post-receive` hook. Staging is `~/apps/os/site`;
 production is its own `~/apps/<app>/site`.
 
+### Refreshing a content tree
+
+Content -- the files the pages, pybooks and blog apps serve -- is not in git and
+does not ride a deploy; it lives in the host's `hostdata/apps/<app>/<tree>` and
+is mirrored in from a staged directory by `ops/refresh-content.sh`, which must
+run on the host. `ops/push-content.sh` does the whole thing from the laptop --
+the transfer and that remote mirror -- taking a target the same way `deploy.sh`
+does:
+
+```bash
+ops/push-content.sh staging ~/Projects/Python/orpy/python-classes \
+    --app pybooks --tree html-pages --mirror
+ops/push-content.sh staging ~/Projects/Python/sitescraper/build \
+    --app blog --tree export --mirror
+```
+
+`--app`/`--tree` name the destination `hostdata/apps/<app>/<tree>`; `--mirror`
+removes whatever the source no longer has (off by default -- an incomplete
+source with it deletes live content); `--dry-run` prints the plan. Content is
+live the moment it lands: the content apps read each file per request, no
+restart. To refresh the **local** dev instance instead, run `refresh-content.sh`
+directly against the source, same `APP`/`TREE`, no transfer.
+
 ## 3. Verifying a deployment
 
 Never by looking at the front page. The QR code app answered 200 for weeks
