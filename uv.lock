@@ -383,7 +383,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.8.1b5"
+version = "1.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
