@@ -65,6 +65,28 @@ a new host. The `migrate` service applies the alembic history before `web`
 starts.
 
 
+## Updating site content
+
+The content apps — `pages`, `pybooks`, `blog` — serve files from the host's
+`hostdata/apps/<app>/<tree>`, not from git. `ops/push-content.sh` mirrors a
+built tree from the laptop straight to a target's running site (it rsyncs the
+source up and runs `refresh-content.sh` on the host, which owns the container
+files):
+
+```bash
+ops/push-content.sh staging ~/Projects/Python/orpy/python-classes \
+    --app pybooks --tree html-pages --mirror
+ops/push-content.sh staging ~/Projects/Python/sitescraper/build \
+    --app blog --tree export --mirror
+```
+
+`--mirror` removes what the source no longer has (off by default — an
+incomplete source with it would delete live content); `--dry-run` shows the
+plan. Content is live the moment it lands. For the local dev instance, run
+`ops/refresh-content.sh <source> --mirror` with the matching `APP`/`TREE`
+instead.
+
+
 ## Database schema changes
 
 One alembic history for the whole site. The metadata alembic compares
