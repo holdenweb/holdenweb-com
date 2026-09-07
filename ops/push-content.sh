@@ -21,8 +21,9 @@
 # the tree at hostdata/apps/<app>/<tree>. --mirror passes straight through and
 # means the same there -- remove whatever the source does not have -- and is off
 # by default in both places, because an incomplete source with --mirror deletes a
-# visitor's content; ask for it when you mean it. --dry-run prints the plan and
-# changes nothing.
+# visitor's content; ask for it when you mean it, and an interactive run asks
+# you to type `mirror` to confirm first. --dry-run prints the plan and changes
+# nothing.
 set -euo pipefail
 
 usage() {
@@ -70,6 +71,17 @@ if [ "$dry" -eq 1 ]; then
   echo "+ ssh $sshhost \"cd ~/$path && APP=$app TREE=$tree ./ops/refresh-content.sh <scratch> $mirror_arg\""
   echo "+ ssh $sshhost 'rm -rf <scratch>'   # always, on the way out"
   exit 0
+fi
+
+# --mirror deletes whatever the source no longer has, on a live site -- so
+# confirm it the way scripts/restore.sh confirms its own destructive step, but
+# only when a human is here to answer. A piped or non-interactive run has
+# already said it means to, by passing --mirror.
+if [ "$mirror" -eq 1 ] && [ -t 0 ]; then
+  printf 'Mirroring %s/%s on %s will DELETE anything the source no longer has.\n' "$app" "$tree" "$target" >&2
+  printf "Type 'mirror' to proceed: " >&2
+  read -r reply
+  [ "$reply" = mirror ] || { echo "aborted; nothing was changed." >&2; exit 1; }
 fi
 
 echo "==> pushing $src -> $target ($sshhost:$path), tree $app/$tree${mirror_arg:+ (mirror)}"
