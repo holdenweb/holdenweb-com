@@ -342,7 +342,16 @@ that looks like a different site.
 ## 8. Changing the mail password
 
 Gmail App Passwords are the usual case: revoked, rotated, or never right in the
-first place.
+first place. Rotate — not merely re-enter — whenever the value may have leaked,
+and remember a rotation is only safe once the *old* password is revoked.
+
+**In the Google account, first.** App Passwords exist only where 2-Step
+Verification is on, for the account the site sends as — the username `mail
+check` (step 3) prints. At `myaccount.google.com/apppasswords`, create a new one
+(name it, say, `holdenweb SMTP`) and copy its sixteen letters. Do **not** revoke
+the old one yet: a typo in the new value would otherwise lock the site out of
+mail with nothing to fall back to. Revoking is step 4, once the new password is
+proven live.
 
 1. Edit `MAIL_PASSWORD` in `secrets.env` on the host. Keep it to
    `[A-Za-z0-9_-]`: **`$` is expanded by compose in `secrets.env` as well as
@@ -362,6 +371,10 @@ first place.
    real SMTP connection and exits non-zero on failure. The shape check exists
    because a perfectly good password taken from `passwords.google.com` instead
    of the App Passwords page fails identically to a wrong one.
+4. **Now revoke the old App Password** at `myaccount.google.com/apppasswords` —
+   delete the previous entry. Until you do, the superseded (or leaked) password
+   still authenticates; revoking is what turns a second working key into a
+   rotation.
 
 `MAIL_PASSWORD` is declared in `config/app.toml` under `[site] secrets`, so the
 site refuses to boot without it rather than discovering its absence when a
@@ -370,25 +383,61 @@ visitor asks for a password reset.
 > **Outstanding:** `MAIL_PASSWORD` on the production host was last seen holding
 > the example value. Until it is changed, password reset cannot work.
 
+If you are rotating because the value may have leaked — an editor state file
+cached it, a backup went astray — deleting or tightening that copy is part of
+the job too, or the replacement leaks by the same route. Rotating and revoking
+(step 4) limits the damage; the stray copy is what caused it.
+
 ## 9. Rotating the other secrets
 
 | Secret | Rotatable | What it costs |
 | --- | --- | --- |
 | `MAIL_PASSWORD` | freely | nothing; §8 |
-| `POSTGRES_PASSWORD` (superuser) | with care | edit `secrets.env`, `ALTER ROLE … PASSWORD`, restart |
+| `POSTGRES_PASSWORD` (superuser) | with care | `\password` on the live role, and edit `secrets.env` for a future rebuild; no restart — the app never uses it |
 | `POSTGRES_APP_PASSWORD` | with care | **also** update `SQLALCHEMY_DATABASE_URI`, which embeds it — the two disagreeing is a site that starts and cannot reach its data |
 | `SECRET_KEY` | technically | every session and every in-flight password-reset link is void; users are logged out |
 | `SECURITY_PASSWORD_SALT` | **no** | every stored password becomes unverifiable. There is no way back but a reset for every account |
 
-Changing an application password is two changes that must agree, so make them
-together:
+Changing an application password is two changes that must agree — the role in
+the running cluster and the value in `secrets.env` — so make them together and
+in this order. Set the role's password with psql's `\password`, **not**
+`ALTER ROLE … PASSWORD '<value>'`: `\password` prompts for the value, hashes it
+in the client and sends only the hash, so the plaintext never reaches the
+process arguments (where `ps` or `podman top` would show it) nor, should
+statement logging ever be turned on, the server log.
 
 ```bash
-podman compose exec -T postgres sh -c \
-  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER ROLE \"$POSTGRES_APP_USER\" PASSWORD '"'"'<new>'"'"'"'
-# then edit BOTH POSTGRES_APP_PASSWORD and SQLALCHEMY_DATABASE_URI in secrets.env
+# 1. Set the new password on the application role, interactively.
+#    No -T: \password needs a terminal. Connect as the superuser; pg_hba trusts
+#    the container's local socket, so no password is asked:
+podman compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+#    then at the psql prompt, naming the application role, and \q when done:
+#      \password <the POSTGRES_APP_USER value>
+
+# 2. Edit secrets.env to the SAME new value, in BOTH lines that carry it:
+#      POSTGRES_APP_PASSWORD=…
+#      SQLALCHEMY_DATABASE_URI=…://<app-user>:<here>@postgres:5432/<db>
+#    Keep it to [A-Za-z0-9_-]: secrets.env $-expands (§8's trap), and those
+#    characters are URI-safe, so the connection string needs no escaping. A
+#    generator that already obeys both: python3 -c 'import secrets; print(secrets.token_urlsafe(24))'
+
+# 3. Recreate the containers that read the URI, so web reconnects with it:
 podman compose up -d
+
+# 4. Verify: /healthz reports the database ok, and a login works.
 ```
+
+Do this promptly, end to end: between step 1 and step 3 the running `web` still
+carries the old password, so *new* database connections fail until it is
+recreated — existing pooled connections keep working, which is why the site does
+not drop the instant you run `\password`, but do not leave it half-rotated.
+
+The superuser (`POSTGRES_PASSWORD`) rotates the same way — `\password` for
+`$POSTGRES_USER` — with one wrinkle: the cluster set that password from the
+variable at first init and never re-reads it, so `\password` changes the live
+cluster while the `secrets.env` edit only keeps a *future* rebuild-from-empty
+consistent. The application is never given this credential, so nothing needs
+restarting for it.
 
 Take a backup first, and rehearse it afterwards: a backup taken before the
 change restores against a `db-init` that will recreate the *old* password from
