@@ -72,3 +72,39 @@ def test_an_unknown_page_is_the_sites_own_404(page: Page, base_url: str) -> None
     expect(page.get_by_role("heading", name="Page not found")).to_be_visible()
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)
     expect(page.locator("nav.pagenav a")).to_have_count(5)
+
+
+def test_the_pybooks_app_serves_a_book(page: Page, base_url: str) -> None:
+    """A Python course book, in the site's chrome, with its own assets served.
+    Proves pybooks found its data directory (a wrong bind mount fails here) and
+    that /pybooks/asset serves the book's files -- neither of which a bare 200
+    on the index would show."""
+    response = page.goto(f"{base_url}/pybooks/python1/index")
+    assert response is not None and response.status == 200, "the python1 book did not serve"
+    expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)  # the site's chrome
+    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    # The book's own stylesheet, through the app's asset route:
+    css = page.request.get(f"{base_url}/pybooks/asset/common/course.css")
+    assert css.status == 200, f"pybooks asset route returned {css.status}"
+    # Every image on the page loads rather than 404s -- a broken asset path here
+    # is exactly what a bind-mount or refresh mistake produces.
+    for img in page.locator("img").all():
+        src = img.get_attribute("src")
+        if src and not src.startswith("http"):
+            r = page.request.get(f"{base_url}{src}")
+            assert r.status == 200, f"lesson image {src} returned {r.status}"
+
+
+def test_the_blog_app_serves_a_post(page: Page, base_url: str) -> None:
+    """The blog index lists posts, and following one renders it in the site's
+    chrome -- proving the export landed and its manifest is served, not merely
+    that /blog answered."""
+    page.goto(f"{base_url}/blog/")
+    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    post = page.locator('a[href^="/blog/posts/"]').first
+    expect(post).to_be_visible()  # the index actually lists posts
+    href = post.get_attribute("href")
+    response = page.goto(f"{base_url}{href}")
+    assert response is not None and response.status == 200, f"post {href} returned {response.status if response else 'nothing'}"
+    expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)  # the site's chrome
+    assert "Holden Web" in page.content()
