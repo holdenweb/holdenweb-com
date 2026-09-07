@@ -1,5 +1,5 @@
 # This site's configuration. In a container it is bind-mounted read-only at
-# /etc/holdenweb/app.toml; locally, point PODPACK_CONFIG at it.
+# /etc/podpack/app.toml; locally, point PODPACK_CONFIG at it.
 
 [site]
 name = "holdenweb.com"

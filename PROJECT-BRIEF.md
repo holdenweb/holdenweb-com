@@ -34,25 +34,30 @@ specific to holdenweb.com.
 
 ## 2. The shape of the site
 
-`src/holdenweb/__init__.py` is now 95 lines: a factory that delegates to
+`src/holdenweb/__init__.py` is now 113 lines: a factory that delegates to
 `podpack.create_app(site_package="holdenweb", init=_wire)`, and `_wire`,
 which attaches the extensions belonging to the site rather than to any
-feature — mail, flask-security, paranoid sessions — per
-[ADR-0025](../podpack/adrs/0025-the-site-wires-its-own-extensions.md).
+feature — mail and paranoid sessions — per
+[ADR-0025](../podpack/adrs/0025-the-site-wires-its-own-extensions.md). Login
+is no longer among them: podpack installs flask-security itself
+([ADR-0033](../podpack/adrs/0033-login-is-core.md)).
 
-Four apps are installed, named by import name in `config/app.toml`:
+Six apps are installed, named by import name in `config/app.toml`:
 
 | App | Import name | Mounted | Where it lives |
 | --- | --- | --- | --- |
 | `main` | `holdenweb` | `/` | this repository, `src/holdenweb/views.py` |
+| `pybooks` | `podpack_pages.pybooks` | `/pybooks` | github.com/holdenweb/podpack-pages |
+| `blog` | `podpack_pages.blog` | `/blog` | github.com/holdenweb/podpack-pages |
 | `pages` | `podpack_pages` | `/pages` | github.com/holdenweb/podpack-pages |
 | `qrcode` | `podpack_qrcode` | `/qrcode` | github.com/holdenweb/podpack-qrcode |
 | `pp_pdf` | `pp_pdf` | `/pdf` | github.com/holdenweb/pp-pdf |
 
 `main` is this site's own routes packaged as an app like any other — the
-front page, `/config`, `/ip`, `/python`, and permanent redirects from the
-pre-podpack content URLs. It is listed first so its front page claims `/`
-before podpack's fallback can ([ADR-0024](../podpack/adrs/0024-the-front-page-belongs-to-the-site.md)).
+front page, `/config`, `/ip`, and permanent redirects from the pre-podpack
+content URLs (including `/python`, now a 301 into the pybooks app). It is
+listed first so its front page claims `/` before podpack's fallback can
+([ADR-0024](../podpack/adrs/0024-the-front-page-belongs-to-the-site.md)).
 
 ### Content is one name space now
 
@@ -75,8 +80,9 @@ elsewhere, that is a change inside `podpack-pages`.
 
 ## 3. Running it
 
-Locally, with the Flask CLI and an explicit environment — there is no
-devserver script any more, and the repo's `.env` is *container* wiring
+Locally, either with `scripts/dev.sh` (it sources `dev.env` and runs
+`flask --app holdenweb run --debug`) or with the Flask CLI and an explicit
+environment as below. The repo's `.env` is *container* wiring
 (`HOST_DATA_DIR` is compose's variable, not `PODPACK_DATA_ROOT`):
 
 ```bash
@@ -127,14 +133,18 @@ POSTGRES_HOST_PORT=5439 podman compose --profile postgres-port up -d postgres-po
 - **`user` and `role` keep flask-security's unprefixed table names**, so
   podpack warns about them at boot. Renaming means a production data
   migration; the warning is the cheaper option for now.
-- **The `main` app's nav contributes Home and Python.** "Blog" was dropped:
-  it pointed at `/blog`, which no route has ever served, and podpack refuses
-  to boot on a nav entry naming an endpoint no view provides.
-- **`/python/` serves `static/python/web/`, which is not in this
-  repository.** It is deployed out of band; locally that route 404s, exactly
-  as it did before the conversion.
-- **`scripts/` belongs to podpack** — only `up.sh` and
-  `prepare-host-dirs.sh`. Personal experiments go in `scratch/`, which is
+- **The `main` app's nav contributes only Home.** Python and Blog are the
+  pybooks and blog apps' own nav entries now
+  ([ADR-0022](../podpack/adrs/0022-nav-is-contributed-and-addressed-by-endpoint.md));
+  both `/pybooks` and `/blog` are served. podpack still refuses to boot on a
+  nav entry naming an endpoint no view provides.
+- **`/python/` is now a permanent (301) redirect into the pybooks app**, as
+  are the old `/pages/python-classes` deep links. The `static/python/web/`
+  tree it used to serve is gone; the Python course content lives in
+  `podpack-pages` and is pushed to the host, not shipped in this repository.
+- **`scripts/` belongs to podpack** — `backup.sh`, `configure-host.py`,
+  `dev.sh`, `prepare-host-dirs.sh`, `restore.sh`, `up.sh` and
+  `verify-backup.sh`. Personal experiments go in `scratch/`, which is
   gitignored; the MongoDB lab lives there now as `scratch/podman/`.
 
 ## 5. What is left

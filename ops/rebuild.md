@@ -487,7 +487,7 @@ answered 200 for weeks while contributing no navigation at all.
 uv run pytest tests/integration --base-url "https://$SITE_HOST"
 ```
 
-*Expect:* 15 passed, and a header naming what it tested. **Run it against the
+*Expect:* 18 passed, and a header naming what it tested. **Run it against the
 host you just built** — a suite pointed at the old deployment passes and proves
 nothing, which is how rehearsal 1 left the restore path unverified.
 

@@ -10,11 +10,14 @@ podpack supplies the factory, the app registry and the migration wiring.
 
 | Feature | Comes from |
 | --- | --- |
-| front page, `/config`, `/ip`, `/python`, legacy redirects | this package (`src/holdenweb/views.py`, installed as the app `main`) |
-| HTML/Markdown content at `/pages/<name>` | `podpack-pages` |
+| front page, `/config`, `/ip`, legacy redirects | this package (`src/holdenweb/views.py`, installed as the app `main`) |
+| HTML/Markdown content at `/pages/<name>` | `podpack-pages` (the `pages` app) |
+| Python course at `/pybooks/` (the "Python" nav entry) | `podpack-pages` (the `pybooks` app) |
+| Blog at `/blog/` (the "Blog" nav entry) | `podpack-pages` (the `blog` app) |
 | QR code generator at `/qrcode/` | `podpack-qrcode` |
 | PDF booklet maker and page splitter at `/pdf/` | `pp-pdf` |
-| login, mail, session policy | wired by this package's `init` (`_wire`) |
+| login | `podpack` core (ADR-0033) |
+| mail, session policy | wired by this package's `init` (`_wire`) |
 
 Content is served from a **single name space**: `/pages/<name>` searches the
 Markdown tree before the HTML tree, so a page's address never says which

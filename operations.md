@@ -396,12 +396,14 @@ the *old* `secrets.env`, which is exactly why the two are archived together.
 
 ## 10. Updating podpack and the apps
 
-Four dependencies, all currently from git remotes: `podpack`, `podpack-pages`,
-`podpack-qrcode`, `pp-pdf`. A git source resolves to what is **on the remote**,
-so working locally on any of them means pushing before re-locking here.
+Three dependencies come from git remotes: `podpack-pages`, `podpack-qrcode`,
+`pp-pdf`. A git source resolves to what is **on the remote**, so working locally
+on any of them means pushing before re-locking here. `podpack` itself is no
+longer a git source — it publishes to PyPI on every release tag, so it is an
+ordinary version specifier in `pyproject.toml` and upgrades as one.
 
 ```bash
-uv lock --upgrade-package podpack --refresh-package podpack
+uv lock --upgrade-package podpack-pages --refresh-package podpack-pages
 uv sync
 ```
 
@@ -625,9 +627,9 @@ Recorded rather than hidden. None is urgent; all are real.
   nothing that builds these links. The host in the link is already right and
   must stay dynamic: Opalstack owns the binding. `ops/records/backlog.md` item 4 has
   the whole correction.
-- **`config/app.toml` says `environment = "local"` in production.** podpack
-  reads the value but does nothing with it, so nothing is broken; it will
-  mislead a reader.
+- ~~**`config/app.toml` says `environment = "local"` in production.**~~
+  **Closed**: the dead `environment` key was removed from `config/app.toml`
+  (commit 1929993).
 - **Migrations have no tested downgrade** (§15).
 - ~~**`restore.sh` has never been run against this site's data.**~~ **Closed
   2026-08-24.** It has now, on the Opalstack host, from
@@ -637,9 +639,11 @@ Recorded rather than hidden. None is urgent; all are real.
   that failed were worth more than the one that worked: the first found that
   `restore.sh` could not run on Linux at all, and the second that a document
   describing it can be wrong in ways only a real host reveals.
-- **`README.md` is stale** on dependency sources: it warns that four path
-  sources need repointing at git remotes, which was done some time ago.
-- ~~**The substrate is a version behind**~~ — now `0.9.0b3` (§10).
+- ~~**`README.md` is stale** on dependency sources: it warns that four path
+  sources need repointing at git remotes, which was done some time ago.~~
+  **Closed**: that warning is gone from `README.md`.
+- ~~**The substrate is a version behind**~~ — `substrate.json` now records
+  `0.9.0b5`, and the library is pinned `0.9.0b6` (§10).
 
 ---
 

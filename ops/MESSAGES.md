@@ -595,8 +595,8 @@ Every message this system is likely to put in front of you — 119 of them — w
 `/config -> HTTP 404 (to any non-admin)`
 
 - **Info** · **where:** either · **from:** `holdenweb views.py`
-- **Means:** /config serialises the ENTIRE Flask config -- SECRET_KEY, DB URI, MAIL_PASSWORD among it -- so it 404s (not 403) to anyone who isn't admin, like /_status. The guard fails closed.
-- **Do:** If an operator gets 404 here, it's the missing-admin-role story again (boot-no-admin-role). If a NON-admin ever gets 200, treat as a serious exposure and rotate every secret.
+- **Means:** /config serialises the Flask config's keys and shape but REDACTS secret values -- SECRET_KEY, the DB URI, MAIL_PASSWORD and the like come back as `<redacted, N chars>` (commit 5dd5c28); it 404s (not 403) to anyone who isn't admin, like /_status. The guard fails closed, and the body no longer carries secret values.
+- **Do:** If an operator gets 404 here, it's the missing-admin-role story again (boot-no-admin-role). If a NON-admin ever gets 200, that's a guard failure to investigate at once -- but the redaction means the body does not by itself leak secret values, so rotate only what a check shows was actually exposed.
 
 ### 🔵 status-404-to-non-admin
 `/_status -> HTTP 404 (to any non-operator)`
