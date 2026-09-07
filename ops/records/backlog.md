@@ -47,6 +47,7 @@ drift apart.
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
+| 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use | operational |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -940,6 +941,37 @@ exists to break. So this pairs with MON-1: confirm the stack returns unattended
 after the next host reboot (`podman ps` clean with no manual `up.sh`), keep
 linger enabled, and have MON-1 live so a failure to return is caught rather than
 stumbled on.
+
+## Raised 2026-09-07
+
+### 36. `refresh-content.sh --mirror` deletes live content with no confirmation
+
+**Repo:** holdenweb-com. This is holdenweb's own `ops/` script, not podpack
+substrate -- `refresh-content.sh` lives only at `holdenweb.com/ops/`, so the fix
+is one repo.
+
+*Evidence.* `ops/refresh-content.sh` takes an optional `--mirror`, and in mirror
+mode `podman unshare rsync --delete` removes any file the staged source no longer
+has -- straight into the live `hostdata/apps/<APP>/<TREE>` tree a visitor is
+served from. The script does it the instant it is told to, with no prompt. Its
+new caller `ops/push-content.sh` (a449624) *does* guard `--mirror` with a
+tty-gated "type `mirror` to proceed", so a push from the laptop is safe; but a
+human ssh'd into opal17 running `refresh-content.sh <dir> --mirror` by hand --
+exactly what the local-dev instructions in `README.md` tell you to do -- gets no
+such question.
+
+*Why it matters.* The destructive path is one flag from the safe one, and the
+mistake it invites is real: a partial or wrong source with `--mirror` silently
+deletes whatever it lacks. `scripts/restore.sh` already treats its own
+destructive step this way, and `push-content.sh` now does too; the script that
+actually does the deleting is the one still missing the guard.
+
+*Fix.* Give `refresh-content.sh` the same confirmation `push-content.sh` and
+`restore.sh` use -- when `--mirror` is set *and* stdin is a tty, print what will
+be deleted and require the operator to type `mirror` before proceeding; a piped
+or non-interactive run (the push-content case, which has already confirmed
+upstream) passes straight through. Guarding the script itself, not just its
+caller, is what makes the by-hand host run safe.
 
 ---
 
