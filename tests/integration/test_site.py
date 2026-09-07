@@ -52,11 +52,20 @@ def test_the_nav_offers_every_installed_app(page: Page, base_url: str) -> None:
 
 def test_healthz_reports_the_database(page: Page, base_url: str) -> None:
     """What the container healthcheck gates on, so it is worth checking from
-    outside as well: a site can serve pages while its database is gone."""
+    outside as well: a site can serve pages while its database is gone.
+
+    Apps may contribute their own health under `apps` (ADR-0030) -- the blog
+    reports whether its export loaded -- and a non-fatal app is deliberately not
+    allowed to take the top-level status down. So this asserts the contract the
+    healthcheck actually gates on, `status` and `database`, rather than the exact
+    shape of the body, which grows an `apps` entry per app that reports.
+    """
     response = page.request.get(f"{base_url}/healthz")
 
     assert response.status == 200
-    assert response.json() == {"status": "ok", "database": "ok"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["database"] == "ok"
 
 
 def test_status_is_refused_to_anonymous_visitors(page: Page, base_url: str) -> None:
