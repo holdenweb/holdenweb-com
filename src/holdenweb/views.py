@@ -103,23 +103,31 @@ def parts_demo(number: str):
     return redirect(url_for("pages.page", name="parts_demo"))
 
 
-######## /python -> the pages app's python-classes ########
-# The experimental static/python/web tree is retired; that content lives in the
-# pages app now, at /pages/python-classes, where it can be improved along with
-# the site. Kept as a permanent redirect -- exactly like the legacy routes below
-# -- so the nav entry and any old bookmark land on the maintained tree; every
-# old sub-path collapses onto the one page.
-#
-# The nav cannot address /pages/python-classes directly: a Section is
-# (label, endpoint) and the chrome resolves it with url_for and no arguments
-# (nav.py), so it cannot carry the `name` that pages.page needs. So the nav
-# points here and this hop does the rest. The `defaults` is what lets
-# url_for("main.python_docs") build /python/ with no arguments; `path` is
-# otherwise ignored.
+######## /python -> the pybooks app ########
+# The Python course content now lives in the pybooks app at /pybooks (it moved
+# out of the retired static tree, briefly through the pages app, and now stands
+# as its own app). This is a permanent redirect for old /python bookmarks -- the
+# nav's "Python" entry is pybooks' own now, not this route. Every old sub-path
+# collapses onto the pybooks root; deep links that named a specific page are
+# caught by the /pages/python-classes route below instead.
 @blueprint.route("/python/", defaults={"path": ""})
 @blueprint.route("/python/<path:path>")
 def python_docs(path: str):
-    return redirect(url_for("pages.page", name="python-classes"), 301)
+    return redirect(url_for("pybooks.page"), 301)
+
+
+######## /pages/python-classes/... -> pybooks (old deep links) ########
+# The course books moved out of the pages app into pybooks, so a bookmark to a
+# page under /pages/python-classes follows to the same path under /pybooks. This
+# has more static segments than the pages app's own /<path:name> catch-all, so
+# Flask routes it here first -- a fact pinned by
+# test_old_python_classes_urls_redirect_to_pybooks, since the route depends on
+# exactly that precedence.
+@blueprint.route("/pages/python-classes", defaults={"rest": ""})
+@blueprint.route("/pages/python-classes/", defaults={"rest": ""})
+@blueprint.route("/pages/python-classes/<path:rest>")
+def legacy_python_classes(rest: str):
+    return redirect(url_for("pybooks.page", name=rest), 301)
 
 
 ######## Legacy content URLs ########
@@ -151,8 +159,9 @@ site_app = SiteApp(
     blueprint=blueprint,
     url_prefix=None,          # the site root: the front page is this app's
     nav=(
+        # "Python" is the pybooks app's nav entry now (podpack_pages.pybooks);
+        # this app must not contribute it too, or the nav lists it twice.
         Section("Home", "main.home_page"),
-        Section("Python", "main.python_docs"),
     ),
     # No `owns_tables` any more: `user`, `role` and `roles_users` became
     # podpack's when login did (ADR-0033), and podpack records itself as their

@@ -4,9 +4,11 @@
 [site]
 name = "holdenweb.com"
 
-# Installed apps, by *import* name, in installation order: `holdenweb` is the
-# site's own routes and must come first so its front page claims `/`.
-apps = ["holdenweb", "podpack_pages", "podpack_qrcode", "pp_pdf"]
+# Installed apps, by *import* name, in installation order -- which is also nav
+# order: `holdenweb` is the site's own routes and must come first so its front
+# page claims `/`. pybooks and blog contribute the Python and Blog nav entries;
+# plain `podpack_pages` (at /pages) contributes none.
+apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_pages", "podpack_qrcode", "pp_pdf"]
 
 # Environment variables this site needs beyond podpack's own three, checked at
 # boot with them. Names here, values in the environment -- the same split as
@@ -20,3 +22,10 @@ pool_pre_ping = true
 # Keyed by each app's own name -- its blueprint's -- not the import name above.
 [apps.pages]
 default_title = "Just another holdenweb note"
+
+[apps.pybooks]
+default_title = "Holden Web Python"
+
+[apps.blog]
+# image_root is optional -- where a post's images resolve; unset, they resolve
+# under this app's own mount, which is right when the export ships its images.

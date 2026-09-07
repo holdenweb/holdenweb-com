@@ -417,7 +417,7 @@ requires-dist = [
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.0b6" },
-    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda" },
+    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=029fb3088b3a8a153b740250fc7f5839543a14a3" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
@@ -671,10 +671,11 @@ wheels = [
 
 [[package]]
 name = "podpack-pages"
-version = "0.2.2"
-source = { git = "https://github.com/holdenweb/podpack-pages.git?rev=6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda#6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda" }
+version = "0.3.0rc1"
+source = { git = "https://github.com/holdenweb/podpack-pages.git?rev=029fb3088b3a8a153b740250fc7f5839543a14a3#029fb3088b3a8a153b740250fc7f5839543a14a3" }
 dependencies = [
     { name = "flask" },
+    { name = "jinja2" },
     { name = "markdown" },
     { name = "python-markdown-math" },
 ]

@@ -59,9 +59,9 @@ build-backend = "uv_build"
 # on whatever the branch has moved to. These are the commits currently locked
 # and deployed; bump a rev deliberately, and push it before re-locking here.
 [tool.uv.sources]
-podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "6fbd72dafd7a7d14bbd72bd6678e6554ce3c8dda" }
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "b4a644ef8d63cbc92020320968ded80c95055305" }
 pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git", rev = "a996b1f30222d169d2b3f9e6431b563f73a643a5" }
+podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "029fb3088b3a8a153b740250fc7f5839543a14a3" }
 
 [dependency-groups]
 dev = [

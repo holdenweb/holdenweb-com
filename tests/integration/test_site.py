@@ -40,7 +40,8 @@ def test_the_nav_offers_every_installed_app(page: Page, base_url: str) -> None:
     page.goto(base_url)
     for label, href in [
         ("Home", "/"),
-        ("Python", "/python/"),
+        ("Python", "/pybooks/"),
+        ("Blog", "/blog/"),
         ("QR codes", "/qrcode/"),
         ("PDF tools", "/pdf/"),
     ]:

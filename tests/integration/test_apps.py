@@ -27,7 +27,7 @@ def test_the_pages_app_renders_content(page: Page, base_url: str) -> None:
     # outlived the fix by exactly as long as nobody re-read it.
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)
     assert "Holden Web" in page.content()
-    expect(page.locator("nav.pagenav a")).to_have_count(4)
+    expect(page.locator("nav.pagenav a")).to_have_count(5)
 
 
 def test_the_qrcode_app_generates_a_code(page: Page, base_url: str) -> None:
@@ -71,4 +71,4 @@ def test_an_unknown_page_is_the_sites_own_404(page: Page, base_url: str) -> None
     # get somewhere, which is most of what a 404 is for.
     expect(page.get_by_role("heading", name="Page not found")).to_be_visible()
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)
-    expect(page.locator("nav.pagenav a")).to_have_count(4)
+    expect(page.locator("nav.pagenav a")).to_have_count(5)

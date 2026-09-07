@@ -10,7 +10,8 @@ def test_home_page(client):
 def test_nav_is_contributed_by_the_installed_apps(client):
     body = client.get("/").get_data(as_text=True)
     assert 'href="/"' in body          # Home
-    assert 'href="/python/"' in body   # Python
+    assert 'href="/pybooks/"' in body  # Python, contributed by the pybooks app
+    assert 'href="/blog/"' in body     # Blog
 
 
 def test_get_my_ip(client):
@@ -56,9 +57,9 @@ def test_status_is_not_public(client):
     assert client.get("/_status").status_code == 404
 
 
-def test_status_reports_all_four_apps_to_an_operator(operator_app):
+def test_status_reports_all_apps_to_an_operator(operator_app):
     apps = operator_app.test_client().get("/_status").get_json()["apps"]
-    assert set(apps) == {"main", "pages", "qrcode", "pp_pdf"}
+    assert set(apps) == {"main", "pages", "pybooks", "blog", "qrcode", "pp_pdf"}
 
 
 # The installed apps, wearing this site's chrome.
@@ -114,17 +115,30 @@ def test_parts_demo_redirects_to_pages(client):
     assert response.headers["Location"] == "/pages/parts_demo"
 
 
-def test_old_python_url_redirects_to_pages(client):
-    """/python retired its experimental static tree; it now permanently
-    redirects to the pages app's python-classes content, and every old
-    sub-path collapses onto that one page."""
+def test_old_python_url_redirects_to_pybooks(client):
+    """/python is a permanent redirect to the pybooks app, where the Python
+    course content now lives; every old sub-path collapses onto its root."""
     response = client.get("/python/")
     assert response.status_code == 301
-    assert response.headers["Location"] == "/pages/python-classes"
+    assert response.headers["Location"] == "/pybooks/"
 
     deep = client.get("/python/tutorial/index.html")
     assert deep.status_code == 301
-    assert deep.headers["Location"] == "/pages/python-classes"
+    assert deep.headers["Location"] == "/pybooks/"
+
+
+def test_old_python_classes_urls_redirect_to_pybooks(client):
+    """Deep links under the pages app's old /pages/python-classes follow to the
+    same path under /pybooks. The route has more static segments than the pages
+    app's /<path:name> catch-all, so it must win -- asserted here, since that
+    precedence is the whole reason the route can exist."""
+    root = client.get("/pages/python-classes/")
+    assert root.status_code == 301
+    assert root.headers["Location"] == "/pybooks/"
+
+    deep = client.get("/pages/python-classes/basics/loops")
+    assert deep.status_code == 301
+    assert deep.headers["Location"] == "/pybooks/basics/loops"
 
 
 NAV_BEARING = [
@@ -151,5 +165,5 @@ def test_every_page_carries_the_site_navigation(client, path, what):
     """
     body = client.get(path).get_data(as_text=True)
     assert 'class="pagenav"' in body, f"{what} has no navigation"
-    for label in ("Home", "QR codes", "PDF tools"):
+    for label in ("Home", "Python", "Blog", "QR codes", "PDF tools"):
         assert f">{label}</a>" in body, f"{what} omits {label!r}"
