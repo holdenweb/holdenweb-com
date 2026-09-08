@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.8.1"
+version = "1.8.2"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 requires-python = ">=3.12, <4.0"
@@ -65,6 +65,7 @@ podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = 
 
 [dependency-groups]
 dev = [
+    "linkchecker>=10.6.0",
     "playwright>=1.54.0",
     "pytest-playwright>=0.7.0",
     "pytest>=9.1.1",
