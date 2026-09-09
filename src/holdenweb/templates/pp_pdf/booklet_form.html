@@ -1,34 +1,22 @@
-{% extends "base.html"%}
+{% extends "base.html" %}
 
 {% block content %}
-<div class="col-9">
-  <form class="form-horizontal" method="post" enctype="multipart/form-data">
-    <fieldset>
+<form class="appform" method="post" enctype="multipart/form-data">
+  <fieldset>
     {{ form.hidden_tag() }}
-
-    <!-- Form Name -->
     <legend>Make your own tiny booklets</legend>
-    <p>Use the Choose button to select a PDF file.
-    Hit Submit and you will receive a zip file containing
-    two PDF files, one of odd sides and one of even sides.
-    Print the even sides, then run the same paper through
-    to print the odd sides.</p>
+    <p>Use the Choose button to select a PDF file. Hit Submit and you will
+    receive a zip file containing two PDF files, one of odd sides and one of
+    even sides. Print the even sides, then run the same paper through to print
+    the odd sides.</p>
     <p>The returned file is called "pages.zip", and holds "odd.pdf" and
     "even.pdf" in a directory named "pdf".</p>
-    <!-- File Button -->
-    <div class="control-group">
-      <div class="controls">
-        {{ form.file_details(size=32) }}
-      </div>
+    <div class="field">
+      {{ form.file_details(size=32) }}
     </div>
-    <hr/>
-    <!-- Button -->
-    <div class="control-group">
-      <label class="control-label" for="sbutton"></label>
-      <div class="controls">
-        {{ form.submit() }}
+    <div class="field">
+      {{ form.submit() }}
     </div>
-    </fieldset>
-  </form>
-</div>
+  </fieldset>
+</form>
 {% endblock %}

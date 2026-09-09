@@ -5,9 +5,10 @@
    A page fills `{% block content %}`; the front page (index.html) also
    overrides `{% block pagehead %}` to put its hero where the title would be.
 
-   Bootstrap and jQuery stay in the head: the app forms (pp_pdf, qrcode,
-   flask-security) and the account dropdown in bluebar.html use them. The site's
-   own look is in static/css/styles.css, loaded last so it wins.
+   No framework: the whole look is the site's own static/css/styles.css. The
+   account dropdown in bluebar.html is a native <details>, and the app forms
+   (pp_pdf, qrcode, flask-security) are styled in styles.css -- so Bootstrap,
+   jQuery and popper are gone.
 #}
 {% block doc -%}
 <!DOCTYPE html>
@@ -18,14 +19,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Holden Web{% endblock %}</title>
   {% block metas %}{% endblock %}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/css/bootstrap.min.css" integrity="sha512-T584yQ/tdRR5QwOpfvDfVQUidzfgc2339Lc8uBDtcp/wYu80d7jwBgAxbyMh0a9YM9F8N3tdErpFI8iaGx6x5g==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
-  {%- block head_scripts %}
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@popperjs/core@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/js/bootstrap.bundle.min.js"></script>
-  {%- endblock head_scripts %}
+  {% block head_scripts %}{% endblock %}
   {%- endblock head %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
