@@ -1,39 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Holden Web: Too late!{% endblock %}
-{% block metas %}
-{{ super() }}
-<link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
-{% endblock metas %}
-{% block body_attribs %} class="home-page-holdenweb"{% endblock %}
-{% block body %}
-        <header class="pageheader shadow">
-            <h1><a href="/">Holden Web</a></h1>
-            <div class="tagline">What you'll need to know tomorrow</div>
-            {% include "nav.html" %}
-        </header>
-        <div class="content">
-            <section class="secondary col">
-            </section>
-            <section class="primary col">
-            <h2>So Long, and Thanks for All the Fish</h2>
-             <p>After 20 years building web-based information systems for
-             commercial, governmental and educational customers,
-             Holden Web is now a happy memory.
-             Many thanks to all customers and students.</p>
-             <p><b>Steve Holden</b></p>
-            </section>
-        </div>
-        <footer class="vcard">
-            <div class="secondary col">
-            </div>
-            <div class="primary col">
-                <h1>Holden Web, LLC</h1>
-                <p>Email: <a href="mailto:info@holdenweb.com" class="email">info@holdenweb.com</a></p>
-                <nav>
-                    <ul class="inline_list">
-                        <li><a href="/">Home</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </footer>
-{% endblock body %}
+{% block title %}Holden Web{% endblock %}
+
+{# The front page uses the site's shared chrome (base.html) like every other
+   page; it only replaces the title area with a hero and fills the content with
+   the featured section.
+
+   The hero copy and the featured items below are a hand-set starting point --
+   edit them freely. The featured section is the eventual home of the "nominate
+   a piece of content for the front page" feature; for now it points at the
+   site's own sections by hand. #}
+
+{% block pagehead %}
+<div class="hero">
+  <p class="lead-line">Courses, writing and small tools for working with Python.</p>
+  <p class="sub">Thirty years of Holden Web, kept in one place — the Python courses, the blog, and a couple of utilities that come in handy.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="seclabel"><span class="eyebrow">Featured</span><span class="line"></span></div>
+
+<div class="lead-feature">
+  <div class="txt">
+    <span class="eyebrow">Courses</span>
+    <h2>The Python courses</h2>
+    <p>Four self-contained courses, first written for the O'Reilly School of Technology and republished here — from your first program to real, structured code, each lesson with runnable examples.</p>
+    <a class="go" href="/pybooks/">Browse the courses →</a>
+  </div>
+  <div class="art"><img src="/static/images/logo.png" alt=""></div>
+</div>
+
+<div class="seclabel"><span class="eyebrow">More on the site</span><span class="line"></span></div>
+
+<div class="fcards">
+  <div class="fcard">
+    <span class="tag">Blog</span>
+    <h3>The blog</h3>
+    <p>Notes and essays on Python and the web.</p>
+    <a class="go" href="/blog/">Read →</a>
+  </div>
+  <div class="fcard">
+    <span class="tag">Tool</span>
+    <h3>QR codes</h3>
+    <p>Turn any link or text into a QR code you can download.</p>
+    <a class="go" href="/qrcode/">Open →</a>
+  </div>
+  <div class="fcard">
+    <span class="tag">Tool</span>
+    <h3>PDF tools</h3>
+    <p>Make a printable booklet, or split a PDF into single pages.</p>
+    <a class="go" href="/pdf/">Open →</a>
+  </div>
+</div>
+{% endblock %}

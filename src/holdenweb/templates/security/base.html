@@ -11,5 +11,10 @@
    to run Bootstrap's JavaScript on these pages at all. Backlog 25.
 
    Anything these pages genuinely need that other pages do not belongs in a
-   block override here. Nothing does today. #}
+   block override here. #}
 {% extends "base.html" %}
+
+{# flask-security's own templates carry their page heading ("Login",
+   "Register", ...), so suppress base's `{{ title }}` heading to avoid showing
+   it twice. #}
+{% block pagehead %}{% endblock %}

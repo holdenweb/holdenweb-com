@@ -8,11 +8,13 @@
    drifted apart once.
 
    `bluebar.html` is the other partial and handles the account menu; this one is
-   only the apps. #}
+   only the apps. The class stays `pagenav`: styles.css and the route tests both
+   key off it. `aria-current` marks the app whose page is showing. #}
 <nav class="pagenav">
-    <ul class="inline_list">
+    <ul>
         {% for section in sections %}
-        <li><a href="{{ url_for(section.endpoint) }}">{{ section.label }}</a></li>
+        {% set bp = section.endpoint.split('.')[0] %}
+        <li><a href="{{ url_for(section.endpoint) }}"{% if request.blueprint == bp %} aria-current="page"{% endif %}>{{ section.label }}</a></li>
         {% endfor %}
     </ul>
 </nav>
