@@ -14,6 +14,7 @@ podpack supplies the factory, the app registry and the migration wiring.
 | HTML/Markdown content at `/pages/<name>` | `podpack-pages` (the `pages` app) |
 | Python course at `/pybooks/` (the "Python" nav entry) | `podpack-pages` (the `pybooks` app) |
 | Blog at `/blog/` (the "Blog" nav entry) | `podpack-pages` (the `blog` app) |
+| Jupyter notebooks at `/notebooks/` (the "Notebooks" nav entry) | `podpack-notebooks` |
 | QR code generator at `/qrcode/` | `podpack-qrcode` |
 | PDF booklet maker and page splitter at `/pdf/` | `pp-pdf` |
 | login | `podpack` core (ADR-0033) |
@@ -70,7 +71,7 @@ starts.
 
 ## Updating site content
 
-The content apps — `pages`, `pybooks`, `blog` — serve files from the host's
+The content apps — `pages`, `pybooks`, `blog`, `notebooks` — serve files from the host's
 `hostdata/apps/<app>/<tree>`, not from git. `ops/push-content.sh` mirrors a
 built tree from the laptop straight to a target's running site (it rsyncs the
 source up and runs `refresh-content.sh` on the host, which owns the container

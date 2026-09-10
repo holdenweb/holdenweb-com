@@ -16,6 +16,7 @@ from playwright.sync_api import Page, expect
 PAGES = [
     ("/", "the front page"),
     ("/pages/test", "a page from the pages app"),
+    ("/notebooks/", "the notebooks index"),
     ("/qrcode/", "the QR code form"),
     ("/pdf/", "the PDF tools index"),
     ("/pdf/booklet", "the booklet form"),
@@ -42,6 +43,7 @@ def test_the_nav_offers_every_installed_app(page: Page, base_url: str) -> None:
         ("Home", "/"),
         ("Python", "/pybooks/"),
         ("Blog", "/blog/"),
+        ("Notebooks", "/notebooks/"),
         ("QR codes", "/qrcode/"),
         ("PDF tools", "/pdf/"),
     ]:

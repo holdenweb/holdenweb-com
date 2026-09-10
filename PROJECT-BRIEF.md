@@ -42,13 +42,14 @@ feature — mail and paranoid sessions — per
 is no longer among them: podpack installs flask-security itself
 ([ADR-0033](../podpack/adrs/0033-login-is-core.md)).
 
-Six apps are installed, named by import name in `config/app.toml`:
+Seven apps are installed, named by import name in `config/app.toml`:
 
 | App | Import name | Mounted | Where it lives |
 | --- | --- | --- | --- |
 | `main` | `holdenweb` | `/` | this repository, `src/holdenweb/views.py` |
 | `pybooks` | `podpack_pages.pybooks` | `/pybooks` | github.com/holdenweb/podpack-pages |
 | `blog` | `podpack_pages.blog` | `/blog` | github.com/holdenweb/podpack-pages |
+| `notebooks` | `podpack_notebooks` | `/notebooks` | github.com/holdenweb/podpack-notebooks |
 | `pages` | `podpack_pages` | `/pages` | github.com/holdenweb/podpack-pages |
 | `qrcode` | `podpack_qrcode` | `/qrcode` | github.com/holdenweb/podpack-qrcode |
 | `pp_pdf` | `pp_pdf` | `/pdf` | github.com/holdenweb/pp-pdf |

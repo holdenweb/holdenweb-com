@@ -406,6 +406,7 @@ dependencies = [
     { name = "flask-paranoid" },
     { name = "flask-security-too" },
     { name = "podpack" },
+    { name = "podpack-notebooks" },
     { name = "podpack-pages" },
     { name = "podpack-qrcode" },
     { name = "pp-pdf" },
@@ -431,6 +432,7 @@ requires-dist = [
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.0b6" },
+    { name = "podpack-notebooks", git = "https://github.com/holdenweb/podpack-notebooks.git?rev=a00ba6f69bc43fbac45afde68bbe7ec442702dfb" },
     { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=029fb3088b3a8a153b740250fc7f5839543a14a3" },
     { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305" },
     { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5" },
@@ -697,6 +699,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/2d/b2/297ea7d4ed7ff03d8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e7/46673ad62b6f28a1b9a6a10972d0fcbdc62bca0eb78f4094d14252bcc235/podpack-0.9.0b6-py3-none-any.whl", hash = "sha256:edb8e87f951c561e3c9fc6468d2ce1a9813ad304fd674854aad9a6d068e4c358", size = 161583, upload-time = "2026-09-01T12:00:34.18Z" },
 ]
+
+[[package]]
+name = "podpack-notebooks"
+version = "0.1.0"
+source = { git = "https://github.com/holdenweb/podpack-notebooks.git?rev=a00ba6f69bc43fbac45afde68bbe7ec442702dfb#a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
 
 [[package]]
 name = "podpack-pages"

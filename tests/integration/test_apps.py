@@ -27,7 +27,7 @@ def test_the_pages_app_renders_content(page: Page, base_url: str) -> None:
     # outlived the fix by exactly as long as nobody re-read it.
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)
     assert "Holden Web" in page.content()
-    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    expect(page.locator("nav.pagenav a")).to_have_count(6)
 
 
 def test_the_qrcode_app_generates_a_code(page: Page, base_url: str) -> None:
@@ -71,7 +71,7 @@ def test_an_unknown_page_is_the_sites_own_404(page: Page, base_url: str) -> None
     # get somewhere, which is most of what a 404 is for.
     expect(page.get_by_role("heading", name="Page not found")).to_be_visible()
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)
-    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    expect(page.locator("nav.pagenav a")).to_have_count(6)
 
 
 def test_the_pybooks_app_serves_a_book(page: Page, base_url: str) -> None:
@@ -82,7 +82,7 @@ def test_the_pybooks_app_serves_a_book(page: Page, base_url: str) -> None:
     response = page.goto(f"{base_url}/pybooks/python1/index")
     assert response is not None and response.status == 200, "the python1 book did not serve"
     expect(page.locator('link[href*="/static/css/"]')).to_have_count(1)  # the site's chrome
-    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    expect(page.locator("nav.pagenav a")).to_have_count(6)
     # The book's own stylesheet, through the app's asset route:
     css = page.request.get(f"{base_url}/pybooks/asset/common/course.css")
     assert css.status == 200, f"pybooks asset route returned {css.status}"
@@ -100,7 +100,7 @@ def test_the_blog_app_serves_a_post(page: Page, base_url: str) -> None:
     chrome -- proving the export landed and its manifest is served, not merely
     that /blog answered."""
     page.goto(f"{base_url}/blog/")
-    expect(page.locator("nav.pagenav a")).to_have_count(5)
+    expect(page.locator("nav.pagenav a")).to_have_count(6)
     post = page.locator('a[href^="/blog/posts/"]').first
     expect(post).to_be_visible()  # the index actually lists posts
     href = post.get_attribute("href")

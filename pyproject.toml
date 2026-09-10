@@ -23,6 +23,7 @@ dependencies = [
  "podpack-pages",
  "podpack-qrcode",
  "pp-pdf",
+ "podpack-notebooks",
  "werkzeug (>=2.3.8)",
  "flask (>=2.3.3)",
  "python-dotenv (>=1.0.1,<2.0.0)",
@@ -62,6 +63,7 @@ build-backend = "uv_build"
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "b4a644ef8d63cbc92020320968ded80c95055305" }
 pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git", rev = "a996b1f30222d169d2b3f9e6431b563f73a643a5" }
 podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "029fb3088b3a8a153b740250fc7f5839543a14a3" }
+podpack-notebooks = { git = "https://github.com/holdenweb/podpack-notebooks.git", rev = "a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
 
 [dependency-groups]
 dev = [

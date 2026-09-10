@@ -59,7 +59,7 @@ def test_status_is_not_public(client):
 
 def test_status_reports_all_apps_to_an_operator(operator_app):
     apps = operator_app.test_client().get("/_status").get_json()["apps"]
-    assert set(apps) == {"main", "pages", "pybooks", "blog", "qrcode", "pp_pdf"}
+    assert set(apps) == {"main", "pages", "pybooks", "blog", "notebooks", "qrcode", "pp_pdf"}
 
 
 # The installed apps, wearing this site's chrome.
@@ -68,6 +68,15 @@ def test_pages_app_serves_seeded_content(client):
     response = client.get("/pages/test")
     assert response.status_code == 200
     assert b"Holden Web" in response.data  # the site's own chrome around it
+
+
+def test_notebooks_app_serves_its_seeded_placeholder(client):
+    """Until notebooks are pushed, the app serves the placeholder it ships --
+    which proves podpack-notebooks installed and found its data directory."""
+    response = client.get("/notebooks/")
+    assert response.status_code == 200
+    assert b"Holden Web" in response.data          # the site's chrome
+    assert b"placeholder landing page" in response.data
 
 
 def test_missing_page_is_404(client):
@@ -165,5 +174,5 @@ def test_every_page_carries_the_site_navigation(client, path, what):
     """
     body = client.get(path).get_data(as_text=True)
     assert 'class="pagenav"' in body, f"{what} has no navigation"
-    for label in ("Home", "Python", "Blog", "QR codes", "PDF tools"):
+    for label in ("Home", "Python", "Blog", "Notebooks", "QR codes", "PDF tools"):
         assert f">{label}</a>" in body, f"{what} omits {label!r}"

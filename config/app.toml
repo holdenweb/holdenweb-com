@@ -8,7 +8,7 @@ name = "holdenweb.com"
 # order: `holdenweb` is the site's own routes and must come first so its front
 # page claims `/`. pybooks and blog contribute the Python and Blog nav entries;
 # plain `podpack_pages` (at /pages) contributes none.
-apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_pages", "podpack_qrcode", "pp_pdf"]
+apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_notebooks", "podpack_pages", "podpack_qrcode", "pp_pdf"]
 
 # Environment variables this site needs beyond podpack's own three, checked at
 # boot with them. Names here, values in the environment -- the same split as

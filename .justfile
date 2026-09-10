@@ -5,10 +5,11 @@
 # podpack-pages serves three content trees on this site, each from
 # hostdata/apps/<app>/<tree>:
 #
-#     pybooks  html-pages   the Python course books (orpy `build.py --fragments`)
-#     blog     export       the blog (sitescraper `python -m blogscraper export`)
-#     pages    html-pages   the site's prose pages (maintained on the host today;
-#                           no laptop builder, so no named recipe -- use `content`)
+#     pybooks    html-pages   the Python course books (orpy `build.py --fragments`)
+#     blog       export       the blog (sitescraper `python -m blogscraper export`)
+#     notebooks  html-pages   Jupyter notebooks (podpack-notebooks `build.py`)
+#     pages      html-pages   the site's prose pages (maintained on the host today;
+#                             no laptop builder, so no named recipe -- use `content`)
 #
 # A tree is refreshed by ops/refresh-content.sh (on the box that runs the site)
 # or ops/push-content.sh (to a remote target). These recipes wrap that pair so
@@ -32,6 +33,7 @@ set shell := ["bash", "-uc"]
 
 orpy        := env_var_or_default("ORPY_BUILD", home_directory() / "Projects/Python/orpy/python-classes")
 sitescraper := env_var_or_default("SITESCRAPER_BUILD", home_directory() / "Projects/Python/sitescraper/build")
+notebooks   := env_var_or_default("NOTEBOOKS_BUILD", home_directory() / "sites/podpack-notebooks/build/html-pages")
 
 # List the recipes.
 default:
@@ -44,6 +46,10 @@ pybooks target="staging" *flags:
 # The blog: the sitescraper export -> the blog app's export tree.
 blog target="staging" *flags:
     @just _content "{{ target }}" "{{ sitescraper }}" blog export {{ flags }}
+
+# The notebooks: podpack-notebooks build.py output -> the notebooks app's html-pages tree.
+notebooks target="staging" *flags:
+    @just _content "{{ target }}" "{{ notebooks }}" notebooks html-pages {{ flags }}
 
 # Any tree: `just content <target> <source-dir> <app> <tree> [--mirror|--dry-run]`.
 content target dir app tree *flags:
