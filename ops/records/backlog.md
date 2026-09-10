@@ -48,6 +48,7 @@ drift apart.
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 | 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use | operational |
+| 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -972,6 +973,30 @@ be deleted and require the operator to type `mirror` before proceeding; a piped
 or non-interactive run (the push-content case, which has already confirmed
 upstream) passes straight through. Guarding the script itself, not just its
 caller, is what makes the by-hand host run safe.
+
+## Raised 2026-09-10
+
+### 37. Published notebooks depend on their source staying put
+
+**Repo:** podpack-notebooks. `notebooks.yaml` names each notebook by a path to
+its `.ipynb` source, and since `build.py` now expands `~` and absolute paths,
+that source commonly lives in a working directory elsewhere on the laptop, not
+in the repo. So a published notebook is only as durable as that source file:
+rename, move or delete it during ordinary development and the next `build.py`
+run drops or changes the published page, quietly.
+
+*Why it's left.* The obvious fix is to *vendor* a copy of each published
+notebook into the podpack-notebooks repo, so publication is pinned to a
+committed artefact rather than a live working file. That is deliberately
+deferred: it brings name-collision handling (two sources with the same stem),
+a decision about when a vendored copy is refreshed from its source, and the
+curation questions that follow — more machinery than the current need warrants.
+Steve's call (2026-09-10): keep it simple for now, convert straight from the
+sources `notebooks.yaml` points at.
+
+*The trigger to watch for* is a published notebook going stale or vanishing
+because its source moved — at which point vendoring (and its collision rules)
+earns its keep.
 
 ---
 
