@@ -22,6 +22,10 @@ pool_pre_ping = true
 # Keyed by each app's own name -- its blueprint's -- not the import name above.
 [apps.pages]
 default_title = "Just another holdenweb note"
+# Show a section nav of the current directory's sibling pages. Opt-in because
+# the pages-kind views are shared: pybooks carries orpy's own course nav and
+# wants no second one, so it does not set this.
+subnav = true
 
 [apps.pybooks]
 default_title = "Holden Web Python"

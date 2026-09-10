@@ -244,3 +244,33 @@ h1.title { border-left: 4px solid var(--indigo); padding-left: 16px; margin-left
   .fcards { grid-template-columns: 1fr; }
   h1.title { margin-left: 0; }
 }
+
+/* ---- section (second-level) nav: a left rail beside the content -------- *
+ * Present only when a content app supplies a `subnav` (see base.html). The
+ * top-level nav (.pagenav) is untouched. */
+.inner.with-subnav {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.subnav { position: sticky; top: 20px; }
+.subnav-inner ul { list-style: none; margin: 0; padding: 0; }
+.subnav-heading {
+  font-family: var(--head-font); font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 8px;
+}
+.subnav-inner a {
+  display: block; padding: 5px 0 5px 12px; margin-left: -14px;
+  font-size: 14px; line-height: 1.35; color: var(--link);
+  border-left: 2px solid transparent;
+}
+.subnav-inner a:hover { color: var(--indigo); text-decoration: none; }
+.subnav-inner a[aria-current] { color: var(--deep); font-weight: 600; border-left-color: var(--indigo); }
+
+@media (max-width: 760px) {
+  .inner.with-subnav { grid-template-columns: 1fr; gap: 0; }
+  .subnav { position: static; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .subnav-inner ul { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .subnav-inner a { border-left: 0; padding: 3px 0; margin-left: 0; }
+}

@@ -1,0 +1,16 @@
+{# The section (second-level) nav, rendered from a `subnav` a content app puts
+   in front of its page: a list of groups, each an optional heading over items
+   that are {label, href, current}. The producer decides what it holds (the blog
+   an archive of years, the pages app the current directory's siblings); this
+   only lays it out. Kept a partial because it is included from base.html for
+   every app that supplies one. #}
+<nav class="subnav-inner" aria-label="Section navigation">
+  {% for group in subnav %}
+    {% if group.heading %}<h2 class="subnav-heading">{{ group.heading }}</h2>{% endif %}
+    <ul>
+      {% for item in group['items'] %}
+        <li><a href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</nav>

@@ -42,25 +42,32 @@
   </div>
 
   <main class="page">
-    <div class="inner">
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          <ul class="flashes">
-            {% for message in messages %}<li>{{ message|safe }}</li>{% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
+    {# A content app may pass a `subnav` (ADR-0022's second level): a list of
+       groups of {label, href, current} items. When present the content sits
+       beside a section rail; when absent (the front page, login, PDF, pybooks)
+       the layout is a single column, unchanged. #}
+    <div class="inner{% if subnav %} with-subnav{% endif %}">
+      {% if subnav %}<aside class="subnav">{% include "subnav.html" %}</aside>{% endif %}
+      <div class="maincol">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flashes">
+              {% for message in messages %}<li>{{ message|safe }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
 
-      {% block pagehead %}
-        {% if title %}
-        <div class="pagehead">
-          {% block eyebrow %}{% endblock %}
-          <h1 class="title">{{ title }}</h1>
-        </div>
-        {% endif %}
-      {% endblock %}
+        {% block pagehead %}
+          {% if title %}
+          <div class="pagehead">
+            {% block eyebrow %}{% endblock %}
+            <h1 class="title">{{ title }}</h1>
+          </div>
+          {% endif %}
+        {% endblock %}
 
-      {% block content -%}<div class="prose">{{ content | safe }}</div>{%- endblock %}
+        {% block content -%}<div class="prose">{{ content | safe }}</div>{%- endblock %}
+      </div>
     </div>
   </main>
 
