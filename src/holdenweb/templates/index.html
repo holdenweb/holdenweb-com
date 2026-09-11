@@ -17,6 +17,11 @@
 </div>
 {% endblock %}
 
+{# The front page is the one page that fills the full content width: the
+   featured grid below wants it. Clearing this block drops the `reading`
+   modifier base.html adds by default. #}
+{% block maincol_class %}{% endblock %}
+
 {% block content %}
 <div class="seclabel"><span class="eyebrow">Featured</span><span class="line"></span></div>
 

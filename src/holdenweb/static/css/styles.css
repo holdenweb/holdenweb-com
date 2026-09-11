@@ -117,6 +117,12 @@ p { margin: 0.7em 0; }
 
 /* ---- content area ----------------------------------------------------- */
 main.page { padding: 26px 0 44px; }
+/* Article/app pages carry `.reading` on .maincol (base.html); the front page
+   clears it to keep the full width. This constrains the whole column -- title,
+   flashes and body together -- so it covers app templates that fill
+   {% block content %} without the default .prose wrapper (blog, pages, pybooks,
+   notebooks). */
+.maincol.reading { max-width: var(--read); }
 .prose { max-width: var(--read); }
 .pagehead { max-width: var(--read); }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 11.5px; font-weight: 600; color: var(--indigo); display: block; }
@@ -126,6 +132,26 @@ h1.title { border-left: 4px solid var(--indigo); padding-left: 16px; margin-left
 .prose li { margin: 0.3em 0; }
 .prose img { border-radius: 6px; }
 .flashes { list-style: none; padding: 10px 14px; margin: 0 0 16px; background: var(--soft); border-radius: 8px; max-width: var(--read); }
+
+/* ---- code (Markdown fenced blocks + inline) --------------------------- *
+ * The token colours are themed per app in templates/<app>/codehilite.css and
+ * included inline by that distribution's markdown.html; that file carries only
+ * .codehilite-scoped *colour* (the pygmentize convention drops the global
+ * `pre`). So the box, the mono face, and -- with the reading column now
+ * narrower than many code lines -- horizontal scroll all belong here. */
+code, kbd, samp {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+/* inline code in prose: a small tinted pill (fenced code is pre > code, so
+   :not(pre) leaves it alone). */
+:not(pre) > code { background: var(--soft); color: var(--deep); padding: 0.12em 0.4em; border-radius: 5px; }
+/* a fenced block. codehilite.css paints .codehilite's background and tokens;
+   this is the panel around it. overflow-x keeps a long line inside the column
+   instead of widening the page. */
+.codehilite { border: 1px solid var(--line); border-radius: 10px; margin: 1.1em 0; overflow-x: auto; }
+.codehilite pre { margin: 0; padding: 14px 16px; line-height: 1.5; }
+.codehilite code { background: none; color: inherit; padding: 0; border-radius: 0; }
 
 /* ---- front page: hero + featured (Direction B) ------------------------ */
 .hero { padding: 30px 0 8px; }

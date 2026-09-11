@@ -48,7 +48,11 @@
        the layout is a single column, unchanged. #}
     <div class="inner{% if subnav %} with-subnav{% endif %}">
       {% if subnav %}<aside class="subnav">{% include "subnav.html" %}</aside>{% endif %}
-      <div class="maincol">
+      {# Article/app pages sit in a reading column (`reading` -> max-width:
+         var(--read)); the front page overrides this block to reclaim the full
+         width its featured grid needs. Forms are already narrower, so the
+         constraint is a no-op for them. #}
+      <div class="maincol{% block maincol_class %} reading{% endblock %}">
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             <ul class="flashes">
