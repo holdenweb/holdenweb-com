@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.8.2"
+version = "1.8.3"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 requires-python = ">=3.12, <4.0"
@@ -62,7 +62,7 @@ build-backend = "uv_build"
 [tool.uv.sources]
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "b4a644ef8d63cbc92020320968ded80c95055305" }
 pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git", rev = "a996b1f30222d169d2b3f9e6431b563f73a643a5" }
-podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "029fb3088b3a8a153b740250fc7f5839543a14a3" }
+podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "133a7c48af770339dc193dd4368a7f4f137eb75f" }
 podpack-notebooks = { git = "https://github.com/holdenweb/podpack-notebooks.git", rev = "a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
 
 [dependency-groups]
