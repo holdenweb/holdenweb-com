@@ -40,6 +40,12 @@
 # is live the moment it lands.
 set -euo pipefail
 
+# CDPATH is exported in this project's shell (.zshrc). With it set, bash echoes
+# the directory on a CDPATH-matched `cd`, so the `$(cd ... && pwd)` below would
+# capture the path twice and `cd "$here"` would then fail on the doubled value.
+# Nothing here wants CDPATH's search behaviour; clear it once.
+unset CDPATH
+
 # --- configuration -------------------------------------------------------
 APP="${APP:-pages}"
 TREE="${TREE:-html-pages}"
