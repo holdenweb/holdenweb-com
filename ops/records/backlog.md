@@ -1000,6 +1000,42 @@ earns its keep.
 
 ---
 
+## holdenweb's substrate scripts still carry the CDPATH-doubling bug
+
+The six substrate scripts under `scripts/` — `up.sh`, `dev.sh`, `backup.sh`,
+`restore.sh`, `verify-backup.sh`, `prepare-host-dirs.sh` — derive their own root
+with `here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`, which doubles
+`$here` (and then fails on `cd "$here"`) when `CDPATH` is exported *and* the
+script is invoked relatively. `CDPATH` is exported in this laptop's `~/.zshrc`,
+so `up.sh` and `dev.sh` — run relatively from the repo root — fail here today;
+the host-run backup/restore/verify/prepare scripts are exposed only on a
+relative invocation with `CDPATH` set (cron uses an absolute path, so the
+scheduled backup is safe). holdenweb's own `ops/refresh-content.sh` is not a
+substrate file and was fixed directly (commit 9ad969e), which is what surfaced
+this — `just notebooks local` died on the doubled path.
+
+These six are managed podpack substrate files (five `verbatim`, `dev.sh`
+`rendered`), so the fix belongs upstream and is there: **podpack commit 7e50f9d**
+adds `unset CDPATH` to all six (both the `data/` template and its rendered root
+copy). holdenweb installs podpack from PyPI and carries synced copies, so it
+receives the fix only when it moves to a podpack release that includes 7e50f9d
+and re-syncs the substrate.
+
+*Why it's left.* Patching holdenweb's copies directly would create substrate
+drift — `substrate status --check` exists precisely to catch a managed file that
+no longer matches podpack — and the next sync would reconcile it away. The
+durable path is the upstream fix (done) plus a normal substrate upgrade, not a
+per-file patch here.
+
+*The trigger to watch for* is the next podpack bump in `pyproject.toml`: once
+holdenweb is on a podpack release carrying 7e50f9d
+(`uv lock --upgrade-package podpack` after it is published), run the substrate
+upgrade so the six copies refresh to the fixed versions — which also clears the
+pre-existing `substrate.json` staleness. Until then, don't run `up.sh`/`dev.sh`
+relatively on a shell with `CDPATH` set, or invoke them by absolute path.
+
+---
+
 ## Filing these
 
 Nothing here has been filed: creating issues is a change to a shared, public
