@@ -22,7 +22,7 @@ dependencies = [
  "podpack>=0.9.0b6",
  "podpack-pages",
  "podpack-qrcode",
- "pp-pdf",
+ "podpack-pdf",
  "podpack-notebooks",
  "werkzeug (>=2.3.8)",
  "flask (>=2.3.3)",
@@ -61,7 +61,7 @@ build-backend = "uv_build"
 # and deployed; bump a rev deliberately, and push it before re-locking here.
 [tool.uv.sources]
 podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "b4a644ef8d63cbc92020320968ded80c95055305" }
-pp-pdf = { git = "https://github.com/holdenweb/pp-pdf.git", rev = "a996b1f30222d169d2b3f9e6431b563f73a643a5" }
+podpack-pdf = { git = "https://github.com/holdenweb/podpack-pdf.git", rev = "a8eb92f7525dfa8e6f6a863b1f1c780f4420b1b1" }
 podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "133a7c48af770339dc193dd4368a7f4f137eb75f" }
 podpack-notebooks = { git = "https://github.com/holdenweb/podpack-notebooks.git", rev = "a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
 

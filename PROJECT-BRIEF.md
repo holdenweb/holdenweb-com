@@ -52,7 +52,7 @@ Seven apps are installed, named by import name in `config/app.toml`:
 | `notebooks` | `podpack_notebooks` | `/notebooks` | github.com/holdenweb/podpack-notebooks |
 | `pages` | `podpack_pages` | `/pages` | github.com/holdenweb/podpack-pages |
 | `qrcode` | `podpack_qrcode` | `/qrcode` | github.com/holdenweb/podpack-qrcode |
-| `pp_pdf` | `pp_pdf` | `/pdf` | github.com/holdenweb/pp-pdf |
+| `pdf` | `podpack_pdf` | `/pdf` | github.com/holdenweb/podpack-pdf |
 
 `main` is this site's own routes packaged as an app like any other — the
 front page, `/config`, `/ip`, and permanent redirects from the pre-podpack
@@ -152,7 +152,7 @@ POSTGRES_HOST_PORT=5439 podman compose --profile postgres-port up -d postgres-po
 
 1. **Push this branch's dependencies' repositories**, and then this branch.
    All four dependencies resolve from git already
-   (`podpack`, `podpack-pages`, `podpack-qrcode`, `pp-pdf`), which is what
+   (`podpack`, `podpack-pages`, `podpack-qrcode`, `podpack-pdf`), which is what
    lets the container build succeed.
 2. **Merge `podpack` to `main`** and deploy. Production is stamped at the
    old baseline revision, so it needs no schema change; the deployment

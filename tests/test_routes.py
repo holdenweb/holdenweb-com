@@ -59,7 +59,7 @@ def test_status_is_not_public(client):
 
 def test_status_reports_all_apps_to_an_operator(operator_app):
     apps = operator_app.test_client().get("/_status").get_json()["apps"]
-    assert set(apps) == {"main", "pages", "pybooks", "blog", "notebooks", "qrcode", "pp_pdf"}
+    assert set(apps) == {"main", "pages", "pybooks", "blog", "notebooks", "qrcode", "pdf"}
 
 
 # The installed apps, wearing this site's chrome.

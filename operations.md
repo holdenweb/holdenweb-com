@@ -446,7 +446,7 @@ the *old* `secrets.env`, which is exactly why the two are archived together.
 ## 10. Updating podpack and the apps
 
 Three dependencies come from git remotes: `podpack-pages`, `podpack-qrcode`,
-`pp-pdf`. A git source resolves to what is **on the remote**, so working locally
+`podpack-pdf`. A git source resolves to what is **on the remote**, so working locally
 on any of them means pushing before re-locking here. `podpack` itself is no
 longer a git source — it publishes to PyPI on every release tag, so it is an
 ordinary version specifier in `pyproject.toml` and upgrades as one.
