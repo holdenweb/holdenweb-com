@@ -123,3 +123,75 @@ def test_submitting_the_login_form_does_not_error(page: Page, base_url: str) -> 
     # And it must have *handled* the bad login, not merely avoided a 500: the
     # form comes back for another try. A crash page would not carry it.
     expect(page.get_by_role("button", name="Login")).to_be_visible()
+
+
+# --- second-level nav, reading column, and code theme --------------------
+# Three chrome features that shipped together and are each invisible to a 200:
+# the section subnav, the reading column, and the site's own code theme. Each
+# has a silent-regression twin -- a page that must *not* get the treatment --
+# so both halves are asserted, because a blanket rule that caught the front
+# page or a lost opt-out would still leave every 200 green.
+
+# App/article pages render their body in a reading column: base.html carries a
+# `reading` modifier on .maincol, because the content apps fill
+# `{% block content %}` without the default .prose wrapper, so the column -- not
+# the wrapper -- is where the measure has to be enforced.
+READING_COLUMN_PAGES = [
+    ("/pages/test", "a pages markdown page"),
+    ("/pybooks/python1/index", "a pybooks lesson"),
+    ("/notebooks/", "the notebooks index"),
+    ("/blog/", "the blog index"),
+]
+
+
+@pytest.mark.parametrize(
+    "path, what", READING_COLUMN_PAGES, ids=[p for p, _ in READING_COLUMN_PAGES]
+)
+def test_app_pages_render_in_the_reading_column(
+    page: Page, base_url: str, path: str, what: str
+) -> None:
+    page.goto(f"{base_url}{path}")
+    expect(page.locator("main.page .maincol.reading")).to_have_count(1)
+
+
+def test_the_front_page_opts_out_of_the_reading_column(page: Page, base_url: str) -> None:
+    """The one full-width page: its featured grid needs the width, so index.html
+    clears the modifier. The column is still there -- just not constrained -- so
+    this asserts the modifier is gone, not the column."""
+    page.goto(base_url)
+    expect(page.locator("main.page .maincol")).to_have_count(1)
+    expect(page.locator("main.page .maincol.reading")).to_have_count(0)
+
+
+def test_the_section_rail_appears_only_where_an_app_asks(page: Page, base_url: str) -> None:
+    """The blog contributes a year archive as its section nav (ADR-0022's second
+    level) and the chrome renders it as a left rail; pybooks deliberately
+    supplies none -- it keeps orpy's own in-page course nav -- so the rail must
+    be absent there. The opt-out is the half that regresses unseen: a stray
+    `subnav = true` would light a rail up on every app and nothing else would
+    notice."""
+    page.goto(f"{base_url}/blog/")
+    rail = page.locator("aside.subnav")
+    expect(rail).to_have_count(1)
+    expect(rail).to_contain_text("Archive")  # the year-archive heading
+
+    page.goto(f"{base_url}/pybooks/python1/index")
+    expect(page.locator("aside.subnav")).to_have_count(0)
+
+
+def test_the_site_themes_markdown_code(page: Page, base_url: str) -> None:
+    """Markdown fenced code is marked up by podpack-pages (Pygments classes on a
+    `.codehilite` block) but coloured by the SITE: holdenweb ships
+    templates/podpack_pages/codehilite.css and the loader resolves it ahead of
+    the app's shipped default (site -> app -> framework, ADR-0005). So this is
+    really "is the override in force on the deployed host?" -- which a page that
+    merely served would not reveal. /pages/test carries a Python block."""
+    page.goto(f"{base_url}/pages/test")
+    block = page.locator(".codehilite").first
+    expect(block).to_be_visible()  # the page actually carries a fenced block
+    # The panel background is the override's #fbfbfe, not the shipped #f8f8f8 --
+    # true whatever tokens the code contains, so it is the load-bearing check.
+    expect(block).to_have_css("background-color", "rgb(251, 251, 254)")
+    # And a keyword is the site's deep blue (--deep, #0d2a8f), not Pygments'
+    # default green (#008000): the tokens are themed, not merely the box.
+    expect(page.locator(".codehilite .k").first).to_have_css("color", "rgb(13, 42, 143)")
