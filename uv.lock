@@ -408,8 +408,8 @@ dependencies = [
     { name = "podpack" },
     { name = "podpack-notebooks" },
     { name = "podpack-pages" },
+    { name = "podpack-pdf" },
     { name = "podpack-qrcode" },
-    { name = "pp-pdf" },
     { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "werkzeug" },
@@ -432,10 +432,10 @@ requires-dist = [
     { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.0b6" },
-    { name = "podpack-notebooks", git = "https://github.com/holdenweb/podpack-notebooks.git?rev=a00ba6f69bc43fbac45afde68bbe7ec442702dfb" },
-    { name = "podpack-pages", git = "https://github.com/holdenweb/podpack-pages.git?rev=133a7c48af770339dc193dd4368a7f4f137eb75f" },
-    { name = "podpack-qrcode", git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305" },
-    { name = "pp-pdf", git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5" },
+    { name = "podpack-notebooks", specifier = ">=0.1.1" },
+    { name = "podpack-pages", specifier = ">=0.3.3" },
+    { name = "podpack-pdf", specifier = ">=0.2.2" },
+    { name = "podpack-qrcode", specifier = ">=0.2.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
     { name = "werkzeug", specifier = ">=2.3.8" },
@@ -684,7 +684,7 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.9.0b6"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -695,20 +695,24 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2d/b2/297ea7d4ed7ff03d899280675ccea37865a3ce56f2e8fb4171d4fd7a0383/podpack-0.9.0b6.tar.gz", hash = "sha256:20db7846f72eaab2fc43e311f42950f396a38fb9978f34309bdb7db284548d45", size = 158540, upload-time = "2026-09-01T12:00:35.744Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/85/13acc59567395294a8e2c6d814bd253d7cee48318a4cf1f0501b28721bad/podpack-0.9.1.tar.gz", hash = "sha256:5713eceacc3345bdace936bf86ca983fb1acb608e950002692afcd164e9520cd", size = 160525, upload-time = "2026-09-12T20:47:53.361Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/e7/46673ad62b6f28a1b9a6a10972d0fcbdc62bca0eb78f4094d14252bcc235/podpack-0.9.0b6-py3-none-any.whl", hash = "sha256:edb8e87f951c561e3c9fc6468d2ce1a9813ad304fd674854aad9a6d068e4c358", size = 161583, upload-time = "2026-09-01T12:00:34.18Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/a3/1e38cf0abacd03c80d08cc32517f783dba659df69e6732c3e7c7408202bc/podpack-0.9.1-py3-none-any.whl", hash = "sha256:6c3e0780f28ba20ea14b3645dd7a36f50fc98740289f17f27308f3b95100804a", size = 163410, upload-time = "2026-09-12T20:47:52.008Z" },
 ]
 
 [[package]]
 name = "podpack-notebooks"
-version = "0.1.0"
-source = { git = "https://github.com/holdenweb/podpack-notebooks.git?rev=a00ba6f69bc43fbac45afde68bbe7ec442702dfb#a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/f3/7813913945213016a2cccd8f15aae83dab3026963c39cd8d2d602a528de8/podpack_notebooks-0.1.1.tar.gz", hash = "sha256:627ceabc3eebb67a5f0270bc695437a56cd7789999c62c5a6d65391cb700f59e", size = 4276, upload-time = "2026-09-13T22:00:13.808Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/3e/8c811d10e89c162922bf5819c8b5364afd4f5bf3ac38ac8557b77d387ca5/podpack_notebooks-0.1.1-py3-none-any.whl", hash = "sha256:e5cb081534d25e98bc0069f14b22e312df365dd99715a3243c450a7216667573", size = 5100, upload-time = "2026-09-13T22:00:12.758Z" },
+]
 
 [[package]]
 name = "podpack-pages"
 version = "0.3.3"
-source = { git = "https://github.com/holdenweb/podpack-pages.git?rev=133a7c48af770339dc193dd4368a7f4f137eb75f#133a7c48af770339dc193dd4368a7f4f137eb75f" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
     { name = "jinja2" },
@@ -716,27 +720,39 @@ dependencies = [
     { name = "pygments" },
     { name = "python-markdown-math" },
 ]
-
-[[package]]
-name = "podpack-qrcode"
-version = "0.2.2"
-source = { git = "https://github.com/holdenweb/podpack-qrcode.git?rev=b4a644ef8d63cbc92020320968ded80c95055305#b4a644ef8d63cbc92020320968ded80c95055305" }
-dependencies = [
-    { name = "flask" },
-    { name = "flask-wtf" },
-    { name = "qrcode", extra = ["pil"] },
+sdist = { url = "https://files.pythonhosted.org/packages/a7/49/79bfaaf5f1a5031cbcb40cd15bb2e1c38d8ba932dbeacb2eed8599faf8af/podpack_pages-0.3.3.tar.gz", hash = "sha256:385bb7d08a148a513573a15fd69548c8ba91d6f5266183dacf346066099aa43d", size = 1060703, upload-time = "2026-09-14T07:17:46.742Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/cb/34db9f998c2ac00d267fa4025d4486dd4f3859bf10ad6d2aa88e2b98671e/podpack_pages-0.3.3-py3-none-any.whl", hash = "sha256:b3d0c0e4d8a2d448f87f1ed793144192827812d509a93ecc37ebbd867910377f", size = 1070032, upload-time = "2026-09-14T07:17:45.315Z" },
 ]
 
 [[package]]
-name = "pp-pdf"
-version = "0.2.1"
-source = { git = "https://github.com/holdenweb/pp-pdf.git?rev=a996b1f30222d169d2b3f9e6431b563f73a643a5#a996b1f30222d169d2b3f9e6431b563f73a643a5" }
+name = "podpack-pdf"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
     { name = "flask-wtf" },
     { name = "pdfrw" },
     { name = "reportlab" },
     { name = "wtforms" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/44/68/fcfed8389dbf7e9d3d7c874abad4aecf84dc5a5e04fa9147ad83b16c3902/podpack_pdf-0.2.2.tar.gz", hash = "sha256:5a2e17fe703affecdbf16650c6d8769efad42452e9465d3efa97e3dd40354dba", size = 11444, upload-time = "2026-09-13T21:13:18.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/2e/9175d77f49b6765a4464ada626f83337c9f7206731d38071bc5840598da3/podpack_pdf-0.2.2-py3-none-any.whl", hash = "sha256:deb14adfbbf1c67ef2ecfea4d46aa46f6f42defc18523d49b66003e6448f1f2c", size = 15351, upload-time = "2026-09-13T21:13:17.078Z" },
+]
+
+[[package]]
+name = "podpack-qrcode"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-wtf" },
+    { name = "qrcode", extra = ["pil"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/bb/6ae0a7e2ed7dfcbbd2154881d193f312864981bc636b16dcd2c447467839/podpack_qrcode-0.2.2.tar.gz", hash = "sha256:9d02bdb6cf67d1e6961dd013956ef33f8c247487385593028841b5d7ab22d4c1", size = 2788, upload-time = "2026-09-14T09:39:46.203Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/65/b88c186712d5f9fa68309775d6660f740d35ad56928c84a22ae4c48d14a1/podpack_qrcode-0.2.2-py3-none-any.whl", hash = "sha256:e5b0d3744117813e914603095ac81252a6caf194832f9e4da1e6d4f4b2244aee", size = 3902, upload-time = "2026-09-14T09:39:45.463Z" },
 ]
 
 [[package]]

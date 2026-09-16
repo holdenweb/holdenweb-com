@@ -20,10 +20,25 @@ dependencies = [
  #       so the checkout is left wearing the backup's identity and holding none
  #       of its data. Measured on Opalstack, 2026-08-24.
  "podpack>=0.9.0b6",
- "podpack-pages",
- "podpack-qrcode",
- "podpack-pdf",
- "podpack-notebooks",
+ #
+ # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
+ # something this deployment depends on, not merely the newest available:
+ #
+ #   pages 0.3.3      the section subnav, and the Markdown work under it --
+ #                    fenced code highlighted, Pygments a runtime dependency,
+ #                    and codehilite.css included so this site's override wins.
+ #   qrcode 0.2.2     0.2.1's nav entry names the endpoint `podpack_qrcode.form`
+ #                    while the blueprint is `qrcode`, and podpack treats a nav
+ #                    entry naming no view as a boot failure. Below this floor
+ #                    the site does not start at all.
+ #   pdf 0.2.2        the rename: distribution podpack-pdf, import podpack_pdf,
+ #                    app `pdf` -- which is what config/app.toml lists and what
+ #                    templates/pdf/ overrides.
+ #   notebooks 0.1.1  the app as installed here.
+ "podpack-pages>=0.3.3",
+ "podpack-qrcode>=0.2.2",
+ "podpack-pdf>=0.2.2",
+ "podpack-notebooks>=0.1.1",
  "werkzeug (>=2.3.8)",
  "flask (>=2.3.3)",
  "python-dotenv (>=1.0.1,<2.0.0)",
@@ -46,24 +61,15 @@ email = "steve@holdenweb.com"
 requires = [ "uv_build>=0.8.4,<0.9.0",]
 build-backend = "uv_build"
 
-# podpack is not here any more: it publishes to PyPI on every release tag, so
-# it is an ordinary version specifier above. That is worth having rather than
-# tidiness -- a git source resolves to whatever is on the remote *now*, and uv
-# caches the ref, so moving one forward took `uv lock --upgrade-package X
-# --refresh-package X` and moved silently without it.
+# No [tool.uv.sources] here any more: every dependency above resolves from PyPI.
 #
-# The three apps stay on git until they have PyPI publishers of their own. A
-# path source is not an option for any of them: the container build context has
-# no such path, and `uv sync --frozen` fails there with "Failed to determine
-# installation plan". Each is pinned to an immutable commit, so a re-lock
-# follows the remote only when the rev here changes on purpose -- not silently
-# on whatever the branch has moved to. These are the commits currently locked
-# and deployed; bump a rev deliberately, and push it before re-locking here.
-[tool.uv.sources]
-podpack-qrcode = { git = "https://github.com/holdenweb/podpack-qrcode.git", rev = "b4a644ef8d63cbc92020320968ded80c95055305" }
-podpack-pdf = { git = "https://github.com/holdenweb/podpack-pdf.git", rev = "a8eb92f7525dfa8e6f6a863b1f1c780f4420b1b1" }
-podpack-pages = { git = "https://github.com/holdenweb/podpack-pages.git", rev = "133a7c48af770339dc193dd4368a7f4f137eb75f" }
-podpack-notebooks = { git = "https://github.com/holdenweb/podpack-notebooks.git", rev = "a00ba6f69bc43fbac45afde68bbe7ec442702dfb" }
+# The four apps were git-sourced for as long as they had no publisher of their
+# own, each pinned to an immutable commit so that a re-lock followed the remote
+# only on purpose rather than on whatever a branch had moved to. All four now
+# publish to PyPI from a release tag, so the pins are retired and two traps go
+# with them: needing `uv lock --upgrade-package X --refresh-package X` to shift
+# a cached git ref, and a container build that resolved against whatever was on
+# a remote *now* -- and needed git, and a network, to do it.
 
 [dependency-groups]
 dev = [
