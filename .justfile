@@ -77,6 +77,19 @@ _content target dir app tree *flags:
 
 # ---- housekeeping -----------------------------------------------------------
 
+# backlog.md is the record and is append-only, which makes it the wrong thing to
+# read when you only want what is left. This extracts that, deriving the open set
+# from the summary table rather than from any list kept here -- so an item marked
+# **fixed** there simply stops appearing, and this recipe needs no maintenance.
+# `just still-to-do --check` reports whether the file is stale without writing it.
+#
+# (Blank line below on purpose: just shows the last line of the comment block
+# immediately above a recipe as its --list description.)
+
+# The open backlog items -> ops/records/still_to_do.md.
+still-to-do *flags:
+    @python3 ops/open-backlog.py {{ flags }}
+
 clean:
     rm -f kill port_no start stop
     find . -name __pycache__ -exec rm -rf {} \; -prune
