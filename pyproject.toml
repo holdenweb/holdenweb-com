@@ -3,7 +3,23 @@ name = "holdenweb"
 version = "1.8.3"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENCE"]
 requires-python = ">=3.12, <4.0"
+keywords = ["flask", "plugins", "web", "containers", "podman"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
 dependencies = [
  # The pre-release is spelled out on purpose. uv allows a pre-release only
  # where the specifier names one, so this opts podpack in and nothing else:
