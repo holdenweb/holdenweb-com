@@ -12,7 +12,7 @@ jobs:
       # Dummy values so the app can boot in CI -- no real secrets or
       # infrastructure needed since tests use an in-memory sqlite DB and
       # the dummy mail backend (see tests/conftest.py).
-      SQLALCHEMY_DATABASE_URI: sqlite:///:memory:
+      SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
       SECRET_KEY: ci-test-secret-key
       SECURITY_PASSWORD_SALT: ci-test-password-salt
     steps:
