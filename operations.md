@@ -6,7 +6,12 @@
 > podpack's rather than this site's and will move there; the paragraphs that
 > name only `podpack`, the substrate or `scripts/` are the ones to take.
 
-*Written 2026-08-19, against podpack 0.8.0 and a site running on `opal17`.*
+*Written 2026-08-19, against podpack 0.8.0 and a site running on `opal17`.
+Reviewed 2026-09-21, against podpack 0.9.1 and seven installed apps. The site
+this describes is **staging**, `os.holdenweb.com`. Production does not exist
+yet, so every mention of it below names a target still to be created
+([`ops/DEPLOY.md`](ops/DEPLOY.md)); `holdenweb.com` itself still serves the old
+site and answers no `/healthz`.*
 
 The procedures a running site needs and the site's own documentation does not
 cover: backups, restores, moving hosts, rotating credentials, upgrading, and
@@ -110,13 +115,22 @@ while contributing no navigation at all.
 uv run pytest tests/integration --base-url https://os.holdenweb.com
 ```
 
-Fifteen tests, driving a real browser, asking each app to do its job — generate
-a code, offer both PDF forms, render a page in the site's own stylesheet. The
-header names what it tested, so a suite that quietly checked the laptop instead
-is visible:
+Twenty-six tests, driving a real browser, asking each app to do its job —
+generate a code, offer both PDF forms, render a page in the site's own
+stylesheet. The header names what it tested, so a suite that quietly checked
+the laptop instead is visible:
 
 ```
-integration target: https://holdenweb.com
+integration target: https://os.holdenweb.com
+```
+
+The browsers it drives are not in the lockfile, so a machine that has never run
+this suite — or one whose playwright has just moved, as it did in 47142ae —
+reports `Executable doesn't exist` rather than a test failure. Once per machine,
+and again after playwright changes:
+
+```bash
+uv run playwright install chromium
 ```
 
 Then, as the administrator, `GET /_status`: it reports the installed apps,
@@ -172,8 +186,19 @@ crontab ops/backup.cron
 
 That schedules `backup.sh` (03:17) and `verify-backup.sh` (04:23), both logged
 under `~/backups/`. The fragment runs in `$HOME/apps/os/site`; for production,
-point it at that app's directory. It exists now but is not running until
-installed.
+point it at that app's directory.
+
+Installed on `opal17` on 2026-09-02. The first scheduled run is worth knowing
+about: cron's environment carries neither `$HOME/bin` nor `XDG_RUNTIME_DIR`, so
+`podman compose` resolved the wrong provider and both scripts reported the
+stores down while `podman compose ps` showed them up twenty hours. The cron
+file exports both now, and the host also carries a `containers.conf` provider
+pin (`ops/records/backlog.md` item 31). Nothing on the laptop can see whether
+it is still firing, so on `opal17`:
+
+```bash
+tail -n 20 ~/backups/verify.log
+```
 
 `loginctl enable-linger` is already required for the containers to survive
 logout; the same setting is what lets these run.
@@ -223,14 +248,20 @@ and it is the one worth putting in the calendar:
 ```bash
 git clone <this repo> /tmp/restore-rehearsal && cd /tmp/restore-rehearsal
 # edit .env for a spare port, then:
-./scripts/restore.sh ~/backups/holdenweb-com/<stamp> --yes
+./scripts/restore.sh ~/backups/$SITE_NAME/<stamp> --yes
 ```
 
 That compares every recorded row count and fails on a mismatch. It has been
 exercised end to end on `podpack-demo` — five tables, real uploads, and a
 marker planted after the backup that was gone afterwards — and a deliberately
 tampered `rowcounts.txt` produced `MISMATCH: expected 99, found 5` and exit 1.
-It has **not** yet been run against this site's data.
+
+It has since been run against this site's own data, twice, both on `opal17`.
+On 2026-08-24, from `20260823T170934Z`, every recorded row count matched
+(§17). On 2026-09-03 a full rehearsal went further and verified the site it
+rebuilt, which is the run that finally produced a recovery time —
+[`ops/records/2026-09-03-rehearsal.md`](ops/records/2026-09-03-rehearsal.md),
+with the four earlier attempts and what each of them found.
 
 ## 6. Restoring
 
@@ -380,8 +411,14 @@ proven live.
 site refuses to boot without it rather than discovering its absence when a
 visitor asks for a password reset.
 
-> **Outstanding:** `MAIL_PASSWORD` on the production host was last seen holding
-> the example value. Until it is changed, password reset cannot work.
+> **Outstanding:** this belongs to whichever host is built next, production
+> among them. `configure-host.py` fills `secrets.env` from the example, and the
+> example carries `MAIL_PASSWORD=lab-only-not-a-real-password` — so a new host
+> **boots**, because the `[site] secrets` check asks only that the name is set,
+> and then cannot send a password-reset mail. `configure-host.py` reports a
+> credential still at its example value as a finding; step 3's `mail check` is
+> what proves the replacement works. Run it on any new host before trusting
+> login.
 
 If you are rotating because the value may have leaked — an editor state file
 cached it, a backup went astray — deleting or tightening that copy is part of
@@ -445,20 +482,34 @@ the *old* `secrets.env`, which is exactly why the two are archived together.
 
 ## 10. Updating podpack and the apps
 
-Three dependencies come from git remotes: `podpack-pages`, `podpack-qrcode`,
-`podpack-pdf`. A git source resolves to what is **on the remote**, so working locally
-on any of them means pushing before re-locking here. `podpack` itself is no
-longer a git source — it publishes to PyPI on every release tag, so it is an
-ordinary version specifier in `pyproject.toml` and upgrades as one.
+Everything this site installs comes from PyPI — `podpack` and the four app
+distributions alike. There is no `[tool.uv.sources]` block and no git source
+left (9cd7a82, 2026-09-16), so an upgrade is an ordinary version bump:
 
 ```bash
-uv lock --upgrade-package podpack-pages --refresh-package podpack-pages
+uv lock --upgrade-package podpack-pages
 uv sync
 ```
 
-`--refresh-package` is not optional: without it uv serves a cached git ref and
-the lock silently does not move. Once the apps are on PyPI and the
-`[tool.uv.sources]` block goes, this becomes an ordinary version bump.
+`--refresh-package` is what this section used to insist on, and it is no longer
+needed. It mattered only for git sources, where uv served a cached ref and the
+lock silently did not move; a registry version has no ref to cache. Two heavier
+traps went with the same change: a container build that resolved against
+whatever happened to be on a remote at build time, and needing git and a
+network in the build to do it. Working locally on an app no longer means
+pushing before re-locking here — it means releasing it.
+
+To move everything at once, which is how the security advisories in 47142ae
+were cleared, drop the package name:
+
+```bash
+uv lock --upgrade
+```
+
+That is a larger change than it looks. It moved 28 packages, three of them
+across a major version, and playwright among them — so the suite in §3 could
+say nothing until its browsers were fetched. Run the unit tests, deploy to
+staging, then run §3 against staging before letting such a lock go further.
 
 Then bring the substrate forward — a podpack release often carries container
 files with it:
@@ -481,11 +532,13 @@ Then commit and push, and on the host:
 
 Verify with §3.
 
-> ✅ **Current as of 2026-08-23**: `substrate.json` records podpack
-> **0.9.0b2**, and `scripts/configure-host.py` is present and was run on the
-> host during rehearsal 1. The note that used to stand here — that the site was
-> pinned at 0.7.0 and lacked that script — was true when written and stayed on
-> the page for four releases after it stopped being.
+> ✅ **Current as of 2026-09-21**: `substrate.json` records podpack **0.9.1**,
+> matching the installed library, and `podpack substrate status --check` exits
+> 0. It trailed at 0.9.0b5 for five days after the site moved to 0.9.1, which
+> is how the `unset CDPATH` fix to the six scripts arrived late (47142ae).
+> The check is the thing to run. This note is a snapshot, and it is now the
+> third one on this page to have been left behind by the tree it describes —
+> which is the argument for the monthly line in §16, and for the check.
 
 **What an app upgrade does not do:** deliver changed content. App data seeds
 once; the host copy is the live one from then on. Content changes are made on
@@ -593,8 +646,12 @@ tail -f hostlogs/apps/<app>/<app>.log         # an app's own log
 tail -f hostlogs/postgres/postgresql.log      # the database
 ```
 
-Disk is worth watching: the local lab's PostgreSQL log reached 19 MB against
-62 MB of data. Nothing rotates these by default.
+Disk is worth watching, though PostgreSQL's log is now bounded:
+`config/postgresql.conf` writes `postgresql-Mon.log` through
+`postgresql-Sun.log` and truncates each on reuse, so a week is the most that
+accumulates. Bounded is not small — the seven files in this laptop's lab total
+93 MB. The app logs under `hostlogs/apps/` have no rotation at all, and the
+setting reaches a host only on a deploy followed by a postgres restart.
 
 The database publishes **no port**. When a host-side `psql` or an
 `alembic revision --autogenerate` needs one:
@@ -648,7 +705,7 @@ the one that matters most, and why §5 exists.
 
 | When | What |
 | --- | --- |
-| Every five minutes | the health poll (§18), unattended |
+| Every five minutes | the health poll (§18), unattended — **not running yet** |
 | Every deployment | §3 — the integration suite, against the real host |
 | Nightly | `scripts/backup.sh`, then `scripts/verify-backup.sh` |
 | Monthly | `scripts/restore.sh` into a scratch deployment — the only deep check (§5) |
@@ -691,8 +748,24 @@ Recorded rather than hidden. None is urgent; all are real.
 - ~~**`README.md` is stale** on dependency sources: it warns that four path
   sources need repointing at git remotes, which was done some time ago.~~
   **Closed**: that warning is gone from `README.md`.
-- ~~**The substrate is a version behind**~~ — `substrate.json` now records
-  `0.9.0b5`, and the library is pinned `0.9.0b6` (§10).
+- ~~**The substrate is a version behind**~~ **Closed 2026-09-21**:
+  `substrate.json` records `0.9.1`, matching the installed library, and
+  `substrate status --check` exits 0 (§10). It had closed once before and
+  reopened when the site moved to 0.9.1 without the matching `substrate
+  upgrade`, so the line to trust is the check, not this one.
+- ~~**CI has never run.**~~ **Closed 2026-09-21**: every run since the workflow
+  was added in July failed, and none of them ran a test. `SQLALCHEMY_DATABASE_URI:
+  sqlite:///:memory:` is not a string to YAML — the trailing colon makes it a
+  mapping — so the file never parsed, and GitHub reported `failure` with zero
+  jobs, naming the workflow by its path rather than its `name:`, which is what
+  it does when it cannot read one. Two months of pushes went untested, and the
+  trap was that the Actions list was never empty: some forty runs appeared
+  there, each red for a reason nobody opened. Quoting the value fixed it
+  (a64dac5).
+  What now runs is the unit suite against SQLite; the site runs PostgreSQL, and
+  podpack's own `ci.yml` has the service-container pattern if that gap is worth
+  closing. The lesson is the general one: a check nobody has watched fail is a
+  claim, not a check.
 
 ---
 
