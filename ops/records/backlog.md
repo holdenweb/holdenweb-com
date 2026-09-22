@@ -737,8 +737,9 @@ checking whether it wants an ADR of its own or an amendment to that one.
 **Repo:** podpack-pages — found 2026-08-26 while publishing a generated tree of
 class notes.
 
-**Fixed** in podpack-pages 0.3.4, and not yet live here: it reaches this site
-when 0.3.4 is published and the floor in `pyproject.toml` moves to it.
+**Fixed** in podpack-pages 0.3.4, published 2026-09-22 and taken here the same
+day: the floor in `pyproject.toml` is now `>=0.3.4`. It reaches the deployment on
+the next rebuild.
 `rewrite_asset_urls` became `rewrite_relative_urls` and takes a `page_url`
 beside `asset_url`. A relative value ending `.html` or `.htm` now goes to the
 page route with the suffix *dropped* rather than trusted, because the page space

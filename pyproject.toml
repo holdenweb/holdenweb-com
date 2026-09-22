@@ -40,9 +40,15 @@ dependencies = [
  # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
  # something this deployment depends on, not merely the newest available:
  #
- #   pages 0.3.3      the section subnav, and the Markdown work under it --
- #                    fenced code highlighted, Pygments a runtime dependency,
- #                    and codehilite.css included so this site's override wins.
+ #   pages 0.3.4      0.3.3 brought the section subnav and the Markdown work
+ #                    under it -- fenced code highlighted, Pygments a runtime
+ #                    dependency, codehilite.css included so this site's
+ #                    override wins. 0.3.4 stops a relative link to another page
+ #                    being rewritten to the asset route, where it arrived as a
+ #                    bare document with the site lost around it. No page here
+ #                    exercises that today; the floor is at 0.3.4 so a resolve
+ #                    cannot quietly fall back to the behaviour that loses the
+ #                    chrome on the generated trees still to come.
  #   qrcode 0.2.2     0.2.1's nav entry names the endpoint `podpack_qrcode.form`
  #                    while the blueprint is `qrcode`, and podpack treats a nav
  #                    entry naming no view as a boot failure. Below this floor
@@ -51,7 +57,7 @@ dependencies = [
  #                    app `pdf` -- which is what config/app.toml lists and what
  #                    templates/pdf/ overrides.
  #   notebooks 0.1.1  the app as installed here.
- "podpack-pages>=0.3.3",
+ "podpack-pages>=0.3.4",
  "podpack-qrcode>=0.2.2",
  "podpack-pdf>=0.2.2",
  "podpack-notebooks>=0.1.1",
