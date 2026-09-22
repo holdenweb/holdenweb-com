@@ -24,7 +24,7 @@ drift apart.
 | 6 | holdenweb-com | `README.md` stale on dependency sources — **fixed** | docs |
 | 7 | holdenweb-com | `environment = "local"` in the production config — **fixed** | cosmetic |
 | 8 | holdenweb-com | Nothing polls `/healthz` | gap |
-| 9 | holdenweb-com | No log rotation | gap |
+| 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 14 | podpack | `backup.sh`'s working-tree guard fails open — **fixed** | security |
@@ -40,15 +40,16 @@ drift apart.
 | 26 | podpack | Every `up` builds the same image twice — **fixed** | efficiency |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
-| 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
+| 29 | podpack-pages | A directory has no index, so it cannot be landed on — **fixed** | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
-| 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use | operational |
+| 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use — **fixed** | operational |
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
+| 38 | holdenweb-com | `refresh-content.sh`'s `--mirror` prompt was not tty-gated, so a non-interactive mirror aborted -- including the remote path `push-content.sh` drives over ssh — **fixed** | operational |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -217,6 +218,14 @@ the *standing* home that wants to be always-on.
 
 **Repo:** holdenweb-com. `hostlogs/` grows without limit; the laptop lab's
 PostgreSQL log reached 19 MB against 62 MB of data. Nothing prunes it.
+
+*Progress 2026-09-18.* The PostgreSQL half is done, and it was the half that
+prompted this: `config/postgresql.conf` sets `logging_collector = on`,
+`log_filename = 'postgresql-%a.log'`, `log_rotation_age = 1d` and
+`log_truncate_on_rotation = on`, so that log rotates day-of-week and is
+overwritten a week later instead of growing. What remains is the app logs:
+podpack attaches a plain `logging.FileHandler` (`paths.py:113`), so
+`hostlogs/apps/*.log` still grow without limit. The item stands, narrowed to that.
 
 ### 10. No maintenance page
 
@@ -769,6 +778,14 @@ its directories to be landable.
 
 **Repo:** podpack-pages
 
+**Fixed** in podpack-pages 0.3.x and live here since the 0.3.3 pin; confirmed
+2026-09-18. `views.py` resolves a directory's slash form to its `index` page
+(`name += "index"`, line 105) and 308-redirects the bare form to it when
+`is_page_dir` says the directory exists (lines 109-110). So
+`/pages/python-classes/` lands, and the bare form redirects there rather than
+404ing -- which is also what keeps a relative reference inside an index page
+resolving within its own directory.
+
 *Evidence.* `content.find_page` tries exactly two candidates and stops:
 `md-pages/<name>.md`, then `html-pages/<name>.html`. So
 `/pages/python-classes` raises `ContentNotFound` even when
@@ -951,6 +968,13 @@ stumbled on.
 substrate -- `refresh-content.sh` lives only at `holdenweb.com/ops/`, so the fix
 is one repo.
 
+**Fixed** in `ops/refresh-content.sh`; confirmed 2026-09-18. `--mirror` now asks
+before it removes anything and proceeds only on a typed `mirror`, which is the
+dangerous half of this item closed.
+
+*The gate did not land with it, though*, and that had a live consequence rather
+than being cosmetic. Filed and fixed as 38.
+
 *Evidence.* `ops/refresh-content.sh` takes an optional `--mirror`, and in mirror
 mode `podman unshare rsync --delete` removes any file the staged source no longer
 has -- straight into the live `hostdata/apps/<APP>/<TREE>` tree a visitor is
@@ -1035,6 +1059,41 @@ pre-existing `substrate.json` staleness. Until then, don't run `up.sh`/`dev.sh`
 relatively on a shell with `CDPATH` set, or invoke them by absolute path.
 
 ---
+
+## Raised 2026-09-18, auditing the open items against the source
+
+### 38. `refresh-content.sh`'s mirror prompt was not tty-gated
+
+**Repo:** holdenweb-com — found 2026-09-18 auditing 36's fix.
+
+**Fixed 2026-09-22** in `ops/refresh-content.sh`: the prompt is now inside
+`if [ -t 0 ]`, and the removal is deliberately left outside it.
+
+*Evidence.* 36 asked for "the same tty-gated typed-`mirror` prompt `restore.sh`
+and `push-content.sh` use". The prompt landed; the gate did not.
+`ops/push-content.sh:80` reads `if [ "$mirror" -eq 1 ] && [ -t 0 ]; then`, while
+`refresh-content.sh` carried a bare `read -r -p` and contained no `-t 0` at all.
+Measured: with stdin closed, `read` returns 1 and an empty reply, so the script
+took its `|| { echo "aborted"; exit 1; }` branch.
+
+*Why it mattered.* `ops/push-content.sh:102` drives the remote half as
+`ssh "$sshhost" "cd ~/$path && … ./ops/refresh-content.sh $scratch $mirror_arg"`,
+with no pty. So a `--mirror` confirmed locally reached the host and aborted
+there, and from cron it aborted outright. Before 36 there was no prompt and that
+path simply worked, so the fix had moved the failure rather than removing it.
+
+*The trap in the obvious fix.* Adding `&& [ -t 0 ]` to the outer `if` would skip
+`rm -rf "${target:?}"` as well, silently turning a mirror into a merge: the
+source's files land, the ones it no longer has stay, and the result is a tree
+that never existed anywhere -- the exact state `restore.sh`'s header warns about,
+wearing the appearance of success. So the prompt is gated and the removal is not.
+
+*What shipped, and how it was checked.* Against a throwaway `ztest/ztree`: with
+stdin closed, `--mirror` ran unprompted, exited 0, and removed a `stale.txt` the
+source did not carry; a merge in the same conditions left its stale file in
+place; and the pre-fix `read` was confirmed to return 1 on EOF. The ssh path
+itself is reasoned from the two scripts rather than run, since confirming it
+means mirroring against a real host.
 
 ## Filing these
 
