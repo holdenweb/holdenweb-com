@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="1000" height="780"
+     role="img" aria-label="How a revision of holdenweb.com reaches the running site: one command pushes a commit to opal17 and rebuilds there, compose gates each service on the one before it, and nothing is believed until the site is checked from outside the host.">
+  <title>Deploying holdenweb.com — push, rebuild, prove</title>
+  <desc>ops/deploy.sh refuses a dirty tree, pushes the commit to the staging remote on opal17, and runs scripts/up.sh over ssh. There podman compose rebuilds and starts the stack in a fixed order: init-postgres chowns the storage, postgres must report healthy, alembic migrates the schema, and only then does web start, with its own healthcheck asking /healthz from inside the container. The published loopback port is proxied by Opalstack's nginx to the public name. Two checks from outside then confirm it: ops/poll-health.sh once per deploy, which asserts the body rather than the status code, and UptimeRobot every five minutes for ever.</desc>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4646e9"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6c6f77"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="780" fill="#f6f6ef"/>
+
+  <g font-family="'Gill Sans','Gill Sans MT',Cabin,'Trebuchet MS',sans-serif">
+    <text x="24" y="38" font-size="23" font-weight="600" fill="#0d2a8f">Deploying holdenweb.com — push, rebuild, prove</text>
+    <text x="24" y="60" font-size="12.5" fill="#6c6f77" font-family="-apple-system,'Segoe UI',Arial,sans-serif">One command moves a revision outward. Everything after it is a gate that refuses rather than degrades.</text>
+    <text x="24" y="100" font-size="10.5" font-weight="600" fill="#6c6f77" letter-spacing="1.2">ON THE LAPTOP</text>
+  </g>
+
+  <g font-family="-apple-system,'Segoe UI',Arial,sans-serif" font-size="11" fill="#3a3c42">
+
+    <!-- the laptop chain -->
+    <rect x="24" y="114" width="236" height="52" rx="7" fill="#fff" stroke="#5475ee"/>
+    <text x="36" y="134" font-weight="600" fill="#0d2a8f">ops/deploy.sh staging</text>
+    <text x="36" y="150" font-size="10" fill="#6c6f77">refuses if a tracked file is uncommitted</text>
+    <line x1="264" y1="140" x2="286" y2="140" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <rect x="290" y="114" width="236" height="52" rx="7" fill="#fff" stroke="#e7e4d4"/>
+    <text x="302" y="134" font-weight="600" fill="#0d2a8f">git push staging HEAD:main</text>
+    <text x="302" y="150" font-size="10" fill="#6c6f77">the remote URL opal17:apps/os/site says where</text>
+    <line x1="530" y1="140" x2="552" y2="140" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <rect x="556" y="114" width="236" height="52" rx="7" fill="#fff" stroke="#e7e4d4"/>
+    <text x="568" y="134" font-weight="600" fill="#0d2a8f">ssh opal17 · ./scripts/up.sh</text>
+    <text x="568" y="150" font-size="10" fill="#6c6f77">stamps GIT_SHA into the image</text>
+
+    <text x="24" y="192" font-size="10" fill="#6c6f77">A push, not an rsync: the target is a real checkout at the pushed commit, so /_status can say which commit is serving (ADR-0017).</text>
+    <line x1="674" y1="170" x2="674" y2="206" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <!-- the host -->
+    <rect x="16" y="210" width="968" height="330" rx="12" fill="#fff" stroke="#e7e4d4"/>
+    <text x="32" y="234" font-size="10.5" font-weight="600" fill="#6c6f77" letter-spacing="1.2" font-family="'Gill Sans','Gill Sans MT',Cabin,sans-serif">ON opal17 — podman compose up -d --build</text>
+
+    <rect x="32" y="252" width="164" height="56" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="44" y="272" font-weight="600" fill="#0d2a8f">init-postgres</text>
+    <text x="44" y="288" font-size="9.5" fill="#6c6f77">chowns pg storage to 999,</text>
+    <text x="44" y="300" font-size="9.5" fill="#6c6f77">then exits</text>
+    <line x1="200" y1="280" x2="232" y2="280" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <text x="216" y="272" font-size="8.5" fill="#6c6f77" text-anchor="middle">completed</text>
+
+    <rect x="236" y="252" width="164" height="56" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="248" y="272" font-weight="600" fill="#0d2a8f">postgres 17</text>
+    <text x="248" y="288" font-size="9.5" fill="#6c6f77">pg_isready -U user -d db,</text>
+    <text x="248" y="300" font-size="9.5" fill="#6c6f77">not merely "server is up"</text>
+    <line x1="404" y1="280" x2="436" y2="280" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <text x="420" y="272" font-size="8.5" fill="#6c6f77" text-anchor="middle">healthy</text>
+
+    <rect x="440" y="252" width="164" height="56" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="452" y="272" font-weight="600" fill="#0d2a8f">migrate</text>
+    <text x="452" y="288" font-size="9.5" fill="#6c6f77">alembic upgrade head,</text>
+    <text x="452" y="300" font-size="9.5" fill="#6c6f77">once, outside the app</text>
+    <line x1="608" y1="282" x2="658" y2="292" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <text x="631" y="272" font-size="8.5" fill="#6c6f77" text-anchor="middle">completed</text>
+
+    <rect x="32" y="336" width="164" height="52" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="44" y="356" font-weight="600" fill="#0d2a8f">init-storage</text>
+    <text x="44" y="372" font-size="9.5" fill="#6c6f77">chowns app data to 10001</text>
+
+    <!-- postgres and init-storage both gate web directly -->
+    <polyline points="318,312 318,326 646,326 658,318" fill="none" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <text x="470" y="338" font-size="8.5" fill="#6c6f77" text-anchor="middle">healthy</text>
+    <polyline points="200,362 646,362 658,340" fill="none" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <text x="330" y="356" font-size="8.5" fill="#6c6f77" text-anchor="middle">completed</text>
+
+    <rect x="664" y="252" width="200" height="92" rx="7" fill="#ecedfc" stroke="#5475ee"/>
+    <text x="678" y="274" font-weight="600" fill="#0d2a8f">web</text>
+    <text x="678" y="292" font-size="9.5" fill="#3a3c42">gunicorn, uid 10001, port 8000</text>
+    <text x="678" y="312" font-size="9.5" fill="#3a3c42">healthcheck from inside: /healthz</text>
+    <text x="678" y="326" font-size="9.5" fill="#3a3c42">every 10s, or it is unhealthy</text>
+
+    <line x1="764" y1="348" x2="764" y2="382" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <rect x="664" y="386" width="200" height="52" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="678" y="406" font-weight="600" fill="#0d2a8f">127.0.0.1:${WEB_HOST_PORT}</text>
+    <text x="678" y="422" font-size="9.5" fill="#6c6f77">loopback only; the host picks it</text>
+    <line x1="764" y1="442" x2="764" y2="460" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <rect x="664" y="464" width="200" height="52" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>
+    <text x="678" y="484" font-weight="600" fill="#0d2a8f">Opalstack nginx</text>
+    <text x="678" y="500" font-size="9.5" fill="#6c6f77">TLS, and the public name</text>
+
+    <text x="36" y="410" font-size="11" font-weight="600" fill="#0d2a8f">The rebuild is unconditional, and that is the point.</text>
+    <text x="36" y="428" font-size="10" fill="#3a3c42">Source under src/ is baked into the image, so a restart brings back the previous code and the</text>
+    <text x="36" y="442" font-size="10" fill="#3a3c42">site behaves like the last build. Layers are content-addressed, so an unchanged tree costs about</text>
+    <text x="36" y="456" font-size="10" fill="#3a3c42">six seconds — cheaper than the puzzlement.</text>
+    <text x="36" y="480" font-size="10" fill="#3a3c42">Two stages: the builder resolves the lock with <tspan font-weight="600">uv sync --frozen</tspan>, and the runtime image copies</text>
+    <text x="36" y="494" font-size="10" fill="#3a3c42">only the virtual environment out of it. git is installed in the builder and absent from what ships.</text>
+    <text x="36" y="518" font-size="10" fill="#6c6f77">Every edge above is a compose condition, not a sleep: web cannot start against a schema that has not been migrated.</text>
+
+    <!-- out of the host -->
+    <line x1="764" y1="520" x2="764" y2="592" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
+    <rect x="664" y="596" width="200" height="60" rx="7" fill="#fff" stroke="#5475ee"/>
+    <text x="764" y="622" font-size="13" font-weight="600" fill="#0d2a8f" text-anchor="middle">os.holdenweb.com</text>
+    <text x="764" y="638" font-size="9.5" fill="#6c6f77" text-anchor="middle">what a visitor reaches</text>
+
+    <text x="24" y="566" font-size="10.5" font-weight="600" fill="#6c6f77" letter-spacing="1.2" font-family="'Gill Sans','Gill Sans MT',Cabin,sans-serif">CHECKED FROM OUTSIDE THE HOST, TWICE</text>
+
+    <rect x="24" y="576" width="580" height="64" rx="7" fill="#fff" stroke="#e7e4d4"/>
+    <text x="36" y="596" font-weight="600" fill="#0d2a8f">ops/poll-health.sh — from the laptop, the moment the rebuild returns</text>
+    <text x="36" y="613" font-size="10" fill="#3a3c42">It asserts the body, not the status: nginx answers 200 from its own error page with the container</text>
+    <text x="36" y="628" font-size="10" fill="#3a3c42">gone. deploy.sh runs it, so a deploy that does not come up healthy fails the command that started it.</text>
+    <line x1="608" y1="606" x2="658" y2="616" stroke="#6c6f77" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+
+    <rect x="24" y="654" width="580" height="64" rx="7" fill="#fff" stroke="#e7e4d4"/>
+    <text x="36" y="674" font-weight="600" fill="#0d2a8f">UptimeRobot — from the internet, every five minutes, for ever</text>
+    <text x="36" y="691" font-size="10" fill="#3a3c42">The only thing watching between deploys, and it asks /healthz rather than the front page: with</text>
+    <text x="36" y="706" font-size="10" fill="#3a3c42">postgres stopped on 2026-09-22, / still answered 200 while /healthz answered 503. The mail arrived.</text>
+    <line x1="608" y1="682" x2="658" y2="648" stroke="#6c6f77" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+
+    <text x="24" y="748" font-size="11.5" fill="#3a3c42">Nothing is believed until something outside the host says so, and every gate refuses rather than degrading: a dirty tree stops the deploy,</text>
+    <text x="24" y="766" font-size="11.5" fill="#3a3c42">web waits for a migrated schema, and a rebuild that does not come up healthy fails the command that asked for it.</text>
+  </g>
+</svg>
