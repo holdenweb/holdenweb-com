@@ -72,23 +72,46 @@ starts.
 ## Updating site content
 
 The content apps — `pages`, `pybooks`, `blog`, `notebooks` — serve files from the host's
-`hostdata/apps/<app>/<tree>`, not from git. `ops/push-content.sh` mirrors a
-built tree from the laptop straight to a target's running site (it rsyncs the
-source up and runs `refresh-content.sh` on the host, which owns the container
-files):
+`hostdata/apps/<app>/<tree>`, not from git. Each area is built by its own tool
+on the laptop and delivered straight into that tree: `ops/push-content.sh`
+rsyncs the built directory up and runs `ops/refresh-content.sh` on the host,
+which owns the container-subuid dance. Content is live the moment it lands —
+`podpack_pages` reads the file on every request, so no restart is involved.
 
-```bash
-ops/push-content.sh staging ~/Projects/Python/orpy/python-classes \
-    --app pybooks --tree html-pages --mirror
-ops/push-content.sh staging ~/Projects/Python/sitescraper/build \
-    --app blog --tree export --mirror
-```
+### The four areas
 
-`--mirror` removes what the source no longer has (off by default — an
-incomplete source with it would delete live content); `--dry-run` shows the
-plan. Content is live the moment it lands. For the local dev instance, run
-`ops/refresh-content.sh <source> --mirror` with the matching `APP`/`TREE`
-instead.
+| Area | Served at | Host tree | Built on the laptop by | One line |
+| --- | --- | --- | --- | --- |
+| Python course | `/pybooks` | `pybooks/html-pages` | orpy `build.py --fragments` → `~/Projects/Python/orpy/python-classes` | `just pybooks staging` |
+| Blog | `/blog` | `blog/export` | sitescraper `python -m blogscraper export` → `~/Projects/Python/sitescraper/build` | `just blog staging` |
+| Notebooks | `/notebooks` | `notebooks/html-pages` | podpack-notebooks `uv run build.py` → `~/sites/podpack-notebooks/build/html-pages` | `just notebooks staging` |
+| Prose pages | `/pages` | `pages/md-pages` and `pages/html-pages` | nothing — maintained on the host | `just content staging <dir> pages md-pages` |
+
+Those source directories are the defaults; a builder that writes elsewhere is
+accommodated by `ORPY_BUILD`, `SITESCRAPER_BUILD` or `NOTEBOOKS_BUILD` rather
+than by editing the recipe. Swap `staging` for `local` to refresh this
+checkout's own `hostdata` instead of the deployed site.
+
+### The commands those recipes run
+
+The same pair, spelled out. The left column runs **on the laptop** and needs
+nothing else; the right column runs **on the box that serves the site** — for
+staging that is `opal17`, in the site directory, which is what the left column
+is doing over ssh.
+
+| Area | On the laptop, to staging | On the box that serves |
+| --- | --- | --- |
+| Python course | `ops/push-content.sh staging ~/Projects/Python/orpy/python-classes --app pybooks --tree html-pages` | `APP=pybooks TREE=html-pages ops/refresh-content.sh <staged-dir>` |
+| Blog | `ops/push-content.sh staging ~/Projects/Python/sitescraper/build --app blog --tree export` | `APP=blog TREE=export ops/refresh-content.sh <staged-dir>` |
+| Notebooks | `ops/push-content.sh staging ~/sites/podpack-notebooks/build/html-pages --app notebooks --tree html-pages` | `APP=notebooks TREE=html-pages ops/refresh-content.sh <staged-dir>` |
+| Prose pages | `ops/push-content.sh staging <staged-dir> --app pages --tree md-pages` | `APP=pages TREE=md-pages ops/refresh-content.sh <staged-dir>` |
+
+Append `--mirror` to either to remove whatever the source no longer has. It is
+off by default in both, because an incomplete source with `--mirror` deletes a
+visitor's content, and an interactive run asks you to type `mirror` before it
+deletes anything. `--dry-run` prints the plan and changes nothing, and belongs
+to `push-content.sh` alone — `refresh-content.sh` has no such flag, so
+`just <area> local --dry-run` fails rather than previewing.
 
 
 ## Database schema changes
