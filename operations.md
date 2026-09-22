@@ -491,13 +491,32 @@ uv lock --upgrade-package podpack-pages
 uv sync
 ```
 
-`--refresh-package` is what this section used to insist on, and it is no longer
-needed. It mattered only for git sources, where uv served a cached ref and the
-lock silently did not move; a registry version has no ref to cache. Two heavier
-traps went with the same change: a container build that resolved against
-whatever happened to be on a remote at build time, and needing git and a
-network in the build to do it. Working locally on an app no longer means
-pushing before re-locking here — it means releasing it.
+Two heavier traps went with the same change: a container build that resolved
+against whatever happened to be on a remote at build time, and needing git and a
+network in the build to do it. Working locally on an app no longer means pushing
+before re-locking here — it means releasing it.
+
+**The cache trap did not go with them, though**, and this section said it had
+until 2026-09-22: that `--refresh-package` mattered only for git sources, since
+"a registry version has no ref to cache". uv caches the index *listing* as well,
+and a listing fetched before a release does not contain it. With podpack-pages
+0.3.4 already on `pypi.org/simple` — the wheel and the sdist both visible to
+`curl` — `uv lock` refused twice:
+
+    Because only podpack-pages<=0.3.3 is available and your project depends on
+    podpack-pages>=0.3.4, we can conclude that your project's requirements are
+    unsatisfiable.
+
+`--refresh-package podpack-pages` did not shift it. This did:
+
+```bash
+uv cache clean podpack-pages
+uv lock
+```
+
+The tell is a refusal naming a version you know is published, and the way to
+earn it is to run `uv lock` once *before* the release lands — that is the run
+that caches a listing without it, which is exactly what happened here.
 
 To move everything at once, which is how the security advisories in 47142ae
 were cleared, drop the package name:
