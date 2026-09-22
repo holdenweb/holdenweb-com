@@ -1,6 +1,6 @@
 # Still to do
 
-The open items from [`backlog.md`](backlog.md), extracted 2026-09-18 -- everything
+The open items from [`backlog.md`](backlog.md), extracted 2026-09-22 -- everything
 not marked **fixed** in its summary table and not on its struck list.
 
 This is a *copy*, not a replacement. `backlog.md` remains the record: it is
@@ -14,18 +14,16 @@ than edit in place.
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
 | 8 | holdenweb-com | Nothing polls `/healthz` | gap |
-| 9 | holdenweb-com | No log rotation | gap |
+| 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
-| 29 | podpack-pages | A directory has no index, so it cannot be landed on | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
-| 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use | operational |
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
 
 *Numbers are `backlog.md`'s, so they are stable and have gaps.*
@@ -73,6 +71,14 @@ the *standing* home that wants to be always-on.
 
 **Repo:** holdenweb-com. `hostlogs/` grows without limit; the laptop lab's
 PostgreSQL log reached 19 MB against 62 MB of data. Nothing prunes it.
+
+*Progress 2026-09-18.* The PostgreSQL half is done, and it was the half that
+prompted this: `config/postgresql.conf` sets `logging_collector = on`,
+`log_filename = 'postgresql-%a.log'`, `log_rotation_age = 1d` and
+`log_truncate_on_rotation = on`, so that log rotates day-of-week and is
+overwritten a week later instead of growing. What remains is the app logs:
+podpack attaches a plain `logging.FileHandler` (`paths.py:113`), so
+`hostlogs/apps/*.log` still grow without limit. The item stands, narrowed to that.
 
 ### 10. No maintenance page
 
@@ -175,32 +181,6 @@ declaration, or a convention.
 
 Worth doing with 29, since a tree of pages that link to each other also wants
 its directories to be landable.
-
-### 29. A directory has no index, so it cannot be landed on
-
-**Repo:** podpack-pages
-
-*Evidence.* `content.find_page` tries exactly two candidates and stops:
-`md-pages/<name>.md`, then `html-pages/<name>.html`. So
-`/pages/python-classes` raises `ContentNotFound` even when
-`html-pages/python-classes/` holds a hundred files, and the root of a published
-tree can only be reached by naming its index page explicitly —
-`/pages/python-classes/index`.
-
-*Why it matters.* Every generated site has a front door and this one cannot be
-opened. It also makes a link to a directory — the ordinary way to write "up" or
-"contents" — unresolvable.
-
-*Fix.* Two more candidates after the existing two: `<name>/index.md` and
-`<name>/index.html`. Worth settling whether the index name is fixed or
-configurable, and whether `/pages/x` and `/pages/x/` should both resolve —
-Flask's `<path:name>` captures them differently and only one of them is what a
-relative link in the served page will be resolved against.
-
-Pairs with 27: a navigation that can nest wants directories that can be landed
-on.
-
----
 
 ## Raised 2026-09-03, chasing the backup-cron failure
 
@@ -322,37 +302,6 @@ exists to break. So this pairs with MON-1: confirm the stack returns unattended
 after the next host reboot (`podman ps` clean with no manual `up.sh`), keep
 linger enabled, and have MON-1 live so a failure to return is caught rather than
 stumbled on.
-
-## Raised 2026-09-07
-
-### 36. `refresh-content.sh --mirror` deletes live content with no confirmation
-
-**Repo:** holdenweb-com. This is holdenweb's own `ops/` script, not podpack
-substrate -- `refresh-content.sh` lives only at `holdenweb.com/ops/`, so the fix
-is one repo.
-
-*Evidence.* `ops/refresh-content.sh` takes an optional `--mirror`, and in mirror
-mode `podman unshare rsync --delete` removes any file the staged source no longer
-has -- straight into the live `hostdata/apps/<APP>/<TREE>` tree a visitor is
-served from. The script does it the instant it is told to, with no prompt. Its
-new caller `ops/push-content.sh` (a449624) *does* guard `--mirror` with a
-tty-gated "type `mirror` to proceed", so a push from the laptop is safe; but a
-human ssh'd into opal17 running `refresh-content.sh <dir> --mirror` by hand --
-exactly what the local-dev instructions in `README.md` tell you to do -- gets no
-such question.
-
-*Why it matters.* The destructive path is one flag from the safe one, and the
-mistake it invites is real: a partial or wrong source with `--mirror` silently
-deletes whatever it lacks. `scripts/restore.sh` already treats its own
-destructive step this way, and `push-content.sh` now does too; the script that
-actually does the deleting is the one still missing the guard.
-
-*Fix.* Give `refresh-content.sh` the same confirmation `push-content.sh` and
-`restore.sh` use -- when `--mirror` is set *and* stdin is a tty, print what will
-be deleted and require the operator to type `mirror` before proceeding; a piped
-or non-interactive run (the push-content case, which has already confirmed
-upstream) passes straight through. Guarding the script itself, not just its
-caller, is what makes the by-hand host run safe.
 
 ## Raised 2026-09-10
 
