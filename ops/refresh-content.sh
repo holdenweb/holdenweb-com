@@ -96,8 +96,18 @@ echo "into:    ${target}  ($(plural "$(inside_namespace find "$target" -type f 2
 echo "mode:    ${mode/--/}"
 
 if [[ "$mode" == "--mirror" ]]; then
-    read -r -p "Mirror REMOVES anything not in the source. Type 'mirror' to go on: " reply
-    [[ "$reply" == "mirror" ]] || { echo "aborted"; exit 1; }
+    # The prompt is gated, the removal is not. `push-content.sh` drives this
+    # over ssh with no pty, so an ungated `read` gets EOF and aborts a mirror
+    # that was already confirmed locally -- and from cron it aborts outright.
+    #
+    # Gating the whole branch instead is the obvious edit and is wrong: it would
+    # skip the `rm -rf` too, so --mirror would quietly behave as a merge, leaving
+    # files the source no longer has beside the new ones. That is the state
+    # restore.sh's header warns about, and it would look like success.
+    if [ -t 0 ]; then
+        read -r -p "Mirror REMOVES anything not in the source. Type 'mirror' to go on: " reply
+        [[ "$reply" == "mirror" ]] || { echo "aborted"; exit 1; }
+    fi
     inside_namespace rm -rf "${target:?}"
 fi
 
