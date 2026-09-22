@@ -185,15 +185,16 @@ was_port="$(grep -m1 '^WEB_HOST_PORT=' .env | cut -d= -f2-)"
 sed -i.bak "s/^WEB_HOST_PORT=.*/WEB_HOST_PORT=${WEB_PORT}/" .env && rm -f .env.bak
 note "WEB_HOST_PORT ${was_port:-unset} -> ${WEB_PORT}"
 
-# PODPACK_PROXY_HOPS is no longer written here. podpack derives the count from
-# PODPACK_ENVIRONMENT (ADR-0039), which this .env already carries and which a
-# restore brings back, so a staging or production host trusts its one nginx
-# without being told. An explicit value still wins where one is set, which is
-# how a host behind two proxies -- or a non-local one behind none -- says so.
+# PODPACK_PROXY_HOPS is no longer written here unconditionally. podpack derives
+# the count from PODPACK_ENVIRONMENT (ADR-0039), which this .env already
+# carries and which a restore brings back, so a staging or production host
+# trusts its one nginx without being told. An explicit value still wins where
+# one is set, which is how a host behind two proxies -- or a non-local one
+# behind none -- says so.
 #
-# What replaced this is the check after startup: the count is VERIFIED there
-# rather than assumed here, and verifying the outcome catches every way of
-# getting it wrong, including the ones writing the variable never did.
+# What replaced this is the check after startup, which verifies the OUTCOME
+# rather than assuming it, and writes the explicit line only if the running
+# podpack turns out not to derive one. See "the trusted-hop count" below.
 
 # ---------------------------------------------------------------------------
 # 4. Up, on this host's port.
@@ -211,6 +212,8 @@ done
 [[ "$code" == "200" ]] || die "healthz on 127.0.0.1:${WEB_PORT} answered ${code}, not 200"
 note "healthz 200 on 127.0.0.1:${WEB_PORT}"
 
+# --- the trusted-hop count -------------------------------------------------
+#
 # Ask the running site what it actually concluded, rather than what it was
 # told. `proxy_hops()` is podpack's own resolver and exists in every release
 # that has this module, so this reads the effective count whether it came from
@@ -219,18 +222,48 @@ note "healthz 200 on 127.0.0.1:${WEB_PORT}"
 #
 # Zero behind a proxy is the silent fault this whole rebuild is careful about:
 # every page serves and only absolute URLs are wrong, so nothing else here
-# would catch it.
-hops="$(podman compose exec -T web python -c \
-    'from podpack.proxy import proxy_hops; print(proxy_hops())' 2>/dev/null | tr -d '\r' || true)"
-case "$hops" in
-    ""    ) die "could not ask the container its trusted-hop count. Is web up?" ;;
-    0     ) die "the site trusts 0 proxies, and one nginx is in front of it. Every
+# would catch it. This is a 3am script, so it repairs that rather than stopping
+# and asking somebody to.
+ask_hops() {
+    podman compose exec -T web python -c \
+        'from podpack.proxy import proxy_hops; print(proxy_hops())' 2>/dev/null \
+        | tr -d '\r' || true
+}
+
+environment="$(grep -m1 '^PODPACK_ENVIRONMENT=' .env | cut -d= -f2- || true)"
+# Whether somebody DECLARED a count, as opposed to what the site resolved. An
+# empty value counts as not declared, matching podpack, which strips before
+# reading. Both the repair and the refusal below are suppressed when this is
+# set, because a declared count is a decision and neither is ours to override
+# -- `PODPACK_PROXY_HOPS=0` on a non-local host is the documented way to say
+# "nothing is in front of me" (ADR-0039), and healing it to 1 would hand a
+# directly-reachable site a forgeable X-Forwarded-Proto.
+declared="$(grep -m1 '^PODPACK_PROXY_HOPS=' .env | cut -d= -f2- | tr -d '[:space:]' || true)"
+proxied=no
+[[ "${environment:-local}" != "local" ]] && proxied=yes
+
+hops="$(ask_hops)"
+[[ -n "$hops" ]] || die "could not ask the container its trusted-hop count. Is web up?"
+
+# A zero here, on a proxied host that declared nothing, means this podpack
+# predates ADR-0039 and derives nothing. Write the line the old rebuild always
+# wrote, and only in that case. The branch deletes itself the day every host
+# runs a podpack that derives: the condition stops being true.
+if [[ -z "$declared" && "$proxied" == yes && "$hops" == "0" ]]; then
+    note "this podpack does not derive the hop count; setting PODPACK_PROXY_HOPS=1"
+    printf 'PODPACK_PROXY_HOPS=1\n' >> .env
+    podman compose up -d --force-recreate web >/dev/null
+    hops="$(ask_hops)"
+    [[ -n "$hops" ]] || die "the container stopped answering after being recreated."
+fi
+
+if [[ -z "$declared" && "$proxied" == yes && "$hops" == "0" ]]; then
+    die "the site still trusts 0 proxies with one nginx in front of it. Every
     _external URL will be http://, first visible in a password-reset mail.
-    Expected PODPACK_ENVIRONMENT to be non-local (it is '$(grep -m1 '^PODPACK_ENVIRONMENT=' .env | cut -d= -f2-)')
-    on a podpack that derives the count (ADR-0039). On an older podpack, add
-    PODPACK_PROXY_HOPS=1 to .env and re-run ./scripts/up.sh." ;;
-esac
-note "the site trusts ${hops} proxy/proxies"
+    Writing PODPACK_PROXY_HOPS=1 did not take -- check that .env is the file
+    compose reads, and that the line carries no 'export ' prefix."
+fi
+note "the site trusts ${hops} proxy/proxies (PODPACK_ENVIRONMENT=${environment:-unset}, declared=${declared:-none})"
 
 public="$(curl -s -o /dev/null -w '%{http_code}' "https://${SITE_HOST}/healthz" || true)"
 note "https://${SITE_HOST}/healthz -> ${public}"

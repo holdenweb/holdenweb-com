@@ -404,13 +404,23 @@ which is the point of asking this way rather than reading the variable.
 
 **If it says `0`**, the site will build every `_external=True` URL as
 `http://`, and the first thing to carry one is a password-reset mail with a
-token in the path. Two causes, and they are fixed differently:
+token in the path. Two causes, fixed differently:
 
-- `PODPACK_ENVIRONMENT` says `local` on a host that is not a lab. Correct the
-  variable, which is wrong for `prepare-host-dirs.sh` too.
-- This host runs a podpack predating ADR-0039. Add `PODPACK_PROXY_HOPS=1` to
-  `.env` — no `export` prefix, compose's `env_file` is not a shell and would
-  read the name as `export PODPACK_PROXY_HOPS` — and re-run `./scripts/up.sh`.
+- **This host runs a podpack predating ADR-0039**, so nothing derives the
+  count. `ops/rebuild.sh` repairs this itself: seeing a zero on a non-local
+  host that declared nothing, it appends `PODPACK_PROXY_HOPS=1`, recreates
+  `web` and asks again, printing a line when it does. Doing it by hand is the
+  same two steps — no `export` prefix, compose's `env_file` is not a shell and
+  would read the name as `export PODPACK_PROXY_HOPS` — then `./scripts/up.sh`.
+- **`PODPACK_ENVIRONMENT` says `local` on a host that is not a lab.** Nothing
+  repairs this, deliberately: the variable is wrong for `prepare-host-dirs.sh`
+  too, and guessing which of the two is the mistake would be the wrong kind of
+  help. Correct it in `.env`.
+
+The repair leaves a declared count alone in every case. `PODPACK_PROXY_HOPS=0`
+on a non-local host is the documented way to say nothing is in front of you,
+and overwriting it would hand a directly reachable site a forgeable
+`X-Forwarded-Proto`.
 
 *Note:* the count is the number of values in `X-Forwarded-Proto`, not the
 number of proxies. One nginx that overwrites the header is `1` however many
