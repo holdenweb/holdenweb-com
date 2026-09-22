@@ -13,7 +13,7 @@ than edit in place.
 
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
-| 8 | holdenweb-com | Nothing polls `/healthz` | gap |
+| 8 | holdenweb-com | Nothing *schedules* the `/healthz` poll — `ops/poll-health.sh` exists and gates every deploy, but between deploys nothing asks | gap |
 | 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
@@ -65,6 +65,20 @@ it is pointed. What is **still outstanding**:
 
 Rehearsing the fire-and-recover loop from the laptop proves the mechanism; it is
 the *standing* home that wants to be always-on.
+
+*Progress 2026-09-22.* The poll has a caller now. `ops/deploy.sh` runs it
+against the target after the rebuild (`HEALTH_URL="$hu" poll-health.sh`), and a
+non-zero exit is the signal that the deploy did not come up -- described that way
+in [`ops/DEPLOY.md`](../DEPLOY.md). So the script is exercised for real on every
+deploy rather than sitting unused, and its success path has stopped being a
+claim.
+
+It does not close this item, and it is worth saying why rather than letting the
+row look healthier than it is: a check at deploy time is not a monitor. It
+answers "did this deploy come up?", where the question here is "is the site up
+*now*", asked on a schedule from somewhere always on. Between deploys nothing
+asks. All five points above stand, and the failure path -- an alert actually
+reaching a phone -- is still the untested half.
 
 ### 9. No log rotation
 
