@@ -17,7 +17,6 @@ than edit in place.
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
-| 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
@@ -286,12 +285,3 @@ relatively on a shell with `CDPATH` set, or invoke them by absolute path.
 
 ---
 
----
-
-## 30. No shared decorator for operator-only routes -- table row only
-
-**Repo:** podpack
-
-`backlog.md` never carried a section for this one; the summary row at the
-top of this file is the whole of it. Kept here so the number is not
-silently dropped.

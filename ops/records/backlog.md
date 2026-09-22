@@ -41,7 +41,7 @@ drift apart.
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site — **fixed** | **correctness** |
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on — **fixed** | gap |
-| 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
+| 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it — **fixed** | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
@@ -904,6 +904,27 @@ on.
 ---
 
 ## Raised 2026-09-03, chasing the backup-cron failure
+
+### 30. No shared decorator for operator-only routes
+
+**Repo:** podpack
+
+**Fixed** in podpack `9740282`, and not yet taken here: this site installs
+podpack from PyPI, so `/config` keeps its hand-rolled copy until a release
+carries the decorator and the floor moves.
+
+`@operator_required` refuses a route to anyone the site's own admin predicate
+does not admit, and refuses with a 404. flask-security's `roles_required` does
+neither thing: it 403s, which confirms the route exists and that this is a
+podpack site at all, and it asks about `admin` membership directly, walking
+straight past a predicate the site replaced under ADR-0033. `is_operator()`
+moved to `auth.py` beside `is_admin`, and podpack's own `/_status` now carries
+the decorator rather than an inline guard.
+
+*What it removes here, once it lands:* the block in `src/holdenweb/views.py`
+that reads `extensions["podpack"].admin`, wraps the call in `try`/`except` and
+falls through to `abort(404)` -- the same guard podpack had, written out a
+second time, which is what made this an item rather than a tidy-up.
 
 ### 31. `configure-host.py` should pin the compose provider, not just warn
 
