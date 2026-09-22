@@ -146,3 +146,35 @@ app generates a code, the PDF tools offer both forms, the pages app renders
 content wearing the site's own stylesheet. A route returning 200 only proves
 the blueprint registered — the QR code app answered 200 for weeks while
 contributing no navigation entry at all.
+
+## Monitoring
+
+[UptimeRobot](https://uptimerobot.com) checks `https://os.holdenweb.com/healthz`
+every five minutes over HTTPS and mails when it fails. It is the only thing
+watching the site *between* deploys — everything above is a point-in-time check
+that a person runs.
+
+**It asks `/healthz` rather than the front page, and that is the whole value of
+it.** Measured on the laptop lab with the stack up and `podman compose stop
+postgres`:
+
+| | database up | database stopped |
+| --- | --- | --- |
+| `/` | 200 | 200 |
+| `/pages/test` | 200 | 200 |
+| `/login` | 200 | 200 |
+| `/healthz` | 200 | **503** |
+
+A monitor on the site root reports green straight through a total database
+outage: the front page still renders while login, sessions and password reset
+are all broken. `/healthz` answers 503, so a plain 2xx test is exactly right and
+no keyword check is needed. Proven against the real deployment on 2026-09-22 —
+stopping postgres produced the alert mail; on the lab, restarting it returned
+`/healthz` to 200 within about three seconds, unattended.
+
+One case it does not catch, by design: a **non-fatal app** failure keeps the 200
+(ADR-0030), so the blog reporting itself unhealthy does not take the site's
+status down. That is what [`ops/poll-health.sh`](ops/poll-health.sh) is for — it
+greps the body for `"status":"ok"` rather than trusting the status code, and
+`ops/deploy.sh` runs it after every rebuild, so a deploy that does not come up
+healthy fails there rather than quietly.

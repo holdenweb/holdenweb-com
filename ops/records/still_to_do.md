@@ -113,10 +113,17 @@ What is still owed, in the order it matters:
 
   Recovery was measured too: restarting postgres returned `/healthz` to 200
   within about three seconds, unattended.
-- **The fire-and-recover proof.** Stop `web`, watch the alert arrive, restart,
-  watch recovery. Until that has been done once, the alerting is a claim -- and
-  it is the half that was never exercised, because a monitor only proves itself
-  on a failure.
+- **The fire-and-recover proof: DONE 2026-09-22.** Steve stopped the postgres
+  service on the deployment and the outage arrived by email. That is the half a
+  monitor can only earn on a real failure, and it has now been earned against
+  the real thing rather than the lab.
+
+  One thing to reconcile before this item is closed, though: the lab
+  measurement above says the *site root* answers 200 with postgres stopped, so
+  an alert firing implies the monitor is already asking `/healthz`. If it is
+  still on the root, then something else made the root fail and the proof does
+  not mean what it appears to -- the root-monitor hole would still be open.
+  Worth one look at the monitor's URL before striking this.
 - **A production URL**, once a production deployment exists.
 
 `ALERT_CMD` is moot for this path: UptimeRobot carries its own alerting. It
