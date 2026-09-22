@@ -19,19 +19,40 @@ ENV PYTHONUNBUFFERED=1 \
 # build has one fewer network fetch to go wrong and one fewer version to drift.
 COPY --from=ghcr.io/astral-sh/uv:0.10 /uv /usr/local/bin/uv
 
-# uv shells out to a real `git` to fetch a dependency locked to a git source,
-# and the slim base has none. An app installed straight from its repository --
-# the ordinary case for one not published to an index -- therefore fails the
-# build with "Git executable not found" rather than anything about the app.
-# Its own layer, before the lockfile is copied, so that adding an app does not
-# also reinstall git.
+# No `git` in this stage, which is a measured choice and not an oversight.
 #
-# Note that removing it later in a single-stage build would not have helped:
-# the layer above still carries the files, and the deletion only adds another
-# layer on top. Not shipping it at all is what the second stage is for.
-RUN apt-get update \
- && apt-get install --yes --no-install-recommends git \
- && rm -rf /var/lib/apt/lists/*
+# It was needed for as long as four of this site's dependencies resolved from
+# GitHub: uv shells out to a real `git` for anything locked to a git source, and
+# the slim base has none, so the build failed with "Git executable not found" --
+# a message naming neither this file nor the dependency that wanted it. All five
+# apps publish to PyPI now and [tool.uv.sources] names no git source, so nothing
+# `uv sync --frozen` does below reaches for it.
+#
+# Measured on 2026-09-22 by building this file both ways:
+#
+#     builder stage     505.2 MB      ->  401.6 MB        103.6 MB saved
+#     what ships        262,750,539 B ->  262,750,539 B   identical
+#
+# Those are the two builds of the same tree, an hour apart; the absolute figure
+# drifts with the tree itself, since README.md is copied in and travels into the
+# installed wheel. It is the difference between the pair that is the measurement.
+#
+# The shipped image is the same to the byte, because the second stage below was
+# already keeping git out of it -- confirmed by running `command -v git` in both
+# images, which finds nothing in either. What the layer actually cost was those
+# 103.6 MB of builder layers, kept wherever the build runs, which for this site
+# is the host that serves it; and about twelve seconds whenever the base image
+# moves and the layer has to be built again.
+#
+# Put it back if a git source ever returns to uv.lock -- an app pinned to a
+# repository, or a fork being tried before it is released. Removing it later in
+# a single-stage build would not have worked, incidentally: the layer above
+# still carries the files and a deletion only adds another layer on top. Not
+# installing it is what this two-stage arrangement is for.
+#
+#     RUN apt-get update \
+#      && apt-get install --yes --no-install-recommends git \
+#      && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
