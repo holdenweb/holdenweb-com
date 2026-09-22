@@ -39,7 +39,7 @@ drift apart.
 | 25 | holdenweb-com | `security/base.html` is a fork of `base.html`, not a child — **fixed** | correctness |
 | 26 | podpack | Every `up` builds the same image twice — **fixed** | efficiency |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
-| 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site | **correctness** |
+| 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site — **fixed** | **correctness** |
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on — **fixed** | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
@@ -736,6 +736,32 @@ checking whether it wants an ADR of its own or an amendment to that one.
 
 **Repo:** podpack-pages — found 2026-08-26 while publishing a generated tree of
 class notes.
+
+**Fixed** in podpack-pages 0.3.4, and not yet live here: it reaches this site
+when 0.3.4 is published and the floor in `pyproject.toml` moves to it.
+`rewrite_asset_urls` became `rewrite_relative_urls` and takes a `page_url`
+beside `asset_url`. A relative value ending `.html` or `.htm` now goes to the
+page route with the suffix *dropped* rather than trusted, because the page space
+is extensionless and `find_page` appends `.md` before `.html` -- so a link
+written to `guide.html` lands on `guide.md` when that is what the tree holds. A
+`#fragment` or `?query` is split off before the decision and restored after it,
+without which `notes.html#intro` would not be recognised as a page link at all.
+`..` is deliberately not normalised: a link that climbs out of a tree is refused
+by `check_relative` when it is requested, which is where that judgement belongs.
+
+The rule is a suffix test and nothing more, on Steve's call (2026-09-22): an
+HTML document inside a content tree is a page, never an asset. Where it guesses
+wrong it is wrong for one link, which is how the behaviour it replaces was wrong
+for every one of them.
+
+*Measured before it was written, and worth recording.* No content on this site
+changes today. pybooks and notebooks carry no relative HTML links at all --
+orpy's own navigation is absolute, which is why it was left alone -- the blog
+does not use this rewrite, and `pages` holds two links that climb five levels
+outside the tree to content that is not there and stays broken either way. So
+this lowers the error rate for the generated trees still to come rather than
+repairing anything now, and the evidence is three tests that fail when the rule
+is disabled and pass when it is restored.
 
 *Evidence.* `content.rewrite_asset_urls` sends **every** relative `src` or
 `href` through `url_for("pages.asset", ...)`. It cannot distinguish a link to a
