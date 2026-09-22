@@ -23,7 +23,7 @@ drift apart.
 | 5 | holdenweb-com | `PROJECT-BRIEF.md` names the profile `dbport`; it is `postgres-port` — **fixed** | docs |
 | 6 | holdenweb-com | `README.md` stale on dependency sources — **fixed** | docs |
 | 7 | holdenweb-com | `environment = "local"` in the production config — **fixed** | cosmetic |
-| 8 | holdenweb-com | External monitoring is live (UptimeRobot, five-minute) but watches the site root, which answers 200 through a total database outage (measured) — point it at `/healthz`, which answers 503; then the fire-and-recover proof | gap |
+| 8 | holdenweb-com | External monitoring: UptimeRobot checks `/healthz` every five minutes over HTTPS and mails on failure, proven by a real outage — **fixed** | gap |
 | 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
@@ -187,6 +187,14 @@ container healthcheck uses — so external monitoring has something to ask and
 nothing asks it. Today the site being down is noticed by a person. *(Note the
 name: `/healthz`, no underscore, unlike `/_status`.)*
 
+**Fixed 2026-09-22.** UptimeRobot checks `https://os.holdenweb.com/healthz`
+every five minutes over HTTPS and mails on failure, proven against the real
+deployment rather than asserted: postgres stopped, mail received. The site being
+down is no longer something a person notices. The one point below still unticked
+-- a production `HEALTH_URL` -- rides on a production deployment that does not
+exist yet, so it is not an open gap in what is running. Written up in the
+README's Monitoring section.
+
 *Progress 2026-09-02, parked here to revisit before there are paying customers.*
 The **asking half now exists**: [`ops/poll-health.sh`](../poll-health.sh)
 (committed, pushed) fetches `HEALTH_URL` (default `https://os.holdenweb.com/healthz`)
@@ -266,12 +274,9 @@ What is still owed, in the order it matters:
   monitor can only earn on a real failure, and it has now been earned against
   the real thing rather than the lab.
 
-  One thing to reconcile before this item is closed, though: the lab
-  measurement above says the *site root* answers 200 with postgres stopped, so
-  an alert firing implies the monitor is already asking `/healthz`. If it is
-  still on the root, then something else made the root fail and the proof does
-  not mean what it appears to -- the root-monitor hole would still be open.
-  Worth one look at the monitor's URL before striking this.
+  The monitor had been moved to `/healthz` first (Steve, 2026-09-22, on the
+  strength of the measurement above), which is why the alert fired at all: the
+  root would have answered 200 throughout.
 - **A production URL**, once a production deployment exists.
 
 `ALERT_CMD` is moot for this path: UptimeRobot carries its own alerting. It

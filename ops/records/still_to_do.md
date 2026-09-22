@@ -13,7 +13,6 @@ than edit in place.
 
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
-| 8 | holdenweb-com | External monitoring is live (UptimeRobot, five-minute) but watches the site root, which answers 200 through a total database outage (measured) — point it at `/healthz`, which answers 503; then the fire-and-recover proof | gap |
 | 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
@@ -30,104 +29,6 @@ than edit in place.
 ---
 
 ## Tier 2 — standing gaps, from `operations.md` §17
-
-### 8. Nothing polls `/healthz`
-
-**Repo:** holdenweb-com. The endpoint already answers
-`{"database":"ok","status":"ok"}` without authentication — it is what the
-container healthcheck uses — so external monitoring has something to ask and
-nothing asks it. Today the site being down is noticed by a person. *(Note the
-name: `/healthz`, no underscore, unlike `/_status`.)*
-
-*Progress 2026-09-02, parked here to revisit before there are paying customers.*
-The **asking half now exists**: [`ops/poll-health.sh`](../poll-health.sh)
-(committed, pushed) fetches `HEALTH_URL` (default `https://os.holdenweb.com/healthz`)
-and asserts the body carries `"status":"ok"` rather than trusting the status
-code — nginx answers 200 from its own error page with the container gone, so a
-200 alone is not health. A non-2xx, a hang past `--max-time`, or a bad TLS
-certificate all count as failure; it is silent on success, so a scheduler only
-ever fires on a real fault, and `ALERT_CMD` routes the failure message wherever
-it is pointed. What is **still outstanding**:
-
-- **A home that is neither the host nor a sleeping laptop.** The poll sees only
-  what it sees from where it runs, and a laptop asleep at the polling minute is a
-  blind monitor whose silence is indistinguishable from health. An always-on
-  vantage is wanted; a hosted uptime service is the strong form, because it also
-  alerts when the poll *itself* stops — a dead-man's-switch a self-run cron
-  cannot manage.
-- **An alert channel wired into `ALERT_CMD`** (ntfy, Pushover, mail) so a 3am
-  failure reaches a phone rather than a logfile nobody is reading.
-- **A schedule on that machine**, after the host's 03:17/04:23 backup window.
-- **The proof the plan asks for:** stop `web`, watch the alert fire, restart,
-  watch recovery. Until that has been done once, the poll is a claim.
-- **The production `HEALTH_URL`** once a production deployment exists; the
-  default targets staging `os.holdenweb.com`.
-
-Rehearsing the fire-and-recover loop from the laptop proves the mechanism; it is
-the *standing* home that wants to be always-on.
-
-*Progress 2026-09-22.* The poll has a caller now. `ops/deploy.sh` runs it
-against the target after the rebuild (`HEALTH_URL="$hu" poll-health.sh`), and a
-non-zero exit is the signal that the deploy did not come up -- described that way
-in [`ops/DEPLOY.md`](../DEPLOY.md). So the script is exercised for real on every
-deploy rather than sitting unused, and its success path has stopped being a
-claim.
-
-It does not close this item, and it is worth saying why rather than letting the
-row look healthier than it is: a check at deploy time is not a monitor. It
-answers "did this deploy come up?", where the question here is "is the site up
-*now*", asked on a schedule from somewhere always on. Between deploys nothing
-asks. All five points above stand, and the failure path -- an alert actually
-reaching a phone -- is still the untested half.
-
-*Progress 2026-09-22, and this is the big one.* **UptimeRobot now checks
-os.holdenweb.com at five-minute intervals** (Steve). That closes the first and
-hardest of the five points above, and closes it in the form this item argued
-for: a hosted service, not a cron on a laptop, so it also alerts when the poll
-*itself* stops — the dead-man's-switch a self-run schedule cannot manage. The
-site going down is no longer something a person notices.
-
-What is still owed, in the order it matters:
-
-- **Point it at `/healthz`.** The monitor is SSL plus a 2xx on the site root
-  (Steve, 2026-09-22), and measured on the laptop lab the same day -- full
-  stack up, `podman compose stop postgres`, probe, restart -- that is not
-  enough:
-
-  | | database up | database stopped |
-  | --- | --- | --- |
-  | `/` | 200 | **200** |
-  | `/pages/test` | 200 | **200** |
-  | `/login` | 200 | **200** |
-  | `/healthz` | 200 | **503** |
-
-  So the monitor as configured reports green straight through a total database
-  outage, with login, sessions and password reset broken behind a front page
-  that still renders. Changing the monitored URL to
-  `https://os.holdenweb.com/healthz` is the whole of the fix, and it needs no
-  keyword check: the endpoint answers 503, so the default 2xx test is exactly
-  right once it is asking the right question. (`/healthz` keeps its 200 for a
-  non-fatal *app* failure by design -- ADR-0030 -- so this catches the fatal
-  case, which is the one that takes the site with it. `poll-health.sh` greps
-  the body because it also wants the degraded-app case.)
-
-  Recovery was measured too: restarting postgres returned `/healthz` to 200
-  within about three seconds, unattended.
-- **The fire-and-recover proof: DONE 2026-09-22.** Steve stopped the postgres
-  service on the deployment and the outage arrived by email. That is the half a
-  monitor can only earn on a real failure, and it has now been earned against
-  the real thing rather than the lab.
-
-  One thing to reconcile before this item is closed, though: the lab
-  measurement above says the *site root* answers 200 with postgres stopped, so
-  an alert firing implies the monitor is already asking `/healthz`. If it is
-  still on the root, then something else made the root fail and the proof does
-  not mean what it appears to -- the root-monitor hole would still be open.
-  Worth one look at the monitor's URL before striking this.
-- **A production URL**, once a production deployment exists.
-
-`ALERT_CMD` is moot for this path: UptimeRobot carries its own alerting. It
-still matters for `poll-health.sh`, which remains the deploy-time gate.
 
 ### 9. No log rotation
 
