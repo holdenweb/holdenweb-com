@@ -13,7 +13,7 @@ than edit in place.
 
 | # | Repo | Item | Kind |
 | --- | --- | --- | --- |
-| 8 | holdenweb-com | Nothing *schedules* the `/healthz` poll — `ops/poll-health.sh` exists and gates every deploy, but between deploys nothing asks | gap |
+| 8 | holdenweb-com | External monitoring is live (UptimeRobot, five-minute) — still owed: that it asserts `/healthz`'s body rather than a status code, the fire-and-recover proof, and a production URL | gap |
 | 9 | holdenweb-com | No log rotation for app logs (PostgreSQL's now rotates) | gap |
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
@@ -79,6 +79,34 @@ answers "did this deploy come up?", where the question here is "is the site up
 *now*", asked on a schedule from somewhere always on. Between deploys nothing
 asks. All five points above stand, and the failure path -- an alert actually
 reaching a phone -- is still the untested half.
+
+*Progress 2026-09-22, and this is the big one.* **UptimeRobot now checks
+os.holdenweb.com at five-minute intervals** (Steve). That closes the first and
+hardest of the five points above, and closes it in the form this item argued
+for: a hosted service, not a cron on a laptop, so it also alerts when the poll
+*itself* stops — the dead-man's-switch a self-run schedule cannot manage. The
+site going down is no longer something a person notices.
+
+What is still owed, in the order it matters:
+
+- **Whether it asks `/healthz` and asserts the body.** Both `/` and `/healthz`
+  answer 200 today, and `/healthz` answers 200 while carrying its verdict *in
+  the JSON* -- `{"database":"ok","status":"ok"}`, with a non-fatal app
+  deliberately unable to take the top-level status down (ADR-0030). So a
+  status-code check on either URL catches *down* and misses *unhealthy*: a site
+  serving pages with its database gone looks identical to a well one. This is
+  exactly why `poll-health.sh` greps for `"status":"ok"` (`EXPECT`, line 27)
+  rather than trusting `-f`. If the monitor is a plain HTTP check, pointing it
+  at `/healthz` as a *keyword* check on `"status":"ok"` is the whole of the
+  remaining work.
+- **The fire-and-recover proof.** Stop `web`, watch the alert arrive, restart,
+  watch recovery. Until that has been done once, the alerting is a claim -- and
+  it is the half that was never exercised, because a monitor only proves itself
+  on a failure.
+- **A production URL**, once a production deployment exists.
+
+`ALERT_CMD` is moot for this path: UptimeRobot carries its own alerting. It
+still matters for `poll-health.sh`, which remains the deploy-time gate.
 
 ### 9. No log rotation
 
