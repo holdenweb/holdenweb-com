@@ -71,6 +71,8 @@ written, not when the choice was made.
 | [HW-0018](0018-the-committed-lock-resolves-everything-from-pypi.md) | **The committed lock resolves everything from PyPI.** Path sources broke every environment but one laptop; git sources followed branches silently. A path source is now pasted in and taken back out. |
 | [HW-0019](0019-a-version-floor-records-a-behaviour.md) | **A version floor records a behaviour this deployment depends on.** Not an API — a proxy hop count, a restore that works on Linux. The rule the site intends, with its lapses named. |
 | [HW-0020](0020-a-managed-file-may-diverge-when-the-default-must-serve-other-sites.md) | **A managed substrate file may diverge when podpack's default has to serve other sites.** The git layer is the first such edit. Everything else goes upstream, as the CDPATH fix did. |
+| [HW-0032](0032-a-gap-in-the-framework-is-fixed-in-the-framework.md) | **A gap in the framework is fixed in the framework, and the floor is the receipt.** Write the smallest local version, file it upstream, delete it when the release lands. Two worked examples, closed in hours and in days. |
+| [HW-0033](0033-the-framework-arrives-on-two-tracks.md) | **The framework arrives on two tracks, and only the check knows whether they are in step.** The library moves by `uv lock`, the substrate by a deliberate upgrade. They are out of step right now, and `--check` still exits 0. |
 
 ## Records and working practice
 
@@ -82,3 +84,18 @@ written, not when the choice was made.
 | [HW-0024](0024-one-backlog-for-every-repository.md) | **One backlog for every repository, and filing upstream is a separate act.** Four destination repositories, and nothing filed on any of them. |
 | [HW-0025](0025-a-procedure-that-has-not-been-run-says-so.md) | **A claim that rests on having run something says whether it was run.** ✅ and ⚠️ in the reference; expected output at every step in the procedures. |
 | [HW-0026](0026-the-message-catalogue-is-one-data-file.md) | **The message catalogue is one data file and two generated views.** Both committed, because the host has no toolchain at three in the morning. |
+
+## The database, and the two suites
+
+| | |
+| --- | --- |
+| [HW-0027](0027-the-fast-loop-runs-on-sqlite.md) | **The fast loop runs on SQLite; PostgreSQL authors the migrations and serves.** podpack's seeded `dev.env.example` argues against SQLite and is right — about authoring. Nothing enforces the split but a comment and this record. |
+| [HW-0028](0028-one-migration-history-re-parented.md) | **One migration history, re-parented so that it serves a database older than itself.** The root was written after the baseline and put beneath it; the converging alters ask the schema rather than assuming it. |
+| [HW-0029](0029-two-suites-and-ci-is-advisory.md) | **Two suites, and CI is advisory.** One proves the code in seconds, the other drives a browser at a real deployment. The gate that can stop a bad revision is on the target, not on the published branch. |
+
+## Mail, and the edge
+
+| | |
+| --- | --- |
+| [HW-0030](0030-the-site-sends-as-a-person.md) | **The site sends as a person, through a consumer account.** Identity depends on one Gmail App Password; everything else is a code-level default a host can override. |
+| [HW-0031](0031-the-public-edge-is-rented.md) | **The public edge is rented.** Loopback in, Opalstack's proxy and TLS out. Believing `X-Forwarded-Proto` is a promise about the topology. |
