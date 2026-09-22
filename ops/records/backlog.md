@@ -909,9 +909,9 @@ on.
 
 **Repo:** podpack
 
-**Fixed** in podpack `9740282`, and not yet taken here: this site installs
-podpack from PyPI, so `/config` keeps its hand-rolled copy until a release
-carries the decorator and the floor moves.
+**Fixed** in podpack `9740282`, released as **0.9.3** and taken here the same
+day: `/config` carries `@operator_required` and its copy of the guard is gone,
+so the duplication this item was about no longer exists in either place.
 
 `@operator_required` refuses a route to anyone the site's own admin predicate
 does not admit, and refuses with a 404. flask-security's `roles_required` does
@@ -921,10 +921,16 @@ straight past a predicate the site replaced under ADR-0033. `is_operator()`
 moved to `auth.py` beside `is_admin`, and podpack's own `/_status` now carries
 the decorator rather than an inline guard.
 
-*What it removes here, once it lands:* the block in `src/holdenweb/views.py`
-that reads `extensions["podpack"].admin`, wraps the call in `try`/`except` and
-falls through to `abort(404)` -- the same guard podpack had, written out a
-second time, which is what made this an item rather than a tidy-up.
+*What it removed here:* nine lines in `src/holdenweb/views.py` that read
+`extensions["podpack"].admin`, wrapped the call in `try`/`except` and fell
+through to `abort(404)` -- the same guard podpack had, written out a second
+time, which is what made this an item rather than a tidy-up.
+
+The behaviour is unchanged and pinned: `test_config_is_not_public` fails if the
+decorator is taken off, and an anonymous `GET /config` on a running site answers
+404 with the site's own error page. The redaction below it is untouched and
+stays the second line of defence -- the guard defends the config's shape, the
+redaction defends its secrets.
 
 ### 31. `configure-host.py` should pin the compose provider, not just warn
 

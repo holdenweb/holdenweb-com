@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 
-from podpack import Section, SiteApp
+from podpack import Section, SiteApp, operator_required
 
 from .version import __version__
 
@@ -66,21 +66,18 @@ def _redacted(key, value):
 
 
 @blueprint.route("/config")
+@operator_required
 def get_version():
-    # Operator-only, guarded exactly as podpack guards /_status: through the
-    # site's configured admin predicate (ADR-0033), which defaults to
-    # membership of the `admin` role. 404 rather than 403 to everyone else.
-    # And the secret *values* are redacted below regardless -- SECRET_KEY, the
+    # Operator-only. The guard is podpack's since 0.9.3: it asks this site's
+    # configured admin predicate (ADR-0033, defaulting to membership of the
+    # `admin` role), treats a raising predicate as a refusal, and answers 404
+    # rather than 403 -- a 403 would confirm the route exists. It was written
+    # out here for as long as podpack had none to share (backlog 30).
+    #
+    # The secret *values* are redacted below regardless -- SECRET_KEY, the
     # database URI, MAIL_PASSWORD and friends -- so a slip in that guard, of
-    # which there has been one, cannot leak them: the guard defends the config's
-    # shape, the redaction defends its secrets.
-    admin = current_app.extensions["podpack"].admin
-    try:
-        allowed = admin is not None and admin()
-    except Exception:  # noqa: BLE001 -- a broken guard denies, it does not admit
-        allowed = False
-    if not allowed:
-        abort(404)
+    # which there has been one, cannot leak them: the guard defends the
+    # config's shape, the redaction defends its secrets.
     return {
         "server_version": __version__,
         "site_map": site_map(current_app),
