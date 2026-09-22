@@ -32,12 +32,20 @@ SITE_NAME=os-holdenweb-com          # <app>-<site>: dots/underscores → dashes
 PODPACK_ENVIRONMENT=staging         # any non-local value
 HOST_DATA_DIR=../data               # → ~/apps/os/data
 HOST_LOG_DIR=../logs                # → ~/apps/os/logs
-PODPACK_PROXY_HOPS=1                # or reset-password mail goes out as http://
 WEB_HOST_PORT=<Opalstack Nginx Proxy Port>
 WEB_BIND_ADDR=127.0.0.1
 COMPOSE_FILE=compose.yaml:compose.postgres.yaml
 GUNICORN_WORKERS=2
 ```
+
+`PODPACK_PROXY_HOPS` is deliberately not in that list any more. podpack derives
+the trusted-hop count from `PODPACK_ENVIRONMENT` above, so a non-local target
+reads `X-Forwarded-Proto` and builds `https://` URLs without being told
+([ADR-0039](https://github.com/holdenweb/podpack/blob/main/adrs/0039-the-hop-count-follows-the-deployment.md)).
+Set it only for a second proxy, or to `0` where a non-local target has nothing
+in front of it. A host on a podpack older than that decision still needs
+`PODPACK_PROXY_HOPS=1`; `ops/rebuild.md` Part 4 is the check that says which
+case you are in.
 
 On the laptop, add the remote (its URL is the single source of truth
 `deploy.sh` reads the host and path from):

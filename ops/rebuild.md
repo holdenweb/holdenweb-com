@@ -378,41 +378,44 @@ and **no `$`**, which compose expands there as well as in `.env`.
 
 ---
 
-## Part 4 — the setting nothing will tell you about
+## Part 4 — confirm the site believes its proxy
 
 ```bash
 date -u +%H:%M:%S
 ```
 
-Absent however the site got here, and with no symptom you would see by looking
-at it.
+This used to be a step that *set* something, headed "the setting nothing will
+tell you about". It is now a step that checks one, because podpack derives the
+trusted-hop count from `PODPACK_ENVIRONMENT`
+([ADR-0039](https://github.com/holdenweb/podpack/blob/main/adrs/0039-the-hop-count-follows-the-deployment.md)).
+That variable is in this host's `.env` already, `restore.sh` brings it back
+with the other per-host keys, and a value of anything but `local` means one
+nginx is trusted. Nothing to add.
+
+Ask the site what it concluded, rather than what it was told:
 
 ```bash
-echo 'PODPACK_PROXY_HOPS=1' >> .env
+podman compose exec web python -c 'from podpack.proxy import proxy_hops; print(proxy_hops())'
 ```
 
-```bash
-podman compose up -d --force-recreate web
-```
+*Expect:* `1`. This reads the effective count however it was arrived at, so it
+answers on the podpack that derives it and on any older one that does not —
+which is the point of asking this way rather than reading the variable.
 
-```bash
-podman compose exec web printenv PODPACK_PROXY_HOPS
-```
+**If it says `0`**, the site will build every `_external=True` URL as
+`http://`, and the first thing to carry one is a password-reset mail with a
+token in the path. Two causes, and they are fixed differently:
 
-*Expect:* `1`. Empty means the line went into a different `.env`, or carries an
-`export ` prefix — compose's `env_file` is not a shell and would read the name
-as `export PODPACK_PROXY_HOPS`.
-
-> **This site can never be told this by podpack.** The variable's entire
-> documentation lives in `env.example`, and this site's copy is a *seeded*
-> substrate file — `podpack substrate upgrade` reports every file `ok` and
-> delivers nothing. Without the line, every URL built with `_external=True`
-> comes out `http://`, and the first thing to carry one is a password-reset
-> mail.
+- `PODPACK_ENVIRONMENT` says `local` on a host that is not a lab. Correct the
+  variable, which is wrong for `prepare-host-dirs.sh` too.
+- This host runs a podpack predating ADR-0039. Add `PODPACK_PROXY_HOPS=1` to
+  `.env` — no `export` prefix, compose's `env_file` is not a shell and would
+  read the name as `export PODPACK_PROXY_HOPS` — and re-run `./scripts/up.sh`.
 
 *Note:* the count is the number of values in `X-Forwarded-Proto`, not the
 number of proxies. One nginx that overwrites the header is `1` however many
-boxes sit behind it.
+boxes sit behind it. A host behind two proxies, or a non-local host behind
+none, still says so with `PODPACK_PROXY_HOPS`, which always wins.
 
 `☐` `✎` ______________________________________________
 

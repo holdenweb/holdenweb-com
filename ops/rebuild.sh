@@ -33,7 +33,6 @@ set -euo pipefail
 
 SITE_REPO="${SITE_REPO:-git@github.com:holdenweb/holdenweb-com.git}"
 SITE_DIR="${SITE_DIR:-holdenweb-staging}"
-PROXY_HOPS="${PROXY_HOPS:-1}"
 
 check_only=no
 [[ "${1:-}" == "--check" ]] && check_only=yes
@@ -186,15 +185,15 @@ was_port="$(grep -m1 '^WEB_HOST_PORT=' .env | cut -d= -f2-)"
 sed -i.bak "s/^WEB_HOST_PORT=.*/WEB_HOST_PORT=${WEB_PORT}/" .env && rm -f .env.bak
 note "WEB_HOST_PORT ${was_port:-unset} -> ${WEB_PORT}"
 
-# Never delivered by an upgrade: its documentation lives in env.example, which
-# is a seeded file podpack never touches again. Without it every _external URL
-# comes out http://, first visible in a password-reset mail.
-if grep -q '^PODPACK_PROXY_HOPS=' .env; then
-    sed -i.bak "s/^PODPACK_PROXY_HOPS=.*/PODPACK_PROXY_HOPS=${PROXY_HOPS}/" .env && rm -f .env.bak
-else
-    printf 'PODPACK_PROXY_HOPS=%s\n' "$PROXY_HOPS" >> .env
-fi
-note "PODPACK_PROXY_HOPS=${PROXY_HOPS}"
+# PODPACK_PROXY_HOPS is no longer written here. podpack derives the count from
+# PODPACK_ENVIRONMENT (ADR-0039), which this .env already carries and which a
+# restore brings back, so a staging or production host trusts its one nginx
+# without being told. An explicit value still wins where one is set, which is
+# how a host behind two proxies -- or a non-local one behind none -- says so.
+#
+# What replaced this is the check after startup: the count is VERIFIED there
+# rather than assumed here, and verifying the outcome catches every way of
+# getting it wrong, including the ones writing the variable never did.
 
 # ---------------------------------------------------------------------------
 # 4. Up, on this host's port.
@@ -212,9 +211,26 @@ done
 [[ "$code" == "200" ]] || die "healthz on 127.0.0.1:${WEB_PORT} answered ${code}, not 200"
 note "healthz 200 on 127.0.0.1:${WEB_PORT}"
 
-hops="$(podman compose exec -T web printenv PODPACK_PROXY_HOPS 2>/dev/null | tr -d '\r' || true)"
-[[ "$hops" == "$PROXY_HOPS" ]] || die "the container reports PODPACK_PROXY_HOPS='${hops}', not ${PROXY_HOPS}"
-note "container reads PODPACK_PROXY_HOPS=${hops}"
+# Ask the running site what it actually concluded, rather than what it was
+# told. `proxy_hops()` is podpack's own resolver and exists in every release
+# that has this module, so this reads the effective count whether it came from
+# PODPACK_PROXY_HOPS or was derived from PODPACK_ENVIRONMENT -- which matters
+# through the upgrade, when the same rebuild has to be right on both.
+#
+# Zero behind a proxy is the silent fault this whole rebuild is careful about:
+# every page serves and only absolute URLs are wrong, so nothing else here
+# would catch it.
+hops="$(podman compose exec -T web python -c \
+    'from podpack.proxy import proxy_hops; print(proxy_hops())' 2>/dev/null | tr -d '\r' || true)"
+case "$hops" in
+    ""    ) die "could not ask the container its trusted-hop count. Is web up?" ;;
+    0     ) die "the site trusts 0 proxies, and one nginx is in front of it. Every
+    _external URL will be http://, first visible in a password-reset mail.
+    Expected PODPACK_ENVIRONMENT to be non-local (it is '$(grep -m1 '^PODPACK_ENVIRONMENT=' .env | cut -d= -f2-)')
+    on a podpack that derives the count (ADR-0039). On an older podpack, add
+    PODPACK_PROXY_HOPS=1 to .env and re-run ./scripts/up.sh." ;;
+esac
+note "the site trusts ${hops} proxy/proxies"
 
 public="$(curl -s -o /dev/null -w '%{http_code}' "https://${SITE_HOST}/healthz" || true)"
 note "https://${SITE_HOST}/healthz -> ${public}"

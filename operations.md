@@ -728,11 +728,17 @@ Recorded rather than hidden. None is urgent; all are real.
   backup is worth.
 - ~~**Password-reset links go out as `http://`.**~~ **Closed 2026-08-24**:
   `.env` sets `PODPACK_PROXY_HOPS=1`, the container reads it, and `/_status`
-  reports `scheme: https`. Kept here because the reasoning still applies to any
-  rebuild that forgets the line — Not `base_url`, which was recorded as the fix for two days and feeds
-  nothing that builds these links. The host in the link is already right and
-  must stay dynamic: Opalstack owns the binding. `ops/records/backlog.md` item 4 has
-  the whole correction.
+  reports `scheme: https`. **And closed again, differently, 2026-09-22**: the
+  count is now derived from `PODPACK_ENVIRONMENT`, so a rebuild cannot forget
+  it and the explicit line is redundant rather than load-bearing
+  (podpack ADR-0039, backlog item 32). Two things follow. This host keeps its
+  line until somebody removes it, and it still wins, so nothing changes on the
+  next deploy. And the rebuild no longer *sets* the value: `ops/rebuild.sh`
+  asks the running site what it concluded and fails if that is zero, which
+  catches the misconfiguration however it arose. Not `base_url`, which was
+  recorded as the fix for two days and feeds nothing that builds these links.
+  The host in the link is already right and must stay dynamic: Opalstack owns
+  the binding. `ops/records/backlog.md` item 4 has the whole correction.
 - ~~**`config/app.toml` says `environment = "local"` in production.**~~
   **Closed**: the dead `environment` key was removed from `config/app.toml`
   (commit 1929993).

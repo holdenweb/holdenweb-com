@@ -445,11 +445,11 @@ Every message this system is likely to put in front of you — 119 of them — w
 - **Do:** Run migrations through scripts/dev.sh (sources dev.env) or compose (supplies secrets.env); don't rely on a stray .env.
 
 ### 🔴 proxy-hops-not-a-number
-`PODPACK_PROXY_HOPS is '<raw>', which is not a whole number. It counts the proxies between the internet and this site: 1 where a single nginx forwards to it, unset where nothing does.`
+`PODPACK_PROXY_HOPS is '<raw>', which is not a whole number. It counts the proxies between the internet and this site: 1 where a single nginx forwards to it, 0 where nothing does. Unset it to let PODPACK_ENVIRONMENT decide.`
 
 - **Critical** · **where:** either · **from:** `proxy.py`
-- **Means:** PODPACK_PROXY_HOPS is set to a non-integer (or negative). Refused rather than defaulted, because a deployment that meant to proxy but serves unproxied reproduces the cleartext reset-link bug this module fixes.
-- **Do:** Set PODPACK_PROXY_HOPS to a whole number (1 behind a single nginx), or unset it entirely.
+- **Means:** PODPACK_PROXY_HOPS is set to a non-integer (or negative). Refused rather than defaulted, because a deployment that meant to proxy but serves unproxied reproduces the cleartext reset-link bug this module fixes. Since podpack ADR-0039 the count is normally derived from PODPACK_ENVIRONMENT, so this variable being set at all means somebody meant to override that.
+- **Do:** Unset PODPACK_PROXY_HOPS and let PODPACK_ENVIRONMENT decide (0 for local, 1 otherwise), which is right for every ordinary deployment. Set a whole number only to override: 2 behind two proxies, 0 for a non-local site with nothing in front of it.
 
 ### 🔴 reg-clashing-table
 `installing '<module>' failed: it declares the table '<t>' (already needed by <apps> / already on db.metadata). Table names are shared across every installed app ... so prefix __tablename__ with the app's own name.`
