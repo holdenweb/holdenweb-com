@@ -109,9 +109,13 @@ is doing over ssh.
 Append `--mirror` to either to remove whatever the source no longer has. It is
 off by default in both, because an incomplete source with `--mirror` deletes a
 visitor's content, and an interactive run asks you to type `mirror` before it
-deletes anything. `--dry-run` prints the plan and changes nothing, and belongs
-to `push-content.sh` alone — `refresh-content.sh` has no such flag, so
-`just <area> local --dry-run` fails rather than previewing.
+deletes anything. `--dry-run` prints the plan and changes nothing; both scripts
+take it, so `just <area> staging --dry-run` previews a push and
+`just <area> local --dry-run` previews a local refresh. It is worth the
+keystrokes before a `--mirror`: the plan is printed under the file counts at
+both ends, and "this removes 721 files and puts 719 back" is a different
+decision from "this removes nothing" — which is not something the confirmation
+prompt can tell you.
 
 
 ## Database schema changes

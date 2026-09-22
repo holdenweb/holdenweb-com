@@ -23,11 +23,17 @@
 # `inside_namespace` helper scripts/restore.sh uses, for the same reason.
 #
 # Usage:
-#     ops/refresh-content.sh <staged-directory> [--mirror]
+#     ops/refresh-content.sh <staged-directory> [--mirror] [--dry-run]
 #
 # Default is a MERGE: files are added and overwritten, and anything already
 # here that the source does not have is left alone. `--mirror` removes the
 # destination first, so a file deleted at the source disappears here too.
+#
+# `--dry-run` prints what would happen and changes nothing, which is what
+# ops/push-content.sh's own --dry-run has always offered for the remote case.
+# It is most worth using before a --mirror, where the interactive confirmation
+# tells you that files will go but not how many: the counts printed above the
+# plan do.
 #
 # The merge default is deliberate. scripts/restore.sh learned this the hard
 # way: an unpack that only ever adds leaves files deleted on purpose sitting
@@ -55,16 +61,31 @@ APP_UID="${APP_UID:-10001}"          # the Containerfile's unprivileged uid
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$here"
 
-source_dir="${1:-}"
-mode="${2:-merge}"
+usage() {
+    echo "usage: ops/refresh-content.sh <staged-directory> [--mirror] [--dry-run]" >&2
+    exit 1
+}
+
+# A loop rather than positional $2, so the two flags may arrive in either order.
+# `merge` is still accepted where it used to be required, because it is what the
+# old error message told callers to write and there is no gain in breaking them.
+source_dir=""; mirror=0; dry=0
+for arg in "$@"; do
+    case "$arg" in
+        --mirror)  mirror=1 ;;
+        --dry-run) dry=1 ;;
+        merge)     : ;;                      # the default, said out loud
+        --*)       echo "unknown option: ${arg}" >&2; usage ;;
+        *)         if [[ -z "$source_dir" ]]; then source_dir="$arg"
+                   else echo "unexpected argument: ${arg}" >&2; usage; fi ;;
+    esac
+done
 
 if [[ -z "$source_dir" || ! -d "$source_dir" ]]; then
-    echo "usage: ops/refresh-content.sh <staged-directory> [--mirror]" >&2
     [[ -n "$source_dir" ]] && echo "no such directory: ${source_dir}" >&2
-    exit 1
+    usage
 fi
-[[ "$mode" == "merge" || "$mode" == "--mirror" ]] || {
-    echo "second argument, if given, must be --mirror" >&2; exit 1; }
+mode="merge"; [[ "$mirror" -eq 1 ]] && mode="--mirror"
 
 if [[ ! -f .env ]]; then
     echo "no .env here -- run this from a deployed site" >&2
@@ -94,6 +115,26 @@ plural() { [[ "$1" == 1 ]] && echo "1 file" || echo "$1 files"; }
 echo "from:    ${staged}  ($(plural "$(find "$staged" -type f | wc -l | tr -d ' ')"))"
 echo "into:    ${target}  ($(plural "$(inside_namespace find "$target" -type f 2>/dev/null | wc -l | tr -d ' ')"))"
 echo "mode:    ${mode/--/}"
+
+# Everything above this line only reads. Everything below it writes, so a dry
+# run stops here -- after the counts, which are the useful half: "mirror will
+# remove 721 files and put 719 back" is a different decision from "mirror will
+# remove nothing", and the interactive confirmation cannot tell you which.
+if [[ "$dry" -eq 1 ]]; then
+    echo
+    echo "dry run -- nothing was changed. This would:"
+    if [[ "$mirror" -eq 1 ]]; then
+        echo "+ rm -rf ${target}"
+        echo "    (--mirror: every file above that the source does not have goes)"
+    fi
+    echo "+ mkdir -p ${target}"
+    echo "+ cp -R ${staged}/. ${target}/"
+    echo "+ chmod -R u=rwX,go=rX ${target}"
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        echo "+ chown -R ${APP_UID}:${APP_UID} ${target}"
+    fi
+    exit 0
+fi
 
 if [[ "$mode" == "--mirror" ]]; then
     # The prompt is gated, the removal is not. `push-content.sh` drives this

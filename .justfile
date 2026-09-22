@@ -23,8 +23,11 @@
 # `local` refreshes this checkout's own hostdata via ops/refresh-content.sh;
 # `staging`/`production` push to the matching git remote via ops/push-content.sh
 # (production has no remote yet, so it errors until one is added). --mirror and
-# --dry-run pass straight through, and --mirror is confirmed interactively by the
-# underlying scripts. Default is a safe MERGE; ask for --mirror when you mean it.
+# --dry-run go to whichever of those two runs, and both understand both:
+# --mirror removes whatever the source no longer has, asking you to type
+# `mirror` first whenever a terminal is there to answer, and --dry-run prints
+# the plan and changes nothing. Default is a safe MERGE; ask for --mirror when
+# you mean it, and --dry-run first if you are not certain what it will take.
 #
 # Sources default to where each builder writes on the laptop; override the env
 # var if yours differ, e.g. ORPY_BUILD=/somewhere just pybooks staging.
