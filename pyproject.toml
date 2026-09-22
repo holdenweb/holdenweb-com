@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.8.3"
+version = "1.8.4"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 license = "MIT"
@@ -35,7 +35,7 @@ dependencies = [
  #       this host fails on every file -- after replacing .env and secrets.env,
  #       so the checkout is left wearing the backup's identity and holding none
  #       of its data. Measured on Opalstack, 2026-08-24.
- "podpack>=0.9.0b6",
+ "podpack>=0.9.2",
  #
  # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
  # something this deployment depends on, not merely the newest available:
