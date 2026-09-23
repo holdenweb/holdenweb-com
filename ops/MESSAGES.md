@@ -2,14 +2,21 @@
 
 > **Generated from [`messages.json`](messages.json) by [`build-messages.py`](build-messages.py). Edit the JSON, not this file.**
 
-Every message this system is likely to put in front of you — 119 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
+Every message this system is likely to put in front of you — 120 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
 
-**Severity** — 🔴 critical (42) an outage, or data/secrets at risk · 🟠 needs action (36) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
+**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (35) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
 
 **Where** — *laptop* (your machine, dev & deploy) · *host* (the Opalstack deploy host) · *either*.
 
 
 ## Your laptop
+
+### 🔴 deploy-wrong-commit
+`deployed <sha> but the container reports '<other>'. The rebuild did not take.`
+
+- **Critical** · **where:** laptop · **from:** `ops/deploy.sh`
+- **Means:** The site is healthy but is NOT running the commit you just deployed: the fetch, the checkout or the rebuild did not take effect. This check exists because a deploy that changes nothing used to report success.
+- **Do:** Look at the host before deploying again: `ssh <host> 'cd ~/apps/<app>/site && git log -1 --oneline && git status --short'`. An empty report instead of a sha usually means the web container is not running -- `podman compose ps`.
 
 ### 🔴 poll-bad-body
 `<time>: health check FAILED for <url> -- 200 but body lacks "status":"ok" (the proxy answered; the app or database did not)`
@@ -29,21 +36,21 @@ Every message this system is likely to put in front of you — 119 of them — w
 `remote '<target>' is not an scp-style host:path URL: <url>`
 
 - **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** The remote exists but is not host:path form, so deploy can't derive the rebuild command.
+- **Means:** The remote exists but is not host:path form, so deploy can't derive the ssh host and site directory from it.
 - **Do:** Re-point it: `git remote set-url <target> opal17:apps/<app>/site`.
 
 ### 🟠 deploy-dirty
 `uncommitted changes to tracked files; commit first, or pass --allow-dirty.`
 
 - **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** Tracked files have uncommitted changes; only commits are pushed, so they would not deploy. Untracked files (a stray README.pdf) do not count.
+- **Means:** Tracked files have uncommitted changes; only a commit can be fetched by the host, so they would not deploy. Untracked files (a stray README.pdf) do not count.
 - **Do:** Commit them, or pass --allow-dirty to deploy anyway (up.sh then stamps -dirty).
 
 ### 🟠 deploy-no-remote
 `no git remote named '<target>'. Add it (see ops/DEPLOY.md): git remote add <target> opal17:apps/<app>/site`
 
 - **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** The target's git remote is not configured on this laptop.
+- **Means:** The target's git remote is not configured on this laptop. Nothing is pushed to it -- it is the address deploy and content delivery read the host and path from.
 - **Do:** Add it per ops/DEPLOY.md: `git remote add <target> opal17:apps/<app>/site`.
 
 ### 🟠 deploy-usage
@@ -78,8 +85,8 @@ Every message this system is likely to put in front of you — 119 of them — w
 `note: HEAD (<sha>) is not on origin/main -- deploying unpublished code.`
 
 - **Warning** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** You are deploying a commit that is not on GitHub. Fine for staging; worth noticing for production.
-- **Do:** `git push origin main` to publish, or proceed if this is deliberate.
+- **Means:** You are deploying a commit that is not on main. It IS on GitHub -- deploy pushes it to refs/heads/deploy/<target> so the host can fetch it -- but it has not been merged. Fine for staging; worth noticing for production.
+- **Do:** Merge it to main when it earns that, or proceed if this is deliberate.
 
 ### 🟡 dev-created-env
 `created dev.env from dev.env.example -- review it before going further`
@@ -96,10 +103,10 @@ Every message this system is likely to put in front of you — 119 of them — w
 - **Do:** Install MongoDB natively and add MONGODB_URI to dev.env, or accept those apps being unhealthy in local dev.
 
 ### 🔵 deploy-progress
-`==> deploying <sha> to <target> (<host>:<path>) / ==> verifying <url> / ==> <target> is healthy at <sha>`
+`==> deploying <sha> to <target> (<host>:<path>) / ==> verifying <url> / ==> confirming the running commit / ==> <target> is healthy, and running <sha>`
 
 - **Info** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** Normal progress. The last line is success: pushed, rebuilt, and /healthz returned ok.
+- **Means:** Normal progress. The last line is success: published, fetched and checked out on the host, rebuilt, /healthz returned ok, and the container reports the commit you deployed.
 - **Do:** Nothing.
 
 ### 🔵 dev-server-banner
@@ -796,6 +803,13 @@ Every message this system is likely to put in front of you — 119 of them — w
 
 ## External tools — git, uv, podman, nginx
 
+### 🔴 deploy-fetch-denied
+`git@github.com: Permission denied (publickey). / fatal: Could not read from remote repository. -- during `git fetch --prune origin` inside ops/deploy.sh`
+
+- **Critical** · **where:** host · **from:** `git / ssh (on the host)`
+- **Means:** The host cannot authenticate to GitHub non-interactively. Its deploy key is missing, is not registered on this repository, or has a passphrase -- deploy's fetch runs over ssh with no tty and no agent, so a passphrase can never be supplied.
+- **Do:** On the host, test it: `ssh opal17 'cd ~/apps/<app>/site && git fetch --prune origin && echo ok'`. Install a PASSPHRASELESS read-only deploy key for this repository (ops/DEPLOY.md). Do not reach for `ssh -A`: that lends the laptop's agent to the host.
+
 ### 🔴 nginx-502
 `an HTML page whose body says "502 Bad Gateway" with a Server: nginx header (nginx's own error page, not a podpack response). 504 = upstream too slow.`
 
@@ -817,26 +831,19 @@ Every message this system is likely to put in front of you — 119 of them — w
 - **Means:** A [tool.uv.sources] path = ... source can't be resolved inside the container build -- the build context has no such path. (This is why the site pins podpack from PyPI and the apps from git, never a local path.)
 - **Do:** Switch the dependency to a git = "https://..." (or published) source, then `uv lock`.
 
-### 🟠 git-denycurrentbranch
-`remote: error: refusing to update checked out branch: refs/heads/<branch> ... updating the current branch in a non-bare repository is denied ... ! [remote rejected] <branch> -> <branch> (branch is currently checked out)`
+### 🟠 deploy-checkout-refused
+`error: Your local changes to the following files would be overwritten by checkout / error: The following untracked working tree files would be overwritten by checkout -- during `git checkout --detach <sha>` inside ops/deploy.sh`
 
-- **Needs action** · **where:** host · **from:** `git`
-- **Means:** You pushed to the branch checked out on the server's working checkout, and receive.denyCurrentBranch is at its default. Git won't move the branch out from under a live worktree.
-- **Do:** On the host: `git config receive.denyCurrentBranch updateInstead` in ~/apps/<app>/site, then push again. (ops/DEPLOY.md sets this up.)
+- **Needs action** · **where:** host · **from:** `git (on the host)`
+- **Means:** The host's checkout has edits git will not discard. Config edited in place on the deploy host is the usual culprit. The deploy stopped rather than throwing the edits away; nothing was rebuilt.
+- **Do:** On the host, look at `git status --short`, then commit, stash or discard the change -- and if it was a real fix, make it here and deploy it properly. Then re-run the deploy.
 
 ### 🟠 git-non-fast-forward
-`! [rejected] <branch> -> <branch> (fetch first / non-fast-forward) ... the remote contains work that you do not have locally.`
+`! [rejected] <branch> -> <branch> (fetch first / non-fast-forward / stale info) ... the remote contains work that you do not have locally.`
 
-- **Needs action** · **where:** either · **from:** `git`
-- **Means:** The remote has commits you don't -- common when a deploy host committed a config edit.
-- **Do:** `git pull --rebase` then push. Never force-push a shared deploy remote without care.
-
-### 🟠 git-updateinstead-dirty
-`! [remote rejected] <branch> -> <branch> (Working directory has unstaged changes)  /  (Untracked working tree files would be overwritten by merge)`
-
-- **Needs action** · **where:** host · **from:** `git`
-- **Means:** updateInstead refuses when the server worktree is dirty or a push would overwrite untracked files -- it won't clobber edits made on the host. Config edits made in-place on the deploy checkout are the usual culprit.
-- **Do:** On the server, commit/stash/discard the local changes (or move the untracked files), then push again.
+- **Needs action** · **where:** laptop · **from:** `git`
+- **Means:** origin has commits you don't. On main, somebody (or another clone) pushed first. On refs/heads/deploy/<target> it means the deploy ref moved since your last fetch -- deploy.sh pushes it with --force-with-lease, which refuses on stale info rather than overwriting blind.
+- **Do:** `git fetch origin` and look at what moved. For main, `git pull --rebase` then push. For a deploy ref, re-run the deploy once you know whose commit is there.
 
 ### 🟠 podman-no-such-service
 `no such service: <name>   (notably `no such service: .` from a command pasted with a trailing period)`

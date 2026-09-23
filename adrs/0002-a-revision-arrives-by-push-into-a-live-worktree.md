@@ -1,6 +1,6 @@
 # HW-0002: A revision arrives by push into a live worktree, and the rebuild is a separate step
 
-**Status:** Accepted
+**Status:** Superseded by [HW-0034](0034-the-host-fetches-the-commit-it-is-told-to-run.md)
 
 **Date:** 2026-09-22
 

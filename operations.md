@@ -62,15 +62,17 @@ From the laptop, to staging or production:
 ./ops/deploy.sh staging
 ```
 
-It pushes the current commit to that target's receiving checkout
-(`~/apps/<app>/site`, `receive.denyCurrentBranch=updateInstead`), runs
-`scripts/up.sh` there, and polls `/healthz`. [`ops/DEPLOY.md`](ops/DEPLOY.md)
-has the one-time per-target setup and the production target.
+It publishes the current commit to `refs/heads/deploy/<target>` on GitHub, then
+over ssh has the host fetch from its own `origin`, check that commit out
+detached in `~/apps/<app>/site`, and run `scripts/up.sh`. Then it polls
+`/healthz` and asks the container which commit it is running, failing unless
+that is the one deployed. [`ops/DEPLOY.md`](ops/DEPLOY.md) has the one-time
+per-target setup, the deploy key the host needs, and the production target.
 
-Push-and-rebuild rather than rsync so the target is a real checkout at the
-pushed commit: `up.sh` stamps that commit into the image, so `/_status` answers
-"is this running the code I am looking at?" exactly. A `-dirty` suffix in
-`build_commit` means the image was built from an uncommitted tree.
+A real checkout on the host rather than an rsync, because that is what `up.sh`
+stamps the image from, so `/_status` answers "is this running the code I am
+looking at?" exactly. A `-dirty` suffix in `build_commit` means the image was
+built from an uncommitted tree.
 
 Ordering is enforced by the stack, not by the operator:
 `init-storage` → `postgres` (healthy) → `migrate` → `web`. A schema change is
@@ -78,9 +80,12 @@ applied by `migrate` before `web` starts; if `migrate` fails, `web` never
 starts against the stale schema, which is the intended behaviour and not a
 fault to work around.
 
-Settled, since this note asked: `deploy.sh` pushes into a live worktree via
-`receive.denyCurrentBranch=updateInstead` on the host and runs `up.sh` over
-ssh — no bare repo, no `post-receive` hook. Staging is `~/apps/os/site`;
+Settled twice. It used to push into a live worktree via
+`receive.denyCurrentBranch=updateInstead`; since 2026-09-23 the host fetches
+instead, because the push silently did nothing whenever the host's HEAD was
+detached ([HW-0034](adrs/0034-the-host-fetches-the-commit-it-is-told-to-run.md)).
+Still no bare repo and no `post-receive` hook: the publish delivers, and a human
+runs the rebuild knowing they are about to. Staging is `~/apps/os/site`;
 production is its own `~/apps/<app>/site`.
 
 ### Refreshing a content tree

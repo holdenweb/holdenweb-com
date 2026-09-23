@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="1000" height="780"
-     role="img" aria-label="How a revision of holdenweb.com reaches the running site: one command pushes a commit to opal17 and rebuilds there, compose gates each service on the one before it, and nothing is believed until the site is checked from outside the host.">
-  <title>Deploying holdenweb.com — push, rebuild, prove</title>
-  <desc>ops/deploy.sh refuses a dirty tree, pushes the commit to the staging remote on opal17, and runs scripts/up.sh over ssh. There podman compose rebuilds and starts the stack in a fixed order: init-postgres chowns the storage, postgres must report healthy, alembic migrates the schema, and only then does web start, with its own healthcheck asking /healthz from inside the container. The published loopback port is proxied by Opalstack's nginx to the public name. Two checks from outside then confirm it: ops/poll-health.sh once per deploy, which asserts the body rather than the status code, and UptimeRobot every five minutes for ever.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800" width="1000" height="800"
+     role="img" aria-label="How a revision of holdenweb.com reaches the running site: one command publishes a commit, the host fetches and checks it out and rebuilds, compose gates each service on the one before it, and nothing is believed until the site is checked from outside the host and the container is asked which commit it is running.">
+  <title>Deploying holdenweb.com — publish, fetch, prove</title>
+  <desc>ops/deploy.sh refuses a dirty tree, publishes the commit to a deploy ref on GitHub, and over ssh has opal17 fetch it, check it out, and run scripts/up.sh. There podman compose rebuilds and starts the stack in a fixed order: init-postgres chowns the storage, postgres must report healthy, alembic migrates the schema, and only then does web start, with its own healthcheck asking /healthz from inside the container. The published loopback port is proxied by Opalstack's nginx to the public name. Two checks from outside then confirm it: ops/poll-health.sh once per deploy, which asserts the body rather than the status code, and UptimeRobot every five minutes for ever.</desc>
 
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -12,10 +12,10 @@
     </marker>
   </defs>
 
-  <rect width="1000" height="780" fill="#f6f6ef"/>
+  <rect width="1000" height="800" fill="#f6f6ef"/>
 
   <g font-family="'Gill Sans','Gill Sans MT',Cabin,'Trebuchet MS',sans-serif">
-    <text x="24" y="38" font-size="23" font-weight="600" fill="#0d2a8f">Deploying holdenweb.com — push, rebuild, prove</text>
+    <text x="24" y="38" font-size="23" font-weight="600" fill="#0d2a8f">Deploying holdenweb.com — publish, fetch, prove</text>
     <text x="24" y="60" font-size="12.5" fill="#6c6f77" font-family="-apple-system,'Segoe UI',Arial,sans-serif">One command moves a revision outward. Everything after it is a gate that refuses rather than degrades.</text>
     <text x="24" y="100" font-size="10.5" font-weight="600" fill="#6c6f77" letter-spacing="1.2">ON THE LAPTOP</text>
   </g>
@@ -29,15 +29,15 @@
     <line x1="264" y1="140" x2="286" y2="140" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
 
     <rect x="290" y="114" width="236" height="52" rx="7" fill="#fff" stroke="#e7e4d4"/>
-    <text x="302" y="134" font-weight="600" fill="#0d2a8f">git push staging HEAD:main</text>
-    <text x="302" y="150" font-size="10" fill="#6c6f77">the remote URL opal17:apps/os/site says where</text>
+    <text x="302" y="134" font-weight="600" fill="#0d2a8f">git push origin HEAD:deploy/staging</text>
+    <text x="302" y="150" font-size="10" fill="#6c6f77">published where the host can fetch it; not main</text>
     <line x1="530" y1="140" x2="552" y2="140" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
 
     <rect x="556" y="114" width="236" height="52" rx="7" fill="#fff" stroke="#e7e4d4"/>
-    <text x="568" y="134" font-weight="600" fill="#0d2a8f">ssh opal17 · ./scripts/up.sh</text>
-    <text x="568" y="150" font-size="10" fill="#6c6f77">stamps GIT_SHA into the image</text>
+    <text x="568" y="134" font-weight="600" fill="#0d2a8f">ssh opal17 · fetch, checkout, up.sh</text>
+    <text x="568" y="150" font-size="10" fill="#6c6f77">detached at that commit; stamps GIT_SHA</text>
 
-    <text x="24" y="192" font-size="10" fill="#6c6f77">A push, not an rsync: the target is a real checkout at the pushed commit, so /_status can say which commit is serving (ADR-0017).</text>
+    <text x="24" y="192" font-size="10" fill="#6c6f77">The host fetches rather than receives: still a real checkout at the deployed commit, so /_status says which commit serves (ADR-0017).</text>
     <line x1="674" y1="170" x2="674" y2="206" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
 
     <!-- the host -->
@@ -119,6 +119,7 @@
     <line x1="608" y1="682" x2="658" y2="648" stroke="#6c6f77" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ag)"/>
 
     <text x="24" y="748" font-size="11.5" fill="#3a3c42">Nothing is believed until something outside the host says so, and every gate refuses rather than degrading: a dirty tree stops the deploy,</text>
-    <text x="24" y="766" font-size="11.5" fill="#3a3c42">web waits for a migrated schema, and a rebuild that does not come up healthy fails the command that asked for it.</text>
+    <text x="24" y="766" font-size="11.5" fill="#3a3c42">web waits for a migrated schema, a rebuild that does not come up healthy fails the command that asked for it — and, last, the container is asked</text>
+    <text x="24" y="784" font-size="11.5" fill="#3a3c42">which commit it is running, because a deploy that changed nothing used to be able to report success.</text>
   </g>
 </svg>

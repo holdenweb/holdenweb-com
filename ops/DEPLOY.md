@@ -2,24 +2,41 @@
 
 Development happens on the laptop. [`ops/deploy.sh`](deploy.sh) moves a
 committed revision outward — to **staging** (`os.holdenweb.com`) first, then to
-**production** once staging has been seen working. Each target is a git remote
-pointing at a receiving checkout on its Opalstack host; pushing to it updates
-the working tree in place, and `scripts/up.sh` rebuilds from the pushed commit
-so `/_status` reports the exact `build_commit` running.
+**production** once staging has been seen working.
+
+**The host fetches.** `deploy.sh` pushes the commit to GitHub on a per-target
+deploy ref, then over ssh has the host fetch from its own `origin`, check that
+exact commit out, and run `scripts/up.sh` — which stamps it into the image, so
+`/_status` reports the `build_commit` actually running. Each target is still a
+git remote, but only as the address: its scp-style URL says which host and which
+directory (HW-0001), and nothing is pushed to it. See
+[HW-0034](../adrs/0034-the-host-fetches-the-commit-it-is-told-to-run.md) for why
+it works this way.
 
 ## One-time setup, per target
 
 On the Opalstack host (staging is the app `os`, so `~/apps/os`):
 
 ```bash
-mkdir -p ~/apps/os/site ~/apps/os/data ~/apps/os/logs
-cd ~/apps/os/site
-git init -b main
-git config receive.denyCurrentBranch updateInstead   # a push updates the work-tree
+mkdir -p ~/apps/os ~/apps/os/data ~/apps/os/logs
+```
+
+```bash
+cd ~/apps/os && git clone git@github.com:holdenweb/holdenweb-com.git site
+```
+
+That needs a **passphraseless, read-only deploy key** for this repository in the
+host's `~/.ssh` — a deploy key rather than an account key so a compromised host
+cannot push anywhere, and passphraseless because `deploy.sh`'s `git fetch` runs
+over ssh with no tty and no agent to unlock anything. Check it before you rely
+on it:
+
+```bash
+ssh opal17 'cd ~/apps/os/site && git fetch --prune origin && echo ok'
 ```
 
 `data` and `logs` are siblings of `site`, never inside it: the site's own
-content and the database live outside the checkout, so a push (or a
+content and the database live outside the checkout, so a `git checkout` (or a
 `git clean`) can never take them with it. That is also what
 `PODPACK_ENVIRONMENT=staging` enforces — `prepare-host-dirs.sh` refuses to put
 data inside a working tree unless the environment is `local`.
@@ -47,33 +64,52 @@ in front of it. A host on a podpack older than that decision still needs
 `PODPACK_PROXY_HOPS=1`; `ops/rebuild.md` Part 4 is the check that says which
 case you are in.
 
-On the laptop, add the remote (its URL is the single source of truth
-`deploy.sh` reads the host and path from):
+On the laptop, add the remote. Its URL is where `deploy.sh` and
+`push-content.sh` read the host and path from; neither pushes to it:
 
 ```bash
 git remote add staging opal17:apps/os/site
 ```
 
-The first `git push staging HEAD:main` populates the checkout. If it complains
-that `main` is unborn on the host, run `git symbolic-ref HEAD refs/heads/main`
-in `~/apps/os/site` once, then push again.
+## Migrating a host that was set up the old way
+
+The staging checkout was created with `git init` and populated by pushes, so it
+has no `origin`. **Do not re-clone it** — `.env` and `secrets.env` live in that
+directory and are not in git. On the host:
+
+```bash
+cd ~/apps/os/site && git remote add origin git@github.com:holdenweb/holdenweb-com.git
+```
+
+```bash
+cd ~/apps/os/site && git fetch --prune origin && git config --unset receive.denyCurrentBranch
+```
+
+The next `./ops/deploy.sh staging` leaves HEAD detached at the deployed commit,
+which is from then on the normal state of a deploy checkout.
 
 ## Deploying
 
 ```bash
 ./ops/deploy.sh --dry-run staging   # print what it would do, touch nothing
-./ops/deploy.sh staging             # push HEAD, rebuild, poll /healthz
 ```
 
-It refuses a dirty tree (commit first, or `--allow-dirty`), warns if the commit
-is not on `origin/main`, and after the rebuild polls the target's `/healthz`
-via [`ops/poll-health.sh`](poll-health.sh) — a non-zero exit there means the
-deploy did not come up and is the signal to look.
+```bash
+./ops/deploy.sh staging             # publish, fetch, rebuild, prove
+```
+
+It refuses a dirty tree (commit first, or `--allow-dirty`); warns if the commit
+is not on `origin/main`, which is a note rather than a bar because the deploy ref
+is `deploy/staging` and unmerged work is exactly what staging is for; polls the
+target's `/healthz` via [`ops/poll-health.sh`](poll-health.sh); and finally asks
+the container which commit it is running and fails unless that is the commit you
+deployed. A non-zero exit at either of the last two is the signal to look.
 
 ## Adding production
 
 Create its Opalstack app (say `~/apps/hw`), repeat the host setup with
-`SITE_NAME=hw-holdenweb-com`, add the laptop remote
+`SITE_NAME=hw-holdenweb-com` and its own deploy key, add the laptop remote
 `git remote add production opal17:apps/hw/site`, and fill in the `production`
 health URL in [`deploy.sh`](deploy.sh)'s `health_url()`. Then
-`./ops/deploy.sh production` delivers the same commit staging proved.
+`./ops/deploy.sh production` delivers the same commit staging proved, on the ref
+`deploy/production`.

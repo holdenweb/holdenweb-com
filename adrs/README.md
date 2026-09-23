@@ -27,7 +27,8 @@ written, not when the choice was made.
 | | |
 | --- | --- |
 | [HW-0001](0001-a-deploy-target-is-a-git-remote.md) | **A deploy target is a git remote.** Its scp-style URL is the whole of its definition, and a missing one is an error that prints the fix. Scoped to the two push tools; the pull direction still guesses. |
-| [HW-0002](0002-a-revision-arrives-by-push-into-a-live-worktree.md) | **A revision arrives by push into a live worktree, and the rebuild is a separate step.** Forced by podpack ADR-0017: the commit stamp is taken on the host, so an rsync'd tree would stamp `unknown`. The operator is present for the health check. |
+| [HW-0002](0002-a-revision-arrives-by-push-into-a-live-worktree.md) | ~~**A revision arrives by push into a live worktree.**~~ *Superseded by HW-0034* — the push had a hole that reported success: with HEAD detached on the host it updated nothing and the health check still passed. |
+| [HW-0034](0034-the-host-fetches-the-commit-it-is-told-to-run.md) | **The host fetches the commit it is told to run.** Published to a per-target deploy ref, fetched and checked out detached on the host, then rebuilt — and the deploy fails unless the container reports the commit it was given. |
 | [HW-0003](0003-the-gating-extends-past-compose.md) | **The gating extends past compose, to the laptop and to the public URL.** Both ends refuse rather than degrade. Production is not gated yet, and the record says so. |
 
 ## Availability

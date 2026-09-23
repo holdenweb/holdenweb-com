@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # `deploy/**` as well as main: ops/deploy.sh publishes the commit it is
+    # deploying to refs/heads/deploy/<target> so the host can fetch it, and a
+    # commit that reaches a real host should be tested even when it is not on
+    # main -- which is most of them, since staging exists to try unmerged work.
+    # This is still advisory and not a gate (HW-0029): it runs alongside the
+    # deploy, not before it.
+    branches: [main, "deploy/**"]
   pull_request:
 
 jobs:
