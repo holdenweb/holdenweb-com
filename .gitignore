@@ -170,3 +170,11 @@ backups/
 # among them, in clear, so this matters more than the tidiness suggests.
 # Copied by hand from podpack's seed: seeded files never upgrade (ADR-0026).
 *.superseded-*
+
+# The editable-path block for working on a sibling app checkout, pasted into
+# pyproject.toml and taken back out again (HW-0018). It must never be
+# committed: a `[tool.uv.sources]` path is unsatisfiable in the container build
+# context, so a committed one breaks the image, ops/rebuild.sh and CI at once
+# -- the exact failure that retiring the path sources fixed. It was untracked
+# and unignored until now, which left one `git add .` between here and that.
+tool_uv_sources.toml

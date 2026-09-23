@@ -699,8 +699,8 @@ Every message this system is likely to put in front of you — 119 of them — w
 `Git executable not found  (uv, during uv sync in the build)`
 
 - **Critical** · **where:** either · **from:** `Containerfile / uv`
-- **Means:** An app locked to a git source needs git at build time. (Fixed in the Containerfile; only bites a customised base image.)
-- **Do:** Ensure the builder stage still installs git.
+- **Means:** uv shells out to a real git for anything locked to a git source, and this site's builder installs none -- deliberately, because every dependency resolves from PyPI (HW-0020). So either uv.lock has regained a git source, or the base image changed.
+- **Do:** Look for a git source in uv.lock. If one belongs there, restore the commented-out apt-get RUN in the Containerfile, which is kept beside the measurement that removed it; otherwise take the git source back out and re-lock.
 
 ### 🔴 gated-dependency-failed
 `dependency failed to start: container <project>-<svc>-1 exited (<code>)  /  service "web" ... depends on ... which did not complete successfully (or ... is unhealthy)`
