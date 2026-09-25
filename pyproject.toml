@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.8.5"
+version = "1.8.5+dev"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 license = "MIT"
