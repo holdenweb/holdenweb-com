@@ -19,6 +19,23 @@ secrets = ["MAIL_PASSWORD"]
 [database]
 pool_pre_ping = true
 
+# The cap podpack turns into MAX_CONTENT_LENGTH, so a request larger than this
+# is refused with 413 before any view reads a byte of it.
+#
+# There was no [limits] section at all until now, which means the value was
+# unset and uploads to this site were unbounded -- and the pdf app has been
+# accepting them. An unbounded upload is not a clever attack, it is a way to
+# fill the host's disk or the process's memory with one long POST.
+#
+# 20 MiB rather than podpack's lab default of 1 MiB: the booklet maker's whole
+# purpose is real scanned documents, and a 1 MiB cap would reject most of them
+# with a 413 the app never sees and cannot explain (podpack-pdf's README says
+# so). An app that wants a tighter bound sets its own -- podpack-pdf already
+# caps by page count in [apps.pdf], which is the limit that actually protects
+# its splitter, since that builds the whole zip in memory.
+[limits]
+max_upload_bytes = 20971520
+
 # Keyed by each app's own name -- its blueprint's -- not the import name above.
 [apps.pages]
 default_title = "Just another holdenweb note"
