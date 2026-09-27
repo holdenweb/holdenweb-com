@@ -2,9 +2,9 @@
 
 > **Generated from [`messages.json`](messages.json) by [`build-messages.py`](build-messages.py). Edit the JSON, not this file.**
 
-Every message this system is likely to put in front of you — 120 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
+Every message this system is likely to put in front of you — 121 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
 
-**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (35) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
+**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (36) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
 
 **Where** — *laptop* (your machine, dev & deploy) · *host* (the Opalstack deploy host) · *either*.
 
@@ -837,6 +837,13 @@ Every message this system is likely to put in front of you — 120 of them — w
 - **Needs action** · **where:** host · **from:** `git (on the host)`
 - **Means:** The host's checkout has edits git will not discard. Config edited in place on the deploy host is the usual culprit. The deploy stopped rather than throwing the edits away; nothing was rebuilt.
 - **Do:** On the host, look at `git status --short`, then commit, stash or discard the change -- and if it was a real fix, make it here and deploy it properly. Then re-run the deploy.
+
+### 🟠 deploy-ssh-dropped
+`Connection closed by <host-ip> port 22 / Connection to <host-ip> port 22 timed out / Connection timed out during banner exchange -- from the ssh in ops/deploy.sh, with no host output after it`
+
+- **Needs action** · **where:** laptop · **from:** `ssh (on the laptop)`
+- **Means:** The laptop could not complete an ssh session to the host, so nothing ran there: no fetch, no checkout, no rebuild. Not authentication, which says `Permission denied (publickey)`, and not a blocked port, which says `Connection refused` -- this is the session dying after TCP connects, during the banner or key exchange, which is what a lossy network path looks like. deploy.sh runs under `set -euo pipefail`, so it stops here rather than going on to poll health and call a deploy green that never happened.
+- **Do:** Retry: the deploy is idempotent, the deploy ref is already at that sha so the push says `Everything up-to-date`, and the host is untouched. If it persists, measure before blaming the host -- loop `nc -z -w 6 <host-ip> 22`. Connecting every time while ssh still dies means the path is losing the larger packets, so look at your own link; failing to connect at all points at the host or a firewall. Seen once as a third of all connections to github.com, ssh.github.com and os.holdenweb.com alike: three unrelated destinations, which is what showed it was the laptop's network.
 
 ### 🟠 git-non-fast-forward
 `! [rejected] <branch> -> <branch> (fetch first / non-fast-forward / stale info) ... the remote contains work that you do not have locally.`
