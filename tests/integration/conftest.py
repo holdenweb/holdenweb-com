@@ -23,11 +23,21 @@ Browsers are installed once per machine:
 
 import os
 import re
+import socket
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
 SITE_ROOT = Path(__file__).parents[2]
+
+PROBE_TIMEOUT = 2.0
+"""Long enough for a loopback or a LAN host, short enough not to be a wait.
+
+A target that is genuinely up answers in milliseconds; one that is not is
+usually refused outright rather than timing out at all. The timeout only
+matters for an address that silently drops, such as a firewalled host.
+"""
 
 
 def url_from_env_file() -> str | None:
@@ -64,6 +74,31 @@ def resolve(config: pytest.Config) -> str | None:
     return resolved.rstrip("/") if resolved else None
 
 
+def reachable(url: str) -> bool:
+    """Whether anything is listening at `url`'s host and port.
+
+    Knowing *where* the site should be is not knowing that it is there, and
+    the two were conflated: `.env` always supplies a port, so these tests
+    always had a target and failed twenty-six times with ERR_CONNECTION_REFUSED
+    on a laptop with nothing running. HW-0029 says the suite skips without a
+    target, which it did; what it did not do is skip without a *site*.
+
+    A TCP connect rather than a request to `/healthz`, deliberately. The
+    question is "is there a site", not "is it well": a port that answers and
+    then serves a 500 is a real failure this suite exists to report, and
+    skipping on it would hide exactly what it was written to catch.
+    """
+    parts = urlsplit(url)
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    if not parts.hostname:
+        return False
+    try:
+        with socket.create_connection((parts.hostname, port), timeout=PROBE_TIMEOUT):
+            return True
+    except OSError:
+        return False
+
+
 def pytest_report_header(config: pytest.Config) -> str:
     """Say which site is being tested, in the header, where it cannot be
     missed.
@@ -75,7 +110,11 @@ def pytest_report_header(config: pytest.Config) -> str:
     from being believed about the wrong machine.
     """
     target = resolve(config)
-    return f"integration target: {target or 'none -- these tests will skip'}"
+    if not target:
+        return "integration target: none -- these tests will skip"
+    if not reachable(target):
+        return f"integration target: {target} -- NOTHING LISTENING, these tests will skip"
+    return f"integration target: {target}"
 
 
 @pytest.fixture(scope="session")
@@ -92,6 +131,11 @@ def base_url(request: pytest.FixtureRequest) -> str:
             "no site to test: pass --base-url, set SITE_URL, or run from a "
             "site whose .env sets WEB_HOST_PORT",
             allow_module_level=True,
+        )
+    if not reachable(resolved):
+        pytest.skip(
+            f"nothing is listening at {resolved}: start the site with "
+            "./scripts/up.sh, or point these tests at one with --base-url"
         )
     return resolved
 
