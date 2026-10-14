@@ -16,6 +16,7 @@ from flask_mailman import Mail
 from flask_paranoid import Paranoid
 
 import podpack
+from podpack.proxy import LOCAL, deployment_environment
 
 from .commands import mail_commands
 from .mail_util import ReportingMailUtil
@@ -58,8 +59,12 @@ def _wire(app: Flask) -> None:
     """The site's own extensions: mail and session policy.
 
     podpack has already loaded the host config and applied `config_overrides`
-    by the time this runs, so every setting here is a `setdefault` -- an
-    override from a caller wins over the environment and these constants.
+    by the time this runs, so a setting here is a `setdefault` -- an override
+    from a caller wins over the environment and these constants.
+
+    The cookie policy is the exception, and assigns. A key Flask ships in its
+    own defaults is already present by the time this runs, so `setdefault`
+    finds it and does nothing; those keys can be set but not defaulted.
     """
     app.logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
@@ -80,8 +85,33 @@ def _wire(app: Flask) -> None:
     app.config.setdefault('SECURITY_REGISTERABLE', True)
     app.config.setdefault('SECURITY_CONFIRMABLE', True)
     app.config.setdefault('SECURITY_RECOVERABLE', True)
-    app.config.setdefault('REMEMBER_COOKIE_SAMESITE', 'strict')
-    app.config.setdefault('SESSION_COOKIE_SAMESITE', 'strict')
+
+    # Cookie policy, and the one block here that assigns rather than defaults.
+    # Flask ships SESSION_COOKIE_SAMESITE and SESSION_COOKIE_SECURE in its own
+    # defaults, so the `setdefault` this replaces found the key present and did
+    # nothing: the line read 'strict' while the running site served
+    # SESSION_COOKIE_SAMESITE=None. REMEMBER_COOKIE_SAMESITE is not a Flask key,
+    # so that one did take -- two adjacent lines, one live and one dead, which is
+    # why they are now together and explicit.
+    #
+    # Secure follows the deployment rather than being hardcoded, for ADR-0039's
+    # reason: a derived value cannot be forgotten and cannot drift from what it
+    # describes. Hardcoding True would break the laptop, where the dev site
+    # speaks plain HTTP -- the cookie would never be sent and login would fail
+    # with nothing on screen to explain it.
+    #
+    # Lax, not Strict, for the session cookie: confirmation and password-reset
+    # links arrive in mail, and Strict sends no cookie on a cross-site top-level
+    # navigation. The remember cookie keeps the Strict it already had, whose
+    # worst case is milder -- a visitor arriving from a mail link is simply not
+    # remembered and logs in again.
+    secure_cookies = deployment_environment() != LOCAL
+    app.config.update(
+        SESSION_COOKIE_SECURE=secure_cookies,
+        SESSION_COOKIE_SAMESITE='Lax',
+        REMEMBER_COOKIE_SECURE=secure_cookies,
+        REMEMBER_COOKIE_SAMESITE='strict',
+    )
 
     for key in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
         app.config.setdefault(key, 'steve@holdenweb.com')
