@@ -494,7 +494,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Do:** Fix the endpoint string in the app's nav=(Section(...),) to a real blueprint.view name.
 
 ### 🔴 reg-no-site-app
-`<module> is listed as an installed app but exposes no module-level `site_app`; see podpack.registry for the contract`
+`<module> is listed as an installed app but exposes no module-level site_app; see podpack.registry for the contract`
 
 - **Critical** · **where:** either · **from:** `registry.py`
 - **Means:** A name in [site] apps imports fine but has no module-level site_app. Also fires in the migrate container, so it surfaces there rather than one service later in web.
@@ -630,7 +630,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 ## Substrate CLI
 
 ### 🔴 state-hand-edited
-`<path> is missing <fields>. It is written by `podpack substrate` and not meant to be edited by hand; restore it from version control.  (also: cannot read substrate.json: <exc>)`
+`<path> is missing <fields>. It is written by podpack substrate and not meant to be edited by hand; restore it from version control.  (also: cannot read substrate.json: <exc>)`
 
 - **Critical** · **where:** either · **from:** `substrate/__init__.py`
 - **Means:** substrate.json was hand-edited, truncated, or corrupt. Exit 2 distinguishes corruption from ordinary pending work (exit 1).
@@ -651,7 +651,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Do:** Resolve each .new with --take-upstream or --keep, then re-run upgrade.
 
 ### 🟠 cli-no-state
-`no substrate.json here -- run `podpack substrate init` first  (or: substrate.json already exists here -- ... upgrade is the command that moves it forward)`
+`no substrate.json here -- run podpack substrate init first  (or: substrate.json already exists here -- ... upgrade is the command that moves it forward)`
 
 - **Needs action** · **where:** either · **from:** `podpack cli`
 - **Means:** This directory was never initialised (or you ran init on an already-initialised site).
@@ -804,7 +804,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 ## External tools — git, uv, podman, nginx
 
 ### 🔴 deploy-fetch-denied
-`git@github.com: Permission denied (publickey). / fatal: Could not read from remote repository. -- during `git fetch --prune origin` inside ops/deploy.sh`
+`git@github.com: Permission denied (publickey). / fatal: Could not read from remote repository. -- during git fetch --prune origin inside ops/deploy.sh`
 
 - **Critical** · **where:** host · **from:** `git / ssh (on the host)`
 - **Means:** The host cannot authenticate to GitHub non-interactively. Its deploy key is missing, is not registered on this repository, or has a passphrase -- deploy's fetch runs over ssh with no tty and no agent, so a passphrase can never be supplied.
@@ -818,7 +818,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Do:** `podman compose ps` / `logs web`; confirm the container is healthy and bound to the allocated port.
 
 ### 🔴 podman-compose-vs-plugin
-`(no error) services that should wait start in the same second -- the tell-tale of running under `podman-compose` (hyphen) instead of `podman compose` (space)`
+`(no error) services that should wait start in the same second -- the tell-tale of running under podman-compose (hyphen) instead of podman compose (space)`
 
 - **Critical** · **where:** either · **from:** `podman-compose`
 - **Means:** podman-compose (the Python tool) silently IGNORES depends_on conditions -- every ordering gate rests on them. init-storage stops preceding servers (perms break), web stops waiting for migrate, nothing waits for Postgres. A broken front end, not an alternative.
@@ -832,7 +832,7 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Do:** Switch the dependency to a git = "https://..." (or published) source, then `uv lock`.
 
 ### 🟠 deploy-checkout-refused
-`error: Your local changes to the following files would be overwritten by checkout / error: The following untracked working tree files would be overwritten by checkout -- during `git checkout --detach <sha>` inside ops/deploy.sh`
+`error: Your local changes to the following files would be overwritten by checkout / error: The following untracked working tree files would be overwritten by checkout -- during git checkout --detach <sha> inside ops/deploy.sh`
 
 - **Needs action** · **where:** host · **from:** `git (on the host)`
 - **Means:** The host's checkout has edits git will not discard. Config edited in place on the deploy host is the usual culprit. The deploy stopped rather than throwing the edits away; nothing was rebuilt.
@@ -853,21 +853,21 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Do:** `git fetch origin` and look at what moved. For main, `git pull --rebase` then push. For a deploy ref, re-run the deploy once you know whose commit is there.
 
 ### 🟠 podman-no-such-service
-`no such service: <name>   (notably `no such service: .` from a command pasted with a trailing period)`
+`no such service: <name>   (notably no such service: . from a command pasted with a trailing period)`
 
 - **Needs action** · **where:** either · **from:** `podman compose`
 - **Means:** A service name doesn't exist in the merged compose files -- a typo, wrong COMPOSE_FILE, or punctuation pasted with an inline command.
 - **Do:** Check the name / COMPOSE_FILE. Put runnable commands on their own line so no trailing '.' is pasted.
 
 ### 🟠 uv-git-fetch-failed
-`error: Failed to download and build `<pkg> @ git+https://...` ... Git operation failed (repository not found / could not read Username)`
+`error: Failed to download and build <pkg> @ git+https://... ... Git operation failed (repository not found / could not read Username)`
 
 - **Needs action** · **where:** either · **from:** `uv / git`
 - **Means:** A git dependency's repo is private, unpublished, or mistyped.
 - **Do:** Publish/point at the correct repo, or ensure credentials; then `uv lock`.
 
 ### 🟠 uv-lockfile-frozen
-`error: The lockfile at `uv.lock` needs to be updated but `--frozen` was provided. To update the lockfile, run `uv lock`.  (also the --locked / --check variants)`
+`error: The lockfile at uv.lock needs to be updated but --frozen was provided. To update the lockfile, run uv lock.  (also the --locked / --check variants)`
 
 - **Needs action** · **where:** either · **from:** `uv`
 - **Means:** pyproject.toml or [tool.uv.sources] changed but uv.lock wasn't regenerated; the frozen build refuses to drift. Editing a pin alone isn't enough.

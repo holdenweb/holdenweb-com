@@ -14,6 +14,7 @@ from __future__ import annotations
 import html
 import json
 import pathlib
+import re
 from collections import Counter
 from datetime import date
 
@@ -40,6 +41,23 @@ def load() -> list[dict]:
     sev = {s: i for i, s in enumerate(SEV_ORDER)}
     entries.sort(key=lambda e: (order.get(e["layer"], 99), sev.get(e["sev"], 99), e["id"]))
     return entries
+
+
+def code_span(text: str) -> str:
+    """Wrap `text` in a markdown code span long enough to contain it.
+
+    A fixed pair of backticks is wrong whenever the text holds one of its own:
+    the span closes at the inner backtick and the remainder renders as prose,
+    which it did for nine entries -- every message whose `match` quoted a
+    command. CommonMark's answer is that a span may be fenced by any backtick
+    run longer than the longest run inside it, so the fence is measured rather
+    than assumed. The space padding is the same specification's rule for text
+    that itself begins or ends with a backtick, and is stripped on render.
+    """
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
+    fence = "`" * (longest + 1)
+    pad = " " if text.startswith("`") or text.endswith("`") else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
 
 
 def build_md(entries: list[dict]) -> str:
@@ -72,7 +90,7 @@ def build_md(entries: list[dict]) -> str:
         out.append(f"\n## {label}\n")
         for e in group:
             out.append(f"### {dot[e['sev']]} {e['id']}")
-            out.append(f"`{e['match']}`\n")
+            out.append(f"{code_span(e['match'])}\n")
             out.append(f"- **{SEV_LABEL[e['sev']]}** · **where:** {WHERE_LABEL[e['where']]} "
                        f"· **from:** `{e['source']}`")
             out.append(f"- **Means:** {e['means']}")
