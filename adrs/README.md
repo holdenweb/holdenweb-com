@@ -64,6 +64,7 @@ written, not when the choice was made.
 | [HW-0015](0015-sign-up-is-public-and-confers-no-privilege.md) | **Sign-up is public, gated by email confirmation, and confers no privilege.** Closed for three days in September after the site was found open, then reopened with the gate that was actually missing. |
 | [HW-0016](0016-the-config-report-is-operator-only-and-redacted.md) | **The config report is operator-only, and redacts its values regardless of who is reading.** The guard slipped once; that is why there are two mechanisms. 71 of 363 keys redact, of which about five are secret. |
 | [HW-0017](0017-a-rotation-ends-in-revocation.md) | **A rotation ends in revocation, and the new value never reaches a command line.** A rotated-but-not-revoked credential is still live. |
+| [HW-0035](0035-a-cookie-is-tightened-to-what-it-is-worth.md) | **A cookie is tightened to what it is worth, and a stand-in says what it stands in for.** Cookie policy is assigned, not `setdefault`-ed — a Flask-shipped key cannot be defaulted, which left the live site with neither `Secure` nor `SameSite` while the source said `strict`. `Secure` follows the deployment, the session is `Lax` so mailed links work, and the remember cookie keeps `Strict` partly because nothing checks CSRF yet. |
 
 ## Dependencies and the framework
 
