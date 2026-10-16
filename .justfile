@@ -8,8 +8,11 @@
 #     pybooks    html-pages   the Python course books (orpy `build.py --fragments`)
 #     blog       export       the blog (blogscraper `python -m blogscraper export`)
 #     notebooks  html-pages   Jupyter notebooks (podpack-notebooks `build.py`)
-#     pages      html-pages   the site's prose pages (maintained on the host today;
-#                             no laptop builder, so no named recipe -- use `content`)
+#     pages      md-pages     the site's prose pages: no builder, because the
+#                html-pages   source is written by hand in ~/sites/holdenweb-content
+#
+# The first three are another repository's build output and can be regenerated;
+# the prose cannot, which is why it has a repository rather than a build step.
 #
 # A tree is refreshed by ops/refresh-content.sh (on the box that runs the site)
 # or ops/push-content.sh (to a remote target). These recipes wrap that pair so
@@ -29,14 +32,24 @@
 # the plan and changes nothing. Default is a safe MERGE; ask for --mirror when
 # you mean it, and --dry-run first if you are not certain what it will take.
 #
-# Sources default to where each builder writes on the laptop; override the env
-# var if yours differ, e.g. ORPY_BUILD=/somewhere just pybooks staging.
+#     just pages staging              # publish the prose from holdenweb-content
+#
+# Sources default to where each builder writes on the laptop, and for `pages` to
+# the content repository; override the env var if yours differ, e.g.
+# ORPY_BUILD=/somewhere just pybooks staging, PAGES_SOURCE=/somewhere just pages.
 
 set shell := ["bash", "-uc"]
 
 orpy        := env_var_or_default("ORPY_BUILD", home_directory() / "Projects/Python/orpy/python-classes")
 blogscraper := env_var_or_default("SITESCRAPER_BUILD", home_directory() / "Projects/Python/blogscraper/build")
 notebooks   := env_var_or_default("NOTEBOOKS_BUILD", home_directory() / "sites/podpack-notebooks/build/html-pages")
+
+# PAGES_SOURCE, not PAGES_BUILD: the three above name a builder's output, this
+# names authored source. ~/sites/holdenweb-content is a repository of its own,
+# so the prose is version-controlled and the served tree is a copy of it --
+# which it was not until 2026-10-16, when the served tree was the only copy
+# anywhere.
+pages_src   := env_var_or_default("PAGES_SOURCE", home_directory() / "sites/holdenweb-content/pages")
 
 # List the recipes.
 default:
@@ -53,6 +66,16 @@ blog target="staging" *flags:
 # The notebooks: podpack-notebooks build.py output -> the notebooks app's html-pages tree.
 notebooks target="staging" *flags:
     @just _content "{{ target }}" "{{ notebooks }}" notebooks html-pages {{ flags }}
+
+# Two pushes below, because the pages app serves md-pages and html-pages as one
+# namespace while refresh-content.sh refreshes one tree per run. --mirror
+# therefore prunes each tree against its own source, which is what you want; it
+# would be wrong only if the two were ever merged into one tree.
+
+# The prose pages: holdenweb-content -> the pages app's two trees.
+pages target="staging" *flags:
+    @just _content "{{ target }}" "{{ pages_src }}/md-pages"   pages md-pages   {{ flags }}
+    @just _content "{{ target }}" "{{ pages_src }}/html-pages" pages html-pages {{ flags }}
 
 # Any tree: `just content <target> <source-dir> <app> <tree> [--mirror|--dry-run]`.
 content target dir app tree *flags:
