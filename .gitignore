@@ -178,3 +178,8 @@ backups/
 # -- the exact failure that retiring the path sources fixed. It was untracked
 # and unignored until now, which left one `git add .` between here and that.
 tool_uv_sources.toml
+
+# Browser renders of markdown documents (mdhtml). Untracked like the other
+# four (HW-0022); named here because this one sits a case-fold away from the
+# generated ops/messages.html and must never be mistaken for it.
+ops/md-messages.html

@@ -116,6 +116,22 @@ _content target dir app tree *flags:
 still-to-do *flags:
     @python3 ops/open-backlog.py {{ flags }}
 
+# The almanac's markdown view, rendered for a browser -> ops/md-messages.html.
+#
+# The output name is explicit because the obvious one destroys a generated
+# file. mdhtml defaults its output to "the first source, with a .html suffix",
+# so `mdhtml ops/MESSAGES.md` writes ops/MESSAGES.html -- and this filesystem
+# is case-insensitive, so that IS ops/messages.html, the searchable page
+# build-messages.py generates (HW-0026). It was overwritten exactly that way on
+# 2026-10-16 and had to be restored from git. The two differ only in case, and
+# nothing warns.
+#
+# `md-messages` rather than `MESSAGES`: the one name that cannot collide with
+# the generated page no matter how the filesystem compares case.
+render-messages *flags:
+    @mdhtml -o ops/md-messages.html ops/MESSAGES.md {{ flags }}
+    @echo "wrote ops/md-messages.html -- ops/messages.html is the generated one, left alone"
+
 clean:
     rm -f kill port_no start stop
     find . -name __pycache__ -exec rm -rf {} \; -prune
