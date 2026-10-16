@@ -1,6 +1,10 @@
 # HW-0008: Content is delivered, not committed
 
-**Status:** Accepted
+**Status:** Accepted, and amended by
+[HW-0036](0036-the-prose-pages-have-a-source-of-truth.md), which keeps every
+argument below for `pybooks`, `blog` and `notebooks` and changes only the prose
+`pages`: the served tree is no longer the only copy anywhere, because the prose
+now has a repository of its own.
 
 **Date:** 2026-09-22
 

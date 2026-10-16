@@ -44,7 +44,8 @@ written, not when the choice was made.
 
 | | |
 | --- | --- |
-| [HW-0008](0008-content-is-delivered-not-committed.md) | **Content is delivered, not committed.** 879 files that never pass through git and never ride a deploy. Both alternatives were lived through before this one. |
+| [HW-0008](0008-content-is-delivered-not-committed.md) | **Content is delivered, not committed.** *Amended by HW-0036 for the prose pages.* 879 files that never pass through git and never ride a deploy. Both alternatives were lived through before this one. |
+| [HW-0036](0036-the-prose-pages-have-a-source-of-truth.md) | **The prose pages have a source of truth, and it is not the backup.** Three areas are a generator's output and still never pass through git; the prose is written, not generated, so it lives in `~/sites/holdenweb-content` and the served tree is a copy. `PAGES_SOURCE`, not `PAGES_BUILD`. |
 | [HW-0009](0009-no-generator-runs-on-the-serving-host.md) | **No generator runs on the serving host.** The laptop builds, the host receives HTML. Publication needs that one laptop. |
 | [HW-0010](0010-a-content-refresh-merges.md) | **A content refresh merges, and removal must be asked for.** `--mirror` is typed out in words; the confirmation is gated on a tty and the removal deliberately is not. |
 
