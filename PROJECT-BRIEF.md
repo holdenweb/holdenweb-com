@@ -90,9 +90,15 @@ environment as below. The repo's `.env` is *container* wiring
 SECRET_KEY=dev-only SECURITY_PASSWORD_SALT=dev-only-salt \
 SQLALCHEMY_DATABASE_URI=sqlite:////tmp/holdenweb-dev.db \
 PODPACK_CONFIG=config/app.toml \
-PODPACK_DATA_ROOT=./hostdata/apps PODPACK_LOG_ROOT=./hostlogs/apps \
+PODPACK_DATA_ROOT=./devdata/apps PODPACK_LOG_ROOT=./devlogs/apps \
 uv run alembic upgrade head && uv run flask --app holdenweb run --port 8460
 ```
+
+`devdata`/`devlogs`, not `hostdata`/`hostlogs`: those belong to the containers,
+whose `init-storage` one-shot chowns them to unprivileged uids (podpack ADR-0020),
+so a host-side `flask run` writing there fights the ownership and can leave files
+the containers cannot read. `dev.env.example:54-55` has said so all along; this
+block disagreed with it.
 
 In containers, with podpack's substrate:
 

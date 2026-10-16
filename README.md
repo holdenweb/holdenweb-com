@@ -83,13 +83,22 @@ which owns the container-subuid dance. Content is live the moment it lands —
 | Area | Served at | Host tree | Built on the laptop by | One line |
 | --- | --- | --- | --- | --- |
 | Python course | `/pybooks` | `pybooks/html-pages` | orpy `build.py --fragments` → `~/Projects/Python/orpy/python-classes` | `just pybooks staging` |
-| Blog | `/blog` | `blog/export` | sitescraper `python -m blogscraper export` → `~/Projects/Python/sitescraper/build` | `just blog staging` |
+| Blog | `/blog` | `blog/export` | blogscraper `python -m blogscraper export` → `~/Projects/Python/blogscraper/build` | `just blog staging` |
 | Notebooks | `/notebooks` | `notebooks/html-pages` | podpack-notebooks `uv run build.py` → `~/sites/podpack-notebooks/build/html-pages` | `just notebooks staging` |
-| Prose pages | `/pages` | `pages/md-pages` and `pages/html-pages` | nothing — maintained on the host | `just content staging <dir> pages md-pages` |
+| Prose pages | `/pages` | `pages/md-pages` and `pages/html-pages` | no builder — written by hand in `~/sites/holdenweb-content/pages` | `just pages staging` |
 
 Those source directories are the defaults; a builder that writes elsewhere is
-accommodated by `ORPY_BUILD`, `SITESCRAPER_BUILD` or `NOTEBOOKS_BUILD` rather
-than by editing the recipe. Swap `staging` for `local` to refresh this
+accommodated by `ORPY_BUILD`, `SITESCRAPER_BUILD`, `NOTEBOOKS_BUILD` or
+`PAGES_SOURCE` rather than by editing the recipe.
+
+Two things about those defaults that have each cost an afternoon.
+`SITESCRAPER_BUILD` names a builder now called **blogscraper**; the variable
+keeps the old name, and `~/Projects/Python/sitescraper` does not exist, so a
+command naming it fails at `push-content.sh:53`. And `ORPY_BUILD`'s default,
+`~/Projects/Python/orpy/python-classes`, is a **symlink** that orpy's
+`templating/out` points at, itself gitignored inside orpy -- so the Python
+course takes two gitignored hops before it reaches a host tree. `PAGES_SOURCE`
+is the one source that is version-controlled. Swap `staging` for `local` to refresh this
 checkout's own `hostdata` instead of the deployed site.
 
 ### The commands those recipes run
@@ -102,9 +111,10 @@ is doing over ssh.
 | Area | On the laptop, to staging | On the box that serves |
 | --- | --- | --- |
 | Python course | `ops/push-content.sh staging ~/Projects/Python/orpy/python-classes --app pybooks --tree html-pages` | `APP=pybooks TREE=html-pages ops/refresh-content.sh <staged-dir>` |
-| Blog | `ops/push-content.sh staging ~/Projects/Python/sitescraper/build --app blog --tree export` | `APP=blog TREE=export ops/refresh-content.sh <staged-dir>` |
+| Blog | `ops/push-content.sh staging ~/Projects/Python/blogscraper/build --app blog --tree export` | `APP=blog TREE=export ops/refresh-content.sh <staged-dir>` |
 | Notebooks | `ops/push-content.sh staging ~/sites/podpack-notebooks/build/html-pages --app notebooks --tree html-pages` | `APP=notebooks TREE=html-pages ops/refresh-content.sh <staged-dir>` |
-| Prose pages | `ops/push-content.sh staging <staged-dir> --app pages --tree md-pages` | `APP=pages TREE=md-pages ops/refresh-content.sh <staged-dir>` |
+| Prose pages | `ops/push-content.sh staging ~/sites/holdenweb-content/pages/md-pages --app pages --tree md-pages` | `APP=pages TREE=md-pages ops/refresh-content.sh <staged-dir>` |
+| Prose pages | `ops/push-content.sh staging ~/sites/holdenweb-content/pages/html-pages --app pages --tree html-pages` | `APP=pages TREE=html-pages ops/refresh-content.sh <staged-dir>` |
 
 Append `--mirror` to either to remove whatever the source no longer has. It is
 off by default in both, because an incomplete source with `--mirror` deletes a

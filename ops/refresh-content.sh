@@ -1,5 +1,8 @@
 #!/bin/bash
-# Refresh one of the `pages` app's content trees from a staged directory.
+# Refresh one content tree of one app from a staged directory.
+#
+# Generic over APP and TREE despite the defaults below, which name the `pages`
+# app only because it was the first caller. See the note on them.
 #
 # The problem this exists for is ownership. On Linux, prepare-host-dirs.sh
 # hands `hostdata/apps` to the containers' unprivileged uids with
@@ -53,6 +56,12 @@ set -euo pipefail
 unset CDPATH
 
 # --- configuration -------------------------------------------------------
+# These defaults are a hazard, and are kept only because callers rely on them:
+# a bare invocation writes `pages/html-pages`, which is the one tree on this
+# site that no builder can regenerate. Since 2026-10-16 it has a source of
+# truth in ~/sites/holdenweb-content, so a mistake here is recoverable where
+# it previously was not -- but every caller should still pass APP and TREE
+# explicitly, and .justfile does.
 APP="${APP:-pages}"
 TREE="${TREE:-html-pages}"
 APP_UID="${APP_UID:-10001}"          # the Containerfile's unprivileged uid
