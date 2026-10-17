@@ -114,7 +114,38 @@ if [ "$dry" -eq 1 ]; then
 fi
 
 echo "==> deploying $sha to $target ($sshhost:$path)"
-git push --force-with-lease origin "HEAD:$deploy_ref"
+# The lease is this clone's refs/remotes/origin/deploy/<target>, and with no such
+# ref git expects the branch to be ABSENT on GitHub. So a refusal means the ref
+# was moved -- or created -- somewhere this clone never heard about: another
+# machine, another clone, the GitHub UI. git says only "(stale info)", naming
+# neither the commit nor the cause, so say the rest here -- but only when
+# ls-remote shows that is what happened: a push that failed for any other reason
+# (network, auth) keeps git's own message and nothing invented on top.
+#
+# Deliberately no fetch before the push. Fetching first would make the lease
+# agree with whatever is on GitHub, which is --force by a longer name.
+#
+# `|| { rc=$?; ... exit "$rc"; }` rather than `if !`, so the script still exits
+# with git's own status, exactly as it did when set -e stopped it here.
+git push --force-with-lease origin "HEAD:$deploy_ref" || {
+  rc=$?
+  seen="$(git rev-parse -q --verify "refs/remotes/origin/deploy/$target" || true)"
+  there="$(git ls-remote origin "$deploy_ref" 2>/dev/null | cut -f1 || true)"
+  if [ -n "$there" ] && [ "$there" != "$seen" ]; then
+    if git cat-file -e "$there^{commit}" 2>/dev/null; then
+      what="$(git log -1 --format='%h "%s"' "$there")"
+    else
+      what="${there:0:7} (a commit this clone does not have)"
+    fi
+    last="${seen:0:7}"; [ -n "$last" ] || last="missing"
+    echo "deploy/$target on GitHub is at $what," >&2
+    echo "but this clone's origin/deploy/$target is $last: the branch was moved from elsewhere." >&2
+    echo "Find out whose deploy that was before overwriting it, then:" >&2
+    echo "  git fetch origin" >&2
+    echo "  $0 $target" >&2
+  fi
+  exit "$rc"
+}
 ssh "$sshhost" "$remote_cmd"
 
 if [ -n "$hu" ]; then
