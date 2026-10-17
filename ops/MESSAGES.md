@@ -2,9 +2,9 @@
 
 > **Generated from [`messages.json`](messages.json) by [`build-messages.py`](build-messages.py). Edit the JSON, not this file.**
 
-Every message this system is likely to put in front of you — 121 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
+Every message this system is likely to put in front of you — 124 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
 
-**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (36) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
+**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (39) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
 
 **Where** — *laptop* (your machine, dev & deploy) · *host* (the Opalstack deploy host) · *either*.
 
@@ -46,12 +46,26 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Means:** Tracked files have uncommitted changes; only a commit can be fetched by the host, so they would not deploy. Untracked files (a stray README.pdf) do not count.
 - **Do:** Commit them, or pass --allow-dirty to deploy anyway (up.sh then stamps -dirty).
 
+### 🟠 deploy-host-no-checkout
+`no checkout at <host>:~/apps/<app>/site -- missing, or not a git checkout. / deploy.sh updates a host checkout and never makes one; build it first (ops/DEPLOY.md).`
+
+- **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
+- **Means:** deploy.sh looked before fetching and found no checkout at the path the target's remote names: the directory is missing, or exists without a .git of its own -- an empty one made with mkdir, or one with the clone a level further down. The host's checkout is made once, by hand, with the .env and secrets.env that carry the site's identity, and a deploy only ever moves it to another commit (HW-0034). The ~ is the host's home, expanded there. The push to the deploy ref before it may have succeeded, which is harmless; nothing ran on the host. Before this check (2026-10-17, the first production deploy) the same states surfaced as bash's `cd: ...: No such file or directory`, as git's `fatal: not a git repository`, or -- beneath a home directory that is itself a repository -- as a fetch run in that repository instead.
+- **Do:** Look, with `ssh <host> 'ls -la ~/apps/<app>; find ~/apps/<app> -maxdepth 3 -name .git'`. No `<app>`: correct the remote with `git remote set-url <target> opal17:apps/<app>/site`, or find the application's OS user in the panel. No `site`, or an empty one: build it, per ops/DEPLOY.md -- `git clone` accepts an empty directory. A `.git` one level down means the clone was run from inside `site`; clone again from `~/apps/<app>` into an empty `site`.
+
 ### 🟠 deploy-no-remote
 `no git remote named '<target>'. Add it (see ops/DEPLOY.md): git remote add <target> opal17:apps/<app>/site`
 
 - **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
 - **Means:** The target's git remote is not configured on this laptop. Nothing is pushed to it -- it is the address deploy and content delivery read the host and path from.
 - **Do:** Add it per ops/DEPLOY.md: `git remote add <target> opal17:apps/<app>/site`.
+
+### 🟠 deploy-ref-moved
+`deploy/<target> on GitHub is at <sha> "<subject>", but this clone's origin/deploy/<target> is <sha | missing>: the branch was moved from elsewhere. Find out whose deploy that was before overwriting it, then: git fetch origin / ops/deploy.sh <target>`
+
+- **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
+- **Means:** Printed under git's own `! [rejected] HEAD -> deploy/<target> (stale info)` (git-non-fast-forward), once ls-remote has confirmed the cause: the deploy ref on GitHub is not where this clone last saw it. --force-with-lease takes its expectation from refs/remotes/origin/deploy/<target>, and when this clone has no such ref it expects the branch not to exist at all -- so a branch created from another machine, another clone or the GitHub UI, and never fetched here, is refused exactly as one moved since the last fetch is. `(a commit this clone does not have)` in place of a subject means it was made elsewhere too. Nothing was pushed and nothing ran on the host. First seen 2026-10-17 as a bare `(stale info)`, on the first production deploy.
+- **Do:** Find out whose commit is there, and whether a deploy of it reached the host -- `git fetch origin`, then `git log -1 origin/deploy/<target>` -- and re-run the deploy once you are content to replace it. Do not add a fetch to deploy.sh to make this go away: fetching just before the push makes the lease agree with whatever is on GitHub, which is --force by a longer name.
 
 ### 🟠 deploy-usage
 `usage: deploy.sh [--dry-run] [--allow-dirty] <staging|production>`
@@ -858,6 +872,13 @@ Every message this system is likely to put in front of you — 121 of them — w
 - **Needs action** · **where:** either · **from:** `podman compose`
 - **Means:** A service name doesn't exist in the merged compose files -- a typo, wrong COMPOSE_FILE, or punctuation pasted with an inline command.
 - **Do:** Check the name / COMPOSE_FILE. Put runnable commands on their own line so no trailing '.' is pasted.
+
+### 🟠 push-content-no-checkout
+`bash: line 1: cd: /home/<user>/apps/<app>/site: No such file or directory / bash: line 1: ./ops/refresh-content.sh: No such file or directory -- from the ssh in ops/push-content.sh`
+
+- **Needs action** · **where:** host · **from:** `bash (on the host)`
+- **Means:** push-content.sh found no site at the path the target's remote names, so nothing was installed. The first line is a missing directory; the second, one that exists without the site in it. Content is installed into a running site's data directory by that site's own ops/refresh-content.sh, so a target has to be built and deployed before it can take any. deploy.sh checks for this state and says so in plain words (deploy-host-no-checkout); push-content.sh does not yet.
+- **Do:** Build and deploy the target first (ops/DEPLOY.md), then push again. `ssh <host> 'ls -la ~/apps/<app>'` shows which of the two states it is.
 
 ### 🟠 uv-git-fetch-failed
 `error: Failed to download and build <pkg> @ git+https://... ... Git operation failed (repository not found / could not read Username)`

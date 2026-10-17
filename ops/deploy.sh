@@ -97,7 +97,18 @@ deploy_ref="refs/heads/deploy/$target"
 # edits or untracked files would be overwritten, instead of discarding them
 # silently. A deploy that stops is recoverable; one that quietly throws away a
 # config change somebody made on the host is not.
-remote_cmd="cd ~/$path && git fetch --prune origin && git checkout --detach $full_sha && ./scripts/up.sh"
+#
+# The checkout is checked for first, because this updates a host checkout and
+# never makes one: it is made once, by hand, with the .env and secrets.env that
+# carry the site's identity (ops/DEPLOY.md). Without the check, a target nobody
+# had built failed with bash's `cd: ...: No such file or directory` -- or, once
+# somebody had made the directory to get past that, git's `fatal: not a git
+# repository` -- and neither says what is missing (2026-10-17, the first
+# production deploy). `-d .git` rather than `git rev-parse`, which succeeds
+# anywhere beneath another repository: a dotfiles repo in the host's home would
+# satisfy it, and the fetch would then run there. Braces rather than `if !`,
+# and single quotes inside, so --dry-run prints a line that pastes cleanly.
+remote_cmd="{ cd ~/$path 2>/dev/null && [ -d .git ]; } || { printf '%s\n' 'no checkout at $sshhost:~/$path -- missing, or not a git checkout.' 'deploy.sh updates a host checkout and never makes one; build it first (ops/DEPLOY.md).' >&2; exit 1; }; git fetch --prune origin && git checkout --detach $full_sha && ./scripts/up.sh"
 
 # What the container is actually running, asked of the container. Not /_status,
 # which is operator-only (HW-0016) and would need an authenticated request; this

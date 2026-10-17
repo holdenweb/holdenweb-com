@@ -43,6 +43,8 @@ export MODE=RESTORE
 export WEB_PORT=
 export SITE_HOST=
 export BACKUP=
+export PROJECT=
+export ENVIRONMENT=
 export ADMIN_EMAIL=
 ```
 
@@ -54,7 +56,12 @@ export ADMIN_EMAIL=
 | `WEB_PORT` | The port the control panel allocated | **1.1** |
 | `SITE_HOST` | The **public** hostname visitors use — `os.holdenweb.com`, not the machine's own name | **1.2** |
 | `BACKUP` | The backup directory to restore from. `RESTORE` only | **0.1**, or given |
+| `PROJECT` | The new site's `SITE_NAME`: compose project, image and database name, `<app>-<site>` with dots as dashes — `os-holdenweb-com`. `FRESH` only; a restore brings the backup's | now |
+| `ENVIRONMENT` | `staging` or `production` — anything but `local`. `FRESH` only | now |
 | `ADMIN_EMAIL` | Administrator's address. `FRESH` only | **5.1** |
+
+`PROJECT`, not `SITE_NAME`: compose interpolates `${SITE_NAME}`, and a value
+exported in this shell would override whatever `.env` says, in this shell only.
 
 Check it took, before you rely on it:
 
@@ -348,12 +355,40 @@ fresh secrets are the one thing a restore must not have.
 ### `MODE=FRESH` — no dump, so no `restore.sh`
 
 ```bash
-python3 scripts/configure-host.py --port "$WEB_PORT"
+python3 scripts/configure-host.py --port "$WEB_PORT" --site-name "${PROJECT:?}" --data-dir ../data --log-dir ../logs
 ```
 
-*Expect:* `wrote .env and secrets.env (0600)`, then the port, the database and
-role, whether SELinux is enforcing, and that secrets were generated with none
-printed. It **refuses to overwrite** either file, so a second run is safe.
+*Expect:* `wrote .env and secrets.env (0600) for '<PROJECT>'`, then the port,
+a database and role named after `PROJECT`, whether SELinux is enforcing, and
+that secrets were generated with none printed. It **refuses to overwrite**
+either file, so a second run is safe.
+
+**Every flag is there because its default is wrong on a real host.** Without
+`--site-name` the project, database and role are named after this directory —
+`site`, in a deploy target's `~/apps/<app>/site`. Without `--data-dir` and
+`--log-dir` the data goes in `./hostdata`, inside the checkout, where a fresh
+clone or a `git clean` takes it with them; `prepare-host-dirs.sh` refuses that
+outright once the next step makes this a real deployment. `../data` resolves
+against the checkout, so data and logs sit beside it in the app's directory,
+which is how staging is laid out ([`DEPLOY.md`](DEPLOY.md)).
+
+`configure-host.py` has no option for the environment. It leaves the example's
+`local`, and even lists it among the values "usually fine" — which it is in a
+lab, and nowhere else. Set it:
+
+```bash
+sed -i "s/^PODPACK_ENVIRONMENT=.*/PODPACK_ENVIRONMENT=${ENVIRONMENT:?}/" .env
+```
+
+```bash
+grep -E '^(SITE_NAME|HOST_DATA_DIR|HOST_LOG_DIR|WEB_HOST_PORT|PODPACK_ENVIRONMENT)=' .env
+```
+
+*Expect:* `SITE_NAME` is `PROJECT`, the directories are `../data` and
+`../logs`, the port is `WEB_PORT`, and `PODPACK_ENVIRONMENT` is `ENVIRONMENT`.
+Left at `local`, the site trusts no proxy and every password-reset link goes
+out `http://` (Part 4), and `prepare-host-dirs.sh` would accept data inside the
+checkout without a word.
 
 *Watch for:* the SELinux line. `not enforcing` leaves `VOLUME_RW`/`VOLUME_RO`
 empty and is right on a permissive host; `detected` sets them to `:Z`/`,z`. A
@@ -367,6 +402,8 @@ and **no `$`**, which compose expands there as well as in `.env`.
 ```bash
 ./scripts/prepare-host-dirs.sh
 ```
+
+*Expect:* `ready:` lines under `../data` and `../logs`, none under the checkout.
 
 ```bash
 ./scripts/up.sh
