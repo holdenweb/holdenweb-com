@@ -50,6 +50,7 @@ drift apart.
 | 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use — **fixed** | operational |
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
 | 38 | holdenweb-com | `refresh-content.sh`'s `--mirror` prompt was not tty-gated, so a non-interactive mirror aborted -- including the remote path `push-content.sh` drives over ssh — **fixed** | operational |
+| 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -1216,6 +1217,56 @@ source did not carry; a merge in the same conditions left its stale file in
 place; and the pre-fix `read` was confirmed to return 1 on EOF. The ssh path
 itself is reasoned from the two scripts rather than run, since confirming it
 means mirroring against a real host.
+
+## HSTS is sent only where a browser must ignore it
+
+*Raised 2026-10-19, after the cookie policy was fixed (HW-0035) left the
+question of what protects the first request still open.*
+
+podpack ADR-0036:28-29 records the belief that the cleartext problem is covered:
+"nginx answers that with a 301 to https and sends HSTS, so the link *works*".
+It works in the sense that the visitor arrives; it does not protect the request
+that got them there.
+
+**A 301 is a response.** By the time it reaches the browser, the request has
+already crossed the network in clear: the method, the full path, and any cookie
+not marked `Secure`. HSTS protects *later* requests from a browser that has
+already seen the policy. It cannot protect first contact, and the preload list
+is the only thing that can.
+
+**And the policy is never set.** Measured 2026-10-19:
+
+```
+http://os.holdenweb.com/   301, Strict-Transport-Security: max-age=31536000; includeSubDomains;
+https://os.holdenweb.com/  200, no Strict-Transport-Security at all (0 on / and on /healthz)
+```
+
+That is backwards. RFC 6797 §8.1 requires a browser to **ignore** an STS header
+received over non-secure transport, so the one response carrying it is the one
+response where it has no effect, and the responses that could set the policy
+carry nothing. On this evidence HSTS is not in force for this host at all.
+
+**Two caveats on that measurement, both load-bearing.** It was taken while
+`os.holdenweb.com` was serving Opalstack's "no site here.... yet!" placeholder
+rather than the site — `/` was a static file last modified in August 2025 and
+`/healthz` was an nginx 404 — so the HTTPS result describes *that* vhost and may
+not describe the site's own. **Re-measure once routing is restored.** And an
+earlier reading of `max-age=315` during this work was a truncated output line,
+not a short max-age; the real value is a year.
+
+**What has changed, and what has not.** HW-0035 made `SESSION_COOKIE_SECURE`
+follow the deployment, so the session cookie no longer rides that cleartext
+first request — which removes the sharpest consequence. The request line and
+path still do, and `REMEMBER_COOKIE_SECURE` only started being set at the same
+time, so anything issued before that is still a cookie that would travel.
+
+*Why it's left.* The edge is rented and this site owns no nginx configuration
+(HW-0031), so moving the header onto HTTPS responses is Opalstack's to do —
+which makes this an email rather than an engineering task. Preload is a
+separate decision and a one-way door: it applies to the whole domain including
+subdomains, and removal takes months.
+
+---
 
 ## Filing these
 

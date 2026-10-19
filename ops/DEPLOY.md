@@ -1,7 +1,7 @@
 # Deploying: laptop → staging → production
 
 Development happens on the laptop. [`ops/deploy.sh`](deploy.sh) moves a
-committed revision outward — to **staging** (`os.holdenweb.com`) first, then to
+committed revision outward — to **staging** (`staging.holdenweb.com`) first, then to
 **production** once staging has been seen working.
 
 **The host fetches.** `deploy.sh` pushes the commit to GitHub on a per-target
@@ -15,14 +15,18 @@ it works this way.
 
 ## One-time setup, per target
 
-On the Opalstack host (staging is the app `os`, so `~/apps/os`):
+On the Opalstack host (staging is the app `hw-stag`, so `~/apps/hw-stag`):
+
+**Run on the target host:**
 
 ```bash
-mkdir -p ~/apps/os ~/apps/os/data ~/apps/os/logs
+mkdir -p ~/apps/hw-stag ~/apps/hw-stag/data ~/apps/hw-stag/logs
 ```
 
+**Run on the target host:**
+
 ```bash
-cd ~/apps/os && git clone git@github.com:holdenweb/holdenweb-com.git site
+cd ~/apps/hw-stag && git clone git@github.com:holdenweb/holdenweb-com.git site
 ```
 
 That needs a **passphraseless, read-only deploy key** for this repository in the
@@ -31,8 +35,10 @@ cannot push anywhere, and passphraseless because `deploy.sh`'s `git fetch` runs
 over ssh with no tty and no agent to unlock anything. Check it before you rely
 on it:
 
+**Run on the laptop:**
+
 ```bash
-ssh opal17 'cd ~/apps/os/site && git fetch --prune origin && echo ok'
+ssh opal17 'cd ~/apps/hw-stag/site && git fetch --prune origin && echo ok'
 ```
 
 `data` and `logs` are siblings of `site`, never inside it: the site's own
@@ -41,14 +47,20 @@ content and the database live outside the checkout, so a `git checkout` (or a
 `PODPACK_ENVIRONMENT=staging` enforces — `prepare-host-dirs.sh` refuses to put
 data inside a working tree unless the environment is `local`.
 
+**`SITE_NAME` is set once, at creation.** `compose.yaml:1` is
+`name: ${SITE_NAME:-podpack}`, so changing it later renames every container in
+the project and orphans the ones already running.
+
 Create the host's `.env` and `secrets.env` with `scripts/configure-host.py`
 (it generates secrets and writes 0600), then set in `.env`:
 
+**Run on the target host:**
+
 ```
-SITE_NAME=os-holdenweb-com          # <app>-<site>: dots/underscores → dashes
+SITE_NAME=hw-stag-holdenweb-com     # <app>-<site>: dots/underscores → dashes
 PODPACK_ENVIRONMENT=staging         # any non-local value
-HOST_DATA_DIR=../data               # → ~/apps/os/data
-HOST_LOG_DIR=../logs                # → ~/apps/os/logs
+HOST_DATA_DIR=../data               # → ~/apps/hw-stag/data
+HOST_LOG_DIR=../logs                # → ~/apps/hw-stag/logs
 WEB_HOST_PORT=<Opalstack Nginx Proxy Port>
 WEB_BIND_ADDR=127.0.0.1
 COMPOSE_FILE=compose.yaml:compose.postgres.yaml
@@ -67,8 +79,10 @@ case you are in.
 On the laptop, add the remote. Its URL is where `deploy.sh` and
 `push-content.sh` read the host and path from; neither pushes to it:
 
+**Run on the laptop:**
+
 ```bash
-git remote add staging opal17:apps/os/site
+git remote add staging opal17:apps/hw-stag/site
 ```
 
 ## Migrating a host that was set up the old way
@@ -77,12 +91,16 @@ The staging checkout was created with `git init` and populated by pushes, so it
 has no `origin`. **Do not re-clone it** — `.env` and `secrets.env` live in that
 directory and are not in git. On the host:
 
-```bash
-cd ~/apps/os/site && git remote add origin git@github.com:holdenweb/holdenweb-com.git
-```
+**Run on the target host:**
 
 ```bash
-cd ~/apps/os/site && git fetch --prune origin && git config --unset receive.denyCurrentBranch
+cd ~/apps/hw-stag/site && git remote add origin git@github.com:holdenweb/holdenweb-com.git
+```
+
+**Run on the target host:**
+
+```bash
+cd ~/apps/hw-stag/site && git fetch --prune origin && git config --unset receive.denyCurrentBranch
 ```
 
 The next `./ops/deploy.sh staging` leaves HEAD detached at the deployed commit,
@@ -90,9 +108,13 @@ which is from then on the normal state of a deploy checkout.
 
 ## Deploying
 
+**Run on the laptop:**
+
 ```bash
 ./ops/deploy.sh --dry-run staging   # print what it would do, touch nothing
 ```
+
+**Run on the laptop:**
 
 ```bash
 ./ops/deploy.sh staging             # publish, fetch, rebuild, prove
@@ -139,6 +161,8 @@ alone** — that is step 7.
 The staging deploy key already serves: same host, same user, same repository.
 Prove it before cloning anything:
 
+**Run on the target host:**
+
 ```bash
 git ls-remote git@github.com:holdenweb/holdenweb-com.git refs/heads/main
 ```
@@ -149,6 +173,8 @@ means this host has no key for the repository — see *One-time setup* above.
 Then follow [`rebuild.md`](rebuild.md) Parts 2 and 3, taking `MODE=FRESH`,
 from the application's directory and with this configuration in place of the
 block at its top. Part 0 rehearses a site that exists; Part 1 is step 1 here.
+
+**Run on the target host:**
 
 ```bash
 export OS_APP=
@@ -161,6 +187,8 @@ export ENVIRONMENT=production
 export SITE_HOST=holdenweb.com
 ```
 
+**Run on the target host:**
+
 ```bash
 : "${OS_APP:?}" "${WEB_PORT:?}" "${PROJECT:?}" "${ENVIRONMENT:?}" && echo "configuration loaded: $PROJECT"
 ```
@@ -168,6 +196,8 @@ export SITE_HOST=holdenweb.com
 *Expect:* `configuration loaded: <the app's name>-holdenweb-com`. A bare
 `-holdenweb-com` means `OS_APP` was set after the block was pasted; paste the
 whole block again, so `PROJECT` is rebuilt from it.
+
+**Run on the target host:**
 
 ```bash
 cd "$HOME/apps/${OS_APP:?}"
@@ -187,11 +217,15 @@ Part 4 — the hop count must say `1`, and `mail check` must reach Gmail — the
 
 Step 1's name again, in this shell; steps 3 and 6 use it here:
 
+**Run on the laptop:**
+
 ```bash
 export OS_APP=
 ```
 
 The remote, once per clone:
+
+**Run on the laptop:**
 
 ```bash
 git remote add production "opal17:apps/${OS_APP:?}/site"
@@ -200,15 +234,21 @@ git remote add production "opal17:apps/${OS_APP:?}/site"
 If `git remote -v` already lists `production` at some other path, correct it
 instead:
 
+**Run on the laptop:**
+
 ```bash
 git remote set-url production "opal17:apps/${OS_APP:?}/site"
 ```
 
 Deploy a commit staging is already running, or deploy it there first.
 
+**Run on the laptop:**
+
 ```bash
 ops/deploy.sh --dry-run production
 ```
+
+**Run on the laptop:**
 
 ```bash
 ops/deploy.sh production
@@ -220,17 +260,25 @@ yet: it asked the container.
 
 ### 4. Content — *on the laptop*
 
+**Run on the laptop:**
+
 ```bash
 just pages production
 ```
+
+**Run on the laptop:**
 
 ```bash
 just pybooks production
 ```
 
+**Run on the laptop:**
+
 ```bash
 just blog production
 ```
+
+**Run on the laptop:**
 
 ```bash
 just notebooks production
@@ -246,15 +294,21 @@ merge, which on an empty site is the same as `--mirror`.
 ⚠️ This is [`operations.md` §7](../operations.md)'s phase-1 check, never yet
 run. Set the port here too, then hold the tunnel open in one terminal:
 
+**Run on the laptop:**
+
 ```bash
 export WEB_PORT=
 ```
+
+**Run on the laptop:**
 
 ```bash
 ssh -N -L "9000:127.0.0.1:${WEB_PORT:?}" opal17
 ```
 
 and run the suite in another:
+
+**Run on the laptop:**
 
 ```bash
 uv run pytest tests/integration --base-url http://127.0.0.1:9000
@@ -272,14 +326,18 @@ Before the site holds anything worth keeping. [`operations.md`
 which **replaces** the crontab — on this host, staging's schedule. Add
 production's lines instead:
 
+**Run on the target host:**
+
 ```bash
 crontab -e
 ```
 
 Append the two schedule lines from [`backup.cron`](backup.cron), with
-`apps/os/site` changed to `apps/${OS_APP}/site` — the name itself, since cron
+`apps/hw-stag/site` changed to `apps/${OS_APP}/site` — the name itself, since cron
 has no `OS_APP` — and each minute moved (say `47 3` and `53 4`), so the two
 sites' runs do not interleave in one log.
+
+**Run on the target host:**
 
 ```bash
 crontab -l | grep -c scripts/backup.sh
@@ -288,6 +346,8 @@ crontab -l | grep -c scripts/backup.sh
 *Expect:* `2`. Then prove it once by hand, from `~/apps/${OS_APP}/site` —
 [`rebuild.md`](rebuild.md) 5.5:
 
+**Run on the target host:**
+
 ```bash
 ./scripts/backup.sh && ./scripts/verify-backup.sh
 ```
@@ -295,6 +355,8 @@ crontab -l | grep -c scripts/backup.sh
 The off-machine copy, from the laptop, in step 3's shell. The project name is
 step 2's, not the `hw-holdenweb-com` [`pull-backups.sh`](pull-backups.sh)'s
 header suggests:
+
+**Run on the laptop:**
 
 ```bash
 SITE_NAME="${OS_APP:?}-holdenweb-com" ops/pull-backups.sh
@@ -307,6 +369,8 @@ so that its root route points at `${OS_APP}` instead of the old
 application. Leave the old application in place for a week: it is a better
 rollback than any backup ([`operations.md` §7](../operations.md), phase 3).
 
+**Run on the laptop:**
+
 ```bash
 curl -s https://holdenweb.com/healthz
 ```
@@ -318,11 +382,15 @@ curl -s https://holdenweb.com/healthz
 
 Give `deploy.sh` its health URL, in `health_url()`:
 
+**Run on the laptop:**
+
 ```
     production) echo "https://holdenweb.com/healthz" ;;
 ```
 
 Commit that, and deploy again to prove the poll:
+
+**Run on the laptop:**
 
 ```bash
 ops/deploy.sh production
@@ -331,6 +399,8 @@ ops/deploy.sh production
 *Expect:* the poll passes, then `production is healthy, and running <sha>`.
 Then [`rebuild.md`](rebuild.md) 5.2's browser check of `/_status`, signed in as
 step 2's administrator; 5.3 against the real address —
+
+**Run on the laptop:**
 
 ```bash
 uv run pytest tests/integration --base-url https://holdenweb.com

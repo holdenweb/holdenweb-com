@@ -49,7 +49,23 @@ def inline(text: str) -> str:
     return re.sub(r"\x00(\d+)\x00", lambda m: f"<code>{spans[int(m.group(1))]}</code>", text)
 
 
-def code_block(lines: list[str], index: int) -> str:
+def host_badge(where: str) -> str:
+    """Where a block is to be run, as markup, or nothing when it does not say.
+
+    Every command in this document runs on one of two machines and getting it
+    wrong is the expensive kind of mistake, so the host is a property of the
+    block rather than a sentence near it -- it travels with the copy button.
+    It comes from the fence's info string (```laptop, ```opal17), which this
+    renderer previously discarded.
+    """
+    if not where:
+        return ""
+    kind = "local" if where == "laptop" else "remote"
+    label = {"laptop": "laptop", "target": "target host"}.get(where, where)
+    return f'<span class="host {kind}">{html.escape(label)}</span>'
+
+
+def code_block(lines: list[str], index: int, where: str = "") -> str:
     """A command block: a form if it only assigns, a copyable listing if not."""
     assignments = [EXPORT_LINE.match(line) for line in lines if line.strip()]
     if lines and all(assignments):
@@ -62,14 +78,14 @@ def code_block(lines: list[str], index: int) -> str:
         )
         return (
             f'<div class="block form-block" data-block="{index}">'
-            f'<div class="block-head"><span class="tag">fill in</span>'
+            f'<div class="block-head"><span class="tag">fill in</span>{host_badge(where)}'
             f'<button class="copy" type="button">copy</button></div>'
             f'<div class="fields">{fields}</div></div>'
         )
     body = html.escape("\n".join(lines))
     return (
         f'<div class="block" data-block="{index}">'
-        f'<div class="block-head"><span class="tag">run</span>'
+        f'<div class="block-head"><span class="tag">run</span>{host_badge(where)}'
         f'<button class="copy" type="button">copy</button></div>'
         f"<pre><code>{body}</code></pre></div>"
     )
@@ -97,10 +113,11 @@ def render(text: str) -> str:
         line = lines[i]
 
         if line.startswith("```"):
+            where = line[3:].strip()
             j = i + 1
             while j < len(lines) and not lines[j].startswith("```"):
                 j += 1
-            out.append(code_block(lines[i + 1 : j], blocks))
+            out.append(code_block(lines[i + 1 : j], blocks, where))
             blocks += 1
             i = j + 1
             continue
@@ -243,6 +260,11 @@ p.record { font-family:var(--mono); font-size:.82rem; color:var(--muted);
 .tag { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--muted); }
 .form-block .tag { color:var(--warning); }
+.host { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; margin-right:auto; padding:.1rem .45rem;
+  border:1px solid var(--rule); border-radius:3px; }
+.host.local { color:var(--muted); }
+.host.remote { color:var(--accent); border-color:var(--accent); }
 button.copy { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em;
   text-transform:uppercase; color:var(--accent); background:none;
   border:1px solid var(--rule); border-radius:3px; padding:.2rem .6rem;
@@ -264,7 +286,8 @@ pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 .field input:placeholder-shown, .field input[value=""] { border-color:var(--warning); }
 
 @media print {
-  .block-head { display:none; }
+  .block-head { background:none; border-bottom:none; padding-bottom:0; }
+  button.copy { display:none; }
   .block, .tablewrap, blockquote { break-inside:avoid; }
   body { font-size:10.5pt; background:#fff; color:#000; }
 }

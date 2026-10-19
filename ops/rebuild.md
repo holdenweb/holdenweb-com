@@ -36,9 +36,9 @@ rehearsal.
 Fill in, then paste the whole block into the shell you will work in. Anything
 you cannot know yet is marked with the step that tells you.
 
-```bash
+```target
 export SITE_REPO=git@github.com:holdenweb/holdenweb-com.git
-export SITE_DIR=holdenweb.com
+export SITE_DIR=site
 export MODE=RESTORE
 export WEB_PORT=
 export SITE_HOST=
@@ -51,10 +51,10 @@ export ADMIN_EMAIL=
 | Variable | Meaning | Known at |
 | --- | --- | --- |
 | `SITE_REPO` | Where the site's git repository lives | now |
-| `SITE_DIR` | Directory to clone into. **Not a second checkout of a site already deployed on this host** — see 2.1 | now |
+| `SITE_DIR` | Directory to clone into — **`site`, because `deploy.sh` resolves the target from the `staging` remote (`opal17:apps/hw-stag/site`) and will not find any other name.** Not a second checkout of a site already deployed on this host — see 2.1 | now |
 | `MODE` | `RESTORE` or `FRESH` — see below | now |
 | `WEB_PORT` | The port the control panel allocated | **1.1** |
-| `SITE_HOST` | The **public** hostname visitors use — `os.holdenweb.com`, not the machine's own name | **1.2** |
+| `SITE_HOST` | The **public** hostname visitors use — `staging.holdenweb.com`, not the machine's own name | **1.2** |
 | `BACKUP` | The backup directory to restore from. `RESTORE` only | **0.1**, or given |
 | `PROJECT` | The new site's `SITE_NAME`: compose project, image and database name, `<app>-<site>` with dots as dashes — `os-holdenweb-com`. `FRESH` only; a restore brings the backup's | now |
 | `ENVIRONMENT` | `staging` or `production` — anything but `local`. `FRESH` only | now |
@@ -65,7 +65,7 @@ exported in this shell would override whatever `.env` says, in this shell only.
 
 Check it took, before you rely on it:
 
-```bash
+```target
 : "${SITE_REPO:?}" "${SITE_DIR:?}" "${MODE:?}" && echo "configuration loaded"
 ```
 
@@ -100,7 +100,7 @@ number a 3am document most needs. There is a table to fill in at the end.
 
 *Rehearsal only. In a real emergency the host is already gone; start at Part 1.*
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
@@ -117,14 +117,14 @@ own container.
 holds a verbatim copy of every secret. That guard resolves the destination's
 parent, so create it first — if the parent does not exist the check cannot run:
 
-```bash
+```target
 mkdir -p ~/backups
 ```
 
 **Look at what is already there before adding to it**, and note which one you
 intend to restore from — that is `BACKUP`:
 
-```bash
+```target
 ls -lt ~/backups/holdenweb-com/
 ```
 
@@ -141,11 +141,11 @@ ls -lt ~/backups/holdenweb-com/
 > stays: it fires *before* the restore, on the backup you are about to trust,
 > and whether a directory should be deleted is a judgement only you can make.
 
-```bash
+```target
 ./scripts/backup.sh
 ```
 
-```bash
+```target
 ./scripts/verify-backup.sh
 ```
 
@@ -159,11 +159,11 @@ revision.
 
 **0.2 — Record the host as it is**, so the rebuild can be compared to it.
 
-```bash
+```target
 python3 scripts/configure-host.py --check
 ```
 
-```bash
+```target
 podman compose ps
 ```
 
@@ -182,7 +182,7 @@ already; on a bare clone it says `not configured yet` and stops.
 **0.3 — Wipe it**, which is the step that makes this a rehearsal rather than a
 reading. Only after 0.1 has produced a backup you have verified.
 
-```bash
+```target
 podman compose down
 ```
 
@@ -193,7 +193,7 @@ the database and the site's content.
 Then remove the checkout entirely — data, logs and clone together — **from its
 parent directory**, which is also where Part 2 wants you:
 
-```bash
+```target
 cd .. && podman unshare rm -rf "$SITE_DIR"
 ```
 
@@ -217,7 +217,7 @@ cd .. && podman unshare rm -rf "$SITE_DIR"
 
 ## Part 1 — the control panel  *(human; nothing in git knows any of it)*
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
@@ -229,12 +229,12 @@ site rather than a wrong variable. These are
 the only two inputs this document cannot derive, so put them in the
 configuration now:
 
-```bash
+```target
 export WEB_PORT=
 export SITE_HOST=
 ```
 
-```bash
+```target
 : "${WEB_PORT:?}" "${SITE_HOST:?}" && echo "$SITE_HOST -> 127.0.0.1:$WEB_PORT"
 ```
 
@@ -244,15 +244,15 @@ export SITE_HOST=
 
 ## Part 2 — clone
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
-```bash
+```target
 git clone "$SITE_REPO" "$SITE_DIR"
 ```
 
-```bash
+```target
 cd "$SITE_DIR"
 ```
 
@@ -273,7 +273,7 @@ is their backup. No `.env`, no `secrets.env`, no `hostdata/`.
 
 ## Part 3 — **BRANCHES**: bring the site into existence
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
@@ -285,11 +285,11 @@ skip the other entirely.
 Check the backup is the one you mean, and complete — `restore.sh` refuses on a
 missing file, but reading the names first is cheaper than reading its refusal:
 
-```bash
+```target
 ls -l "${BACKUP:?}"
 ```
 
-```bash
+```target
 ./scripts/restore.sh "$BACKUP"
 ```
 
@@ -354,7 +354,7 @@ fresh secrets are the one thing a restore must not have.
 
 ### `MODE=FRESH` — no dump, so no `restore.sh`
 
-```bash
+```target
 python3 scripts/configure-host.py --port "$WEB_PORT" --site-name "${PROJECT:?}" --data-dir ../data --log-dir ../logs
 ```
 
@@ -376,11 +376,11 @@ which is how staging is laid out ([`DEPLOY.md`](DEPLOY.md)).
 `local`, and even lists it among the values "usually fine" — which it is in a
 lab, and nowhere else. Set it:
 
-```bash
+```target
 sed -i "s/^PODPACK_ENVIRONMENT=.*/PODPACK_ENVIRONMENT=${ENVIRONMENT:?}/" .env
 ```
 
-```bash
+```target
 grep -E '^(SITE_NAME|HOST_DATA_DIR|HOST_LOG_DIR|WEB_HOST_PORT|PODPACK_ENVIRONMENT)=' .env
 ```
 
@@ -399,13 +399,13 @@ It also names any value still at the example's, which on this path will include
 `MAIL_PASSWORD`. Set it now, in `secrets.env`: sixteen letters, spaces removed,
 and **no `$`**, which compose expands there as well as in `.env`.
 
-```bash
+```target
 ./scripts/prepare-host-dirs.sh
 ```
 
 *Expect:* `ready:` lines under `../data` and `../logs`, none under the checkout.
 
-```bash
+```target
 ./scripts/up.sh
 ```
 
@@ -417,7 +417,7 @@ and **no `$`**, which compose expands there as well as in `.env`.
 
 ## Part 4 — confirm the site believes its proxy
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
@@ -431,7 +431,7 @@ nginx is trusted. Nothing to add.
 
 Ask the site what it concluded, rather than what it was told:
 
-```bash
+```target
 podman compose exec web python -c 'from podpack.proxy import proxy_hops; print(proxy_hops())'
 ```
 
@@ -469,7 +469,7 @@ none, still says so with `PODPACK_PROXY_HOPS`, which always wins.
 **And prove the mail credential**, which came back with `secrets.env` on
 `RESTORE` and was set by hand on `FRESH`:
 
-```bash
+```target
 podman compose exec web flask --app holdenweb mail check
 ```
 
@@ -482,7 +482,7 @@ value — then a real SMTP connection, exit 0.
 
 ## Part 5 — verify
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 
@@ -493,19 +493,19 @@ sign in as yourself.
 
 **`MODE=FRESH` — make an administrator**, or `/_status` answers nobody:
 
-```bash
+```target
 export ADMIN_EMAIL=
 ```
 
-```bash
+```target
 podman compose exec web flask --app holdenweb users create "${ADMIN_EMAIL:?}" --active
 ```
 
-```bash
+```target
 podman compose exec web flask --app holdenweb roles create admin
 ```
 
-```bash
+```target
 podman compose exec web flask --app holdenweb roles add "$ADMIN_EMAIL" admin
 ```
 
@@ -519,7 +519,7 @@ podman compose exec web flask --app holdenweb roles add "$ADMIN_EMAIL" admin
 404, correctly, so this is a browser step — but the health endpoint is not, and
 answers now:
 
-```bash
+```target
 curl -s "http://127.0.0.1:$WEB_PORT/healthz"
 ```
 
@@ -533,9 +533,14 @@ you deployed, and the database and role you configured.
 ([`operations.md` §3](../operations.md)). Never the front page: the QR code app
 answered 200 for weeks while contributing no navigation at all.
 
-```bash
+```laptop
 uv run pytest tests/integration --base-url "https://$SITE_HOST"
 ```
+
+This is **the one block in this document that runs on the laptop**, because the
+suite drives a real browser and needs playwright installed. `$SITE_HOST` is
+exported in the host's shell by Configuration above, so export it on the
+laptop too, or pass the hostname literally.
 
 *Expect:* 18 passed, and a header naming what it tested. **Run it against the
 host you just built** — a suite pointed at the old deployment passes and proves
@@ -552,7 +557,7 @@ take, and `/_status` says which half — header not sent, or hops not trusted.
 
 **5.5 — Prove the backup regime on *this* host.**
 
-```bash
+```target
 ./scripts/backup.sh && ./scripts/verify-backup.sh
 ```
 
@@ -564,7 +569,7 @@ take, and `/_status` says which half — header not sent, or hops not trusted.
 
 `☐` `✎` ______________________________________________
 
-```bash
+```target
 date -u +%H:%M:%S
 ```
 

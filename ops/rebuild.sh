@@ -8,21 +8,31 @@
 # reconciling the per-host values it overwrites, and checking the result
 # against the address the world actually uses.
 #
+# EVERY COMMAND BELOW RUNS ON THE TARGET HOST, not on the laptop.
+#
 # Run it from the directory that will *contain* the checkout, not from inside
 # one. The script itself may live in any checkout -- it works on the directory
-# you are standing in, not the one it was read from:
+# you are standing in, not the one it was read from. Set the variables, then
+# run it; nothing else is needed:
 #
-#     cd ~/apps/os
-#     export WEB_PORT=15055 SITE_HOST=os.holdenweb.com
+#     cd ~/apps/hw-stag
+#     export WEB_PORT=15055 SITE_HOST=staging.holdenweb.com
 #     export BACKUP=~/backups/holdenweb-com/20260823T170934Z
-#     export SITE_DIR=holdenweb-com
+#     export SITE_DIR=site
 #     /path/to/any/checkout/ops/rebuild.sh --check     # preflight, changes nothing
 #     /path/to/any/checkout/ops/rebuild.sh
 #
-# Name SITE_DIR after the compose project the site will end up driving, which
-# is whatever SITE_NAME the backup carries -- `holdenweb-com` for this site.
-# Directory and project then agree, and `podman compose` from that directory
-# does what it looks like it does. They diverged once and cost an hour.
+# **SITE_DIR must be `site`**, because `ops/deploy.sh` resolves the target from
+# the `staging` remote -- `opal17:apps/hw-stag/site` -- and clones into whatever
+# SITE_DIR names (see the `git clone` below). A rebuild into any other name
+# produces a working site the deploy cannot reach, which is the failure this
+# default used to cause: it was `holdenweb-staging`, while the header example
+# said `holdenweb-com` and the remote wanted `site`. Three names for one
+# directory.
+#
+# It is *not* named after the compose project, which an earlier version of this
+# comment claimed. `compose.yaml:1` is `name: ${SITE_NAME:-podpack}`, so the
+# project comes from SITE_NAME in `.env` and the directory has no say in it.
 #
 # `--check` validates every precondition and changes nothing, which is worth
 # doing first at any hour and essential at three in the morning.
@@ -32,7 +42,7 @@
 set -euo pipefail
 
 SITE_REPO="${SITE_REPO:-git@github.com:holdenweb/holdenweb-com.git}"
-SITE_DIR="${SITE_DIR:-holdenweb-staging}"
+SITE_DIR="${SITE_DIR:-site}"          # must match the staging remote; see above
 
 check_only=no
 [[ "${1:-}" == "--check" ]] && check_only=yes
