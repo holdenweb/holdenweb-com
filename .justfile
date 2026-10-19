@@ -77,6 +77,37 @@ pages target="staging" *flags:
     @just _content "{{ target }}" "{{ pages_src }}/md-pages"   pages md-pages   {{ flags }}
     @just _content "{{ target }}" "{{ pages_src }}/html-pages" pages html-pages {{ flags }}
 
+# docs -- every generated document, rebuilt.
+#
+# Six outputs from four sources. Three have generators of their own here; the
+# browser copies are mdhtml, which until now lived only in shell history -- the
+# gap HW-0022 records, and how ops/messages.html came to be destroyed by a
+# render of its own markdown view on 2026-10-16.
+#
+# Safe to run at any time: every generator rebuilds its output from scratch, so
+# the only thing a needless run costs is a date stamp -- build-messages.py
+# writes today's date into messages.html, so `git diff` will show that one line
+# even when no message changed. Revert it rather than committing the churn.
+#
+# all_adrs.md is NOT built here. It looks like a concatenation of adrs/*.md, it
+# is untracked, and it is stale -- 34 records against 37 files, so it predates
+# HW-0035 and HW-0036 -- but nothing in this repository produces it and
+# guessing its order and separators would be inventing a generator rather than
+# recording one.
+
+# Regenerate every document built from a source file in this repository.
+docs: still-to-do render-messages
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{ justfile_directory() }}"
+    python3 ops/render-rebuild.py > ops/rebuild.html
+    echo "  ops/rebuild.html          <- ops/rebuild.md"
+    ./ops/build-messages.py | sed 's/^/  /'
+    mdhtml --noview -o ops/DEPLOY.html ops/DEPLOY.md >/dev/null
+    echo "  ops/DEPLOY.html           <- ops/DEPLOY.md"
+    mdhtml --noview -o README.html README.md >/dev/null
+    echo "  README.html               <- README.md"
+
 # Any tree: `just content <target> <source-dir> <app> <tree> [--mirror|--dry-run]`.
 content target dir app tree *flags:
     @just _content "{{ target }}" "{{ dir }}" "{{ app }}" "{{ tree }}" {{ flags }}
@@ -116,9 +147,7 @@ _content target dir app tree *flags:
 still-to-do *flags:
     @python3 ops/open-backlog.py {{ flags }}
 
-# The almanac's markdown view, rendered for a browser -> ops/md-messages.html.
-#
-# The output name is explicit because the obvious one destroys a generated
+# The output name below is explicit because the obvious one destroys a generated
 # file. mdhtml defaults its output to "the first source, with a .html suffix",
 # so `mdhtml ops/MESSAGES.md` writes ops/MESSAGES.html -- and this filesystem
 # is case-insensitive, so that IS ops/messages.html, the searchable page
@@ -128,6 +157,8 @@ still-to-do *flags:
 #
 # `md-messages` rather than `MESSAGES`: the one name that cannot collide with
 # the generated page no matter how the filesystem compares case.
+
+# The almanac's markdown view, rendered for a browser -> ops/md-messages.html.
 render-messages *flags:
     @mdhtml -o ops/md-messages.html ops/MESSAGES.md {{ flags }}
     @echo "wrote ops/md-messages.html -- ops/messages.html is the generated one, left alone"

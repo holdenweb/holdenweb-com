@@ -1,0 +1,373 @@
+<meta charset="utf-8">
+<title>Rebuild Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root {
+  --paper:#F1F3F2; --surface:#FBFCFB; --sunk:#E8EBE9; --ink:#111917;
+  --muted:#58635F; --rule:#D3D9D6; --rule-soft:#E2E7E4;
+  --accent:#1F5C63; --accent-dim:#2E767E; --warning:#8A6110; --critical:#9E2F1D;
+  --serif:"Newsreader",Georgia,serif;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0E1513; --surface:#16201D; --sunk:#1C2724; --ink:#E3E9E6;
+    --muted:#93A09B; --rule:#2A3733; --rule-soft:#212D29;
+    --accent:#6FB4BB; --accent-dim:#559AA1; --warning:#D3A244; --critical:#E0725C;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0E1513; --surface:#16201D; --sunk:#1C2724; --ink:#E3E9E6;
+  --muted:#93A09B; --rule:#2A3733; --rule-soft:#212D29;
+  --accent:#6FB4BB; --accent-dim:#559AA1; --warning:#D3A244; --critical:#E0725C;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:16.5px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:48rem; margin:0 auto; padding:clamp(2rem,5vw,4rem) clamp(1.1rem,4vw,2rem) 6rem; }
+h1 { font-family:var(--serif); font-weight:500; font-size:clamp(2rem,5vw,2.8rem);
+  line-height:1.1; letter-spacing:-.015em; margin:0 0 1.2rem; text-wrap:balance; }
+h2 { font-family:var(--serif); font-weight:500; font-size:1.5rem; line-height:1.2;
+  margin:2.6rem 0 .9rem; padding-top:1.1rem; border-top:1px solid var(--rule); text-wrap:balance; }
+h3 { font-family:var(--sans); font-weight:600; font-size:1.02rem; margin:2rem 0 .8rem; }
+p { margin:0 0 .9rem; text-wrap:pretty; }
+hr { border:none; border-top:1px solid var(--rule); margin:2.2rem 0; }
+a { color:var(--accent); text-underline-offset:2px; }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+code { font-family:var(--mono); font-size:.87em; background:var(--sunk);
+  padding:.1em .34em; border-radius:3px; overflow-wrap:break-word; }
+td code, th code { overflow-wrap:normal; }
+strong { font-weight:600; }
+ul { margin:0 0 1rem; padding-left:1.2rem; }
+li { margin-bottom:.4rem; }
+blockquote { margin:0 0 1.1rem; padding:.85rem 1.1rem; background:var(--surface);
+  border:1px solid var(--rule); border-left:2px solid var(--warning);
+  border-radius:3px; font-size:.94rem; }
+blockquote p { margin:0; }
+.tablewrap { overflow-x:auto; border:1px solid var(--rule); border-radius:4px;
+  background:var(--surface); margin:0 0 1.2rem; }
+table { border-collapse:collapse; width:100%; font-size:.89rem; min-width:30rem; }
+th { text-align:left; font-family:var(--mono); font-weight:500; font-size:.67rem;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+  padding:.7rem .85rem; border-bottom:1px solid var(--rule); }
+td { padding:.7rem .85rem; border-bottom:1px solid var(--rule-soft); vertical-align:top; }
+tbody tr:last-child td { border-bottom:none; }
+p.record { font-family:var(--mono); font-size:.82rem; color:var(--muted);
+  border-bottom:1px dashed var(--rule); padding-bottom:.5rem; margin-bottom:1.4rem; }
+
+.block { margin:0 0 1.1rem; border:1px solid var(--rule); border-radius:4px;
+  background:var(--surface); overflow:hidden; }
+.block-head { display:flex; align-items:center; justify-content:space-between;
+  gap:1rem; padding:.35rem .55rem .35rem .85rem;
+  border-bottom:1px solid var(--rule-soft); background:var(--sunk); }
+.tag { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); }
+.form-block .tag { color:var(--warning); }
+.host { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; margin-right:auto; padding:.1rem .45rem;
+  border:1px solid var(--rule); border-radius:3px; }
+.host.local { color:var(--muted); }
+.host.remote { color:var(--accent); border-color:var(--accent); }
+button.copy { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--accent); background:none;
+  border:1px solid var(--rule); border-radius:3px; padding:.2rem .6rem;
+  cursor:pointer; transition:background .12s, color .12s; }
+button.copy:hover { background:var(--accent); color:var(--surface); border-color:var(--accent); }
+button.copy.done { color:var(--surface); background:var(--accent-dim); border-color:var(--accent-dim); }
+button.copy.failed { color:var(--warning); border-color:var(--warning); background:none; }
+pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
+.block pre { margin:0; padding:.8rem .85rem; overflow-x:auto;
+  font-family:var(--mono); font-size:.82rem; line-height:1.6; }
+.block pre code { background:none; padding:0; font-size:inherit; }
+.fields { display:flex; flex-direction:column; gap:.4rem; padding:.75rem .85rem; }
+.field { display:grid; grid-template-columns:minmax(7rem,auto) 1fr; gap:.75rem;
+  align-items:center; }
+.var { font-family:var(--mono); font-size:.78rem; color:var(--accent); }
+.field input { font-family:var(--mono); font-size:.82rem; color:var(--ink);
+  background:var(--paper); border:1px solid var(--rule); border-radius:3px;
+  padding:.3rem .5rem; width:100%; }
+.field input:placeholder-shown, .field input[value=""] { border-color:var(--warning); }
+
+@media print {
+  .block-head { background:none; border-bottom:none; padding-bottom:0; }
+  button.copy { display:none; }
+  .block, .tablewrap, blockquote { break-inside:avoid; }
+  body { font-size:10.5pt; background:#fff; color:#000; }
+}
+</style>
+<div class="wrap">
+<h1>Rebuild: bare host to serving site</h1>
+<blockquote><p><strong>Procedure · for whoever is standing at a host with a broken site.</strong> Meant to be executed top to bottom, not read for understanding: the reasoning is in <a href="../operations.md"><code>../operations.md</code></a>. <a href="rebuild.sh"><code>rebuild.sh</code></a> is the same sequence as a script. Site-specific throughout; nothing here goes to podpack.</p></blockquote>
+<p><strong>Meant to be followed, not read.</strong> The reasoning lives in <a href="../operations.md"><code>operations.md</code></a> and this links there rather than repeating it — one place per fact, or they drift, which is how §6 came to say this site lacks a script it has had since 0.7.1.</p>
+<p><strong>Every command below is literal.</strong> Nothing has a placeholder in it: the values that change between one rebuild and the next are gathered into the configuration block, and every step after that refers to them by name. Fill the block in once, paste it into your shell, and the rest is copy-and-run.</p>
+<p>Where a command&#x27;s output disagrees with what is written, record it and <strong>carry on</strong>. Do not fix as you go: fixing as you go means only the steps before the first problem are ever exercised, which is how a procedure passes its own rehearsal.</p>
+<blockquote><p><strong>Except where a step says STOP.</strong> Three steps make everything after them meaningless if they fail, and carrying on past one produces a page of failures that all say the same thing. They are marked where they arrive: <strong>0.1</strong> (no backup, nothing to restore), <strong>Part 3</strong> (no site), and <strong>5.3</strong> (a suite pointed at the wrong host tells you nothing about this one).</p></blockquote>
+<ul><li><strong><code>☐</code></strong> — as written; tick and move on.</li><li><strong><code>✎</code></strong> — write what differed.</li></ul>
+<hr>
+<h2>Configuration</h2>
+<p>Fill in, then paste the whole block into the shell you will work in. Anything you cannot know yet is marked with the step that tells you.</p>
+<div class="block form-block" data-block="0"><div class="block-head"><span class="tag">fill in</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><div class="fields"><label class="field"><span class="var">SITE_REPO</span><input data-var="SITE_REPO" value="git@github.com:holdenweb/holdenweb-com.git" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">SITE_DIR</span><input data-var="SITE_DIR" value="site" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">MODE</span><input data-var="MODE" value="RESTORE" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">WEB_PORT</span><input data-var="WEB_PORT" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">SITE_HOST</span><input data-var="SITE_HOST" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">BACKUP</span><input data-var="BACKUP" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">PROJECT</span><input data-var="PROJECT" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">ENVIRONMENT</span><input data-var="ENVIRONMENT" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">ADMIN_EMAIL</span><input data-var="ADMIN_EMAIL" value="" spellcheck="false" autocomplete="off"></label></div></div>
+<div class="tablewrap"><table><thead><tr><th>Variable</th><th>Meaning</th><th>Known at</th></tr></thead><tbody><tr><td><code>SITE_REPO</code></td><td>Where the site&#x27;s git repository lives</td><td>now</td></tr><tr><td><code>SITE_DIR</code></td><td>Directory to clone into — <strong><code>site</code>, because <code>deploy.sh</code> resolves the target from the <code>staging</code> remote (<code>opal17:apps/hw-stag/site</code>) and will not find any other name.</strong> Not a second checkout of a site already deployed on this host — see 2.1</td><td>now</td></tr><tr><td><code>MODE</code></td><td><code>RESTORE</code> or <code>FRESH</code> — see below</td><td>now</td></tr><tr><td><code>WEB_PORT</code></td><td>The port the control panel allocated</td><td><strong>1.1</strong></td></tr><tr><td><code>SITE_HOST</code></td><td>The <strong>public</strong> hostname visitors use — <code>staging.holdenweb.com</code>, not the machine&#x27;s own name</td><td><strong>1.2</strong></td></tr><tr><td><code>BACKUP</code></td><td>The backup directory to restore from. <code>RESTORE</code> only</td><td><strong>0.1</strong>, or given</td></tr><tr><td><code>PROJECT</code></td><td>The new site&#x27;s <code>SITE_NAME</code>: compose project, image and database name, <code>&lt;app&gt;-&lt;site&gt;</code> with dots as dashes — <code>os-holdenweb-com</code>. <code>FRESH</code> only; a restore brings the backup&#x27;s</td><td>now</td></tr><tr><td><code>ENVIRONMENT</code></td><td><code>staging</code> or <code>production</code> — anything but <code>local</code>. <code>FRESH</code> only</td><td>now</td></tr><tr><td><code>ADMIN_EMAIL</code></td><td>Administrator&#x27;s address. <code>FRESH</code> only</td><td><strong>5.1</strong></td></tr></tbody></table></div>
+<p><code>PROJECT</code>, not <code>SITE_NAME</code>: compose interpolates <code>${SITE_NAME}</code>, and a value</p>
+<p>exported in this shell would override whatever <code>.env</code> says, in this shell only.</p>
+<p>Check it took, before you rely on it:</p>
+<div class="block" data-block="1"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>: &quot;${SITE_REPO:?}&quot; &quot;${SITE_DIR:?}&quot; &quot;${MODE:?}&quot; &amp;&amp; echo &quot;configuration loaded&quot;</code></pre></div>
+<h3><code>MODE</code> — the one decision</h3>
+<div class="tablewrap"><table><thead><tr><th></th><th><strong>RESTORE</strong></th><th><strong>FRESH</strong></th></tr></thead><tbody><tr><td></td><td>This site&#x27;s data comes back</td><td>An empty site on a new host</td></tr><tr><td>Typical cause</td><td>The host died; you are putting it back</td><td>A new deployment, or a staging copy</td></tr><tr><td>Accounts</td><td>Everyone can still sign in</td><td>Nobody has an account yet</td></tr></tbody></table></div>
+<p><strong>The modes diverge in Part 3 and nowhere else that matters.</strong> <code>RESTORE</code> is a single command — <code>scripts/restore.sh</code> — because the substrate already ships the whole procedure. <code>FRESH</code> has no dump, so it configures a host and starts it. After Part 3 they rejoin, with one small branch at 5.1 over whether an administrator already exists.</p>
+<blockquote><p>Rehearsal 1&#x27;s expensive defect was a step that did <em>not</em> branch when it should have — and the reason it existed at all was that this document was hand-rolling what <code>restore.sh</code> already did, in a worse order. If a step below looks like it assumes the other path, that is a bug here; record it.</p></blockquote>
+<h3>Timing</h3>
+<p>Each part opens with a <code>date</code> command. Run it — the timestamps land in your terminal transcript, so timing costs no attention, and the total is the single number a 3am document most needs. There is a table to fill in at the end.</p>
+<hr>
+<h2>Part 0 — before anything is destroyed</h2>
+<p><em>Rehearsal only. In a real emergency the host is already gone; start at Part 1.</em></p>
+<div class="block" data-block="2"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<p><strong>0.1 — Take the backup you will restore from.</strong></p>
+<p><strong>The site has to be up for this.</strong> <code>backup.sh</code> asks the running <code>web</code> service what to archive, and refuses without it — which is worth knowing before you need it, because in the emergency where the site is down you <em>cannot take a backup</em>. The last good one is whatever you already have. <code>verify-backup.sh</code> needs the stack up too: it reads each dump with the store&#x27;s own tooling, inside the store&#x27;s own container.</p>
+<p><code>backup.sh</code> also refuses to write inside the working tree, because the result</p>
+<p>holds a verbatim copy of every secret. That guard resolves the destination&#x27;s parent, so create it first — if the parent does not exist the check cannot run:</p>
+<div class="block" data-block="3"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>mkdir -p ~/backups</code></pre></div>
+<p><strong>Look at what is already there before adding to it</strong>, and note which one you intend to restore from — that is <code>BACKUP</code>:</p>
+<div class="block" data-block="4"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>ls -lt ~/backups/holdenweb-com/</code></pre></div>
+<blockquote><p><strong>A rehearsal that failed after Part 3 leaves a backup here that verifies clean, and it sorts newest.</strong> The site it archived was <em>seeded</em> from the packages rather than restored, so it is within a few bytes and one row of the real thing and nothing available tells them apart — <code>verify-backup.sh</code> says <code>VERIFIED</code> for both. Since that command with no argument takes <code>ls | sort | tail -1</code>, the wrong one is what &quot;the latest backup&quot; means until somebody removes it. Delete any such directory now. Backlog #22 is fixed in podpack 0.9.0b4 — <code>verify-backup.sh</code> now names any table whose count has fallen since the previous backup, and prints the <code>source directory:</code> that every manifest has recorded all along. This step stays: it fires <em>before</em> the restore, on the backup you are about to trust, and whether a directory should be deleted is a judgement only you can make.</p></blockquote>
+<div class="block" data-block="5"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/backup.sh</code></pre></div>
+<div class="block" data-block="6"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/verify-backup.sh</code></pre></div>
+<p><em>Expect:</em> a directory under <code>~/backups/&lt;site&gt;/</code>, mode 0700, holding</p>
+<p><code>manifest.txt</code>, <code>plan.json</code>, <code>database.pgc</code>, <code>app-data.tar.gz</code>,</p>
+<p><code>config.tar.gz</code>, <code>rowcounts.txt</code>, <code>env</code> — no leading dot — and <code>secrets.env</code>.</p>
+<p><code>verify-backup.sh</code> ends <code>VERIFIED:</code> and names the git commit and alembic</p>
+<p>revision.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>0.2 — Record the host as it is</strong>, so the rebuild can be compared to it.</p>
+<div class="block" data-block="7"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>python3 scripts/configure-host.py --check</code></pre></div>
+<div class="block" data-block="8"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose ps</code></pre></div>
+<p><em>Expect:</em> <code>--check</code> writes nothing, and reports which values are still the example&#x27;s plus whether this host can run containers — the Compose v2 provider, the podman socket, and lingering. It needs <code>.env</code> and <code>secrets.env</code> to exist already; on a bare clone it says <code>not configured yet</code> and stops.</p>
+<blockquote><p>A backup that fails part way leaves nothing behind: <code>backup.sh</code> removes the destination if the plan names no store, if a dump comes out empty, or if a store named in the plan produced no file. So a directory that exists is a directory that got to the end.</p></blockquote>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>0.3 — Wipe it</strong>, which is the step that makes this a rehearsal rather than a reading. Only after 0.1 has produced a backup you have verified.</p>
+<div class="block" data-block="9"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose down</code></pre></div>
+<p><code>down</code> removes the containers and the network. It does <strong>not</strong> remove</p>
+<p><code>hostdata</code>, and that is the distinction worth keeping straight: <code>hostdata</code> is</p>
+<p>the database and the site&#x27;s content.</p>
+<p>Then remove the checkout entirely — data, logs and clone together — <strong>from its parent directory</strong>, which is also where Part 2 wants you:</p>
+<div class="block" data-block="10"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>cd .. &amp;&amp; podman unshare rm -rf &quot;$SITE_DIR&quot;</code></pre></div>
+<blockquote><p><strong><code>rm -rf</code> without <code>podman unshare</code> will fail, and not because of a permissions mistake.</strong> <code>prepare-host-dirs.sh</code> ran <code>podman unshare chown</code> to hand <code>hostdata</code> and <code>hostlogs</code> to the containers&#x27; unprivileged uids — 10001 for the app, 999 for postgres. Under rootless podman those live inside your user namespace and surface on the host as subuids from your <code>/etc/subuid</code> range, so <code>ls -l</code> shows an owner you do not recognise and you cannot delete them. <code>podman unshare</code> re-enters that namespace, where they are yours again. <code>podman unshare ls -la &quot;$SITE_DIR/hostdata/apps&quot;</code> to look first.  <strong>And mind where you are standing.</strong> <code>rm -rf</code> on a path that does not exist succeeds silently, so running this from the wrong directory removes nothing and says nothing — after which the failing <code>rm</code> looks like the <code>unshare</code> did not work. Observed in rehearsal 3.</p></blockquote>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<hr>
+<h2>Part 1 — the control panel  <em>(human; nothing in git knows any of it)</em></h2>
+<div class="block" data-block="11"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<p><strong>1.1</strong> In the Opalstack panel, create or confirm the application and note the port it allocates. <strong>1.2</strong> Confirm the hostname proxied to that port. <strong>The public one</strong> — the name in the certificate and in a visitor&#x27;s address bar. The machine&#x27;s own hostname will resolve, answer, and 404 everything, which looks like a broken site rather than a wrong variable. These are the only two inputs this document cannot derive, so put them in the configuration now:</p>
+<div class="block form-block" data-block="12"><div class="block-head"><span class="tag">fill in</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><div class="fields"><label class="field"><span class="var">WEB_PORT</span><input data-var="WEB_PORT" value="" spellcheck="false" autocomplete="off"></label><label class="field"><span class="var">SITE_HOST</span><input data-var="SITE_HOST" value="" spellcheck="false" autocomplete="off"></label></div></div>
+<div class="block" data-block="13"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>: &quot;${WEB_PORT:?}&quot; &quot;${SITE_HOST:?}&quot; &amp;&amp; echo &quot;$SITE_HOST -&gt; 127.0.0.1:$WEB_PORT&quot;</code></pre></div>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<hr>
+<h2>Part 2 — clone</h2>
+<div class="block" data-block="14"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<div class="block" data-block="15"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>git clone &quot;$SITE_REPO&quot; &quot;$SITE_DIR&quot;</code></pre></div>
+<div class="block" data-block="16"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>cd &quot;$SITE_DIR&quot;</code></pre></div>
+<p><em>Expect:</em> <code>config/</code>, <code>src/</code> and <code>alembic/</code> present — those are in git, and git is their backup. No <code>.env</code>, no <code>secrets.env</code>, no <code>hostdata/</code>.</p>
+<blockquote><p><strong>Know which checkout you are in.</strong> Two checkouts of one site coexist perfectly well provided two things differ: <code>SITE_NAME</code> <em>after compose normalises it</em> — dots are stripped, dashes kept, so <code>holdenweb.com</code> becomes <code>holdenwebcom</code> while <code>holdenweb-com</code> stays as it is — and <code>WEB_HOST_PORT</code>, which is the only genuine bind clash. Images do not collide: measured. What does go wrong is a person forgetting which directory they are in, which is most of what went wrong in rehearsal 1.</p></blockquote>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<hr>
+<h2>Part 3 — <strong>BRANCHES</strong>: bring the site into existence</h2>
+<div class="block" data-block="17"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<p>This is where the two modes stop resembling each other. Follow one heading and skip the other entirely.</p>
+<h3><code>MODE=RESTORE</code> — one command  ·  <strong>STOP IF THIS FAILS</strong></h3>
+<p>Check the backup is the one you mean, and complete — <code>restore.sh</code> refuses on a missing file, but reading the names first is cheaper than reading its refusal:</p>
+<div class="block" data-block="18"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>ls -l &quot;${BACKUP:?}&quot;</code></pre></div>
+<div class="block" data-block="19"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/restore.sh &quot;$BACKUP&quot;</code></pre></div>
+<blockquote><p><strong>If it exits non-zero, stop here and read what it said.</strong> This checkout is a fresh clone, so it has no <code>.env</code> of its own and <code>restore.sh</code> installs the backup&#x27;s — including its <code>SITE_NAME</code>, which is the compose project every later command will act on. Both files go in <em>before</em> anything is unpacked, so a failure after that point leaves this directory carrying the backup&#x27;s identity, and continuing means operating on the <em>backup&#x27;s</em> deployment from here.  Backlog #19 is struck as of podpack 0.9.0b4 and this warning still stands: the fix keeps an <code>.env</code> that already exists, and a fresh clone has none.</p></blockquote>
+<p>That is the whole of it, and it is worth knowing what it is doing rather than treating it as magic, because it stops twice to ask you things:</p>
+<p>1. <strong>Is this the right backup and the right target?</strong> It prints what it is restoring from and into, and waits for you to type <code>restore</code>. 2. <strong>Does the code match the data?</strong> It compares the backup&#x27;s commit against this checkout and says which way you are rolling — a newer checkout means alembic rolls the data forward, which is fine; an older one may not know about tables in the dump.</p>
+<p>Then, in an order chosen to avoid the two traps that a hand-run restore falls into: it puts <code>secrets.env</code> back, keeping yours as <code>.superseded-&lt;stamp&gt;</code>, and either keeps your <code>.env</code> or — as here, in a fresh clone — installs the backup&#x27;s and names every per-host value in it; unpacks the app data <strong>before</strong> the first</p>
+<p><code>compose up</code>,</p>
+<p>because <code>init-storage</code> hands the mounts to the containers&#x27; uids and does not run twice; <strong>removes each restored app&#x27;s directory first</strong>, because <code>tar</code> only ever adds and a merge is a state that never existed; brings <strong>each store up alone</strong>, so its bootstrap creates the role the dump&#x27;s objects belong to; then the rest of the stack, which makes <code>migrate</code> a free consistency check.</p>
+<p>Finally it verifies out loud — every table&#x27;s row count against</p>
+<p><code>rowcounts.txt</code>, and <code>/healthz</code> — and <strong>exits non-zero</strong> if either fails.</p>
+<blockquote><p><strong>On a host whose port differs from the old one, expect it to fail at the last step, and expect that.</strong> This is a fresh clone, so <code>.env</code> comes from the backup carrying the <em>old</em> <code>WEB_HOST_PORT</code>, and the health check polls a port nothing is listening on. (Restoring into a checkout that already has an <code>.env</code> keeps it, and this does not arise.) The data is restored correctly; only the last check is wrong. Fix it:  ``<code>bash sed -i &quot;s/^WEB_HOST_PORT=.*/WEB_HOST_PORT=$WEB_PORT/&quot; .env </code>`<code>  </code>`<code>bash ./scripts/up.sh </code>`<code>  Check the other per-host values in </code>.env<code> while you are there — </code>WEB_BIND_ADDR<code>, and </code>VOLUME_RW<code>/</code>VOLUME_RO<code> if this host&#x27;s SELinux differs from the old one&#x27;s. </code>python3 scripts/configure-host.py --check` reports them without writing anything.</p></blockquote>
+<p><strong>Do not run <code>configure-host.py --port</code> on this path.</strong> It would generate a</p>
+<p><code>.env</code> and <code>secrets.env</code> that <code>restore.sh</code> then replaces with the backup&#x27;s, and</p>
+<p>fresh secrets are the one thing a restore must not have.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<h3><code>MODE=FRESH</code> — no dump, so no <code>restore.sh</code></h3>
+<div class="block" data-block="20"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>python3 scripts/configure-host.py --port &quot;$WEB_PORT&quot; --site-name &quot;${PROJECT:?}&quot; --data-dir ../data --log-dir ../logs</code></pre></div>
+<p><em>Expect:</em> <code>wrote .env and secrets.env (0600) for &#x27;&lt;PROJECT&gt;&#x27;</code>, then the port, a database and role named after <code>PROJECT</code>, whether SELinux is enforcing, and that secrets were generated with none printed. It <strong>refuses to overwrite</strong> either file, so a second run is safe.</p>
+<p><strong>Every flag is there because its default is wrong on a real host.</strong> Without</p>
+<p><code>--site-name</code> the project, database and role are named after this directory —</p>
+<p><code>site</code>, in a deploy target&#x27;s <code>~/apps/&lt;app&gt;/site</code>. Without <code>--data-dir</code> and</p>
+<p><code>--log-dir</code> the data goes in <code>./hostdata</code>, inside the checkout, where a fresh</p>
+<p>clone or a <code>git clean</code> takes it with them; <code>prepare-host-dirs.sh</code> refuses that outright once the next step makes this a real deployment. <code>../data</code> resolves against the checkout, so data and logs sit beside it in the app&#x27;s directory, which is how staging is laid out (<a href="DEPLOY.md"><code>DEPLOY.md</code></a>).</p>
+<p><code>configure-host.py</code> has no option for the environment. It leaves the example&#x27;s</p>
+<p><code>local</code>, and even lists it among the values &quot;usually fine&quot; — which it is in a</p>
+<p>lab, and nowhere else. Set it:</p>
+<div class="block" data-block="21"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>sed -i &quot;s/^PODPACK_ENVIRONMENT=.*/PODPACK_ENVIRONMENT=${ENVIRONMENT:?}/&quot; .env</code></pre></div>
+<div class="block" data-block="22"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>grep -E &#x27;^(SITE_NAME|HOST_DATA_DIR|HOST_LOG_DIR|WEB_HOST_PORT|PODPACK_ENVIRONMENT)=&#x27; .env</code></pre></div>
+<p><em>Expect:</em> <code>SITE_NAME</code> is <code>PROJECT</code>, the directories are <code>../data</code> and</p>
+<p><code>../logs</code>, the port is <code>WEB_PORT</code>, and <code>PODPACK_ENVIRONMENT</code> is <code>ENVIRONMENT</code>.</p>
+<p>Left at <code>local</code>, the site trusts no proxy and every password-reset link goes out <code>http://</code> (Part 4), and <code>prepare-host-dirs.sh</code> would accept data inside the checkout without a word.</p>
+<p><em>Watch for:</em> the SELinux line. <code>not enforcing</code> leaves <code>VOLUME_RW</code>/<code>VOLUME_RO</code> empty and is right on a permissive host; <code>detected</code> sets them to <code>:Z</code>/<code>,z</code>. A host can be <em>labelled but permissive</em>, which is what Opalstack is today — if it is ever switched to enforcing, this decision changes and the mounts break.</p>
+<p>It also names any value still at the example&#x27;s, which on this path will include</p>
+<p><code>MAIL_PASSWORD</code>. Set it now, in <code>secrets.env</code>: sixteen letters, spaces removed,</p>
+<p>and <strong>no <code>$</code></strong>, which compose expands there as well as in <code>.env</code>.</p>
+<div class="block" data-block="23"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/prepare-host-dirs.sh</code></pre></div>
+<p><em>Expect:</em> <code>ready:</code> lines under <code>../data</code> and <code>../logs</code>, none under the checkout.</p>
+<div class="block" data-block="24"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/up.sh</code></pre></div>
+<p><em>Expect:</em> <code>postgres</code> healthy, <code>migrate</code> exited cleanly, <code>web</code> started.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<hr>
+<h2>Part 4 — confirm the site believes its proxy</h2>
+<div class="block" data-block="25"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<p>This used to be a step that <em>set</em> something, headed &quot;the setting nothing will tell you about&quot;. It is now a step that checks one, because podpack derives the trusted-hop count from <code>PODPACK_ENVIRONMENT</code> (<a href="https://github.com/holdenweb/podpack/blob/main/adrs/0039-the-hop-count-follows-the-deployment.md">ADR-0039</a>). That variable is in this host&#x27;s <code>.env</code> already, <code>restore.sh</code> brings it back with the other per-host keys, and a value of anything but <code>local</code> means one nginx is trusted. Nothing to add.</p>
+<p>Ask the site what it concluded, rather than what it was told:</p>
+<div class="block" data-block="26"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web python -c &#x27;from podpack.proxy import proxy_hops; print(proxy_hops())&#x27;</code></pre></div>
+<p><em>Expect:</em> <code>1</code>. This reads the effective count however it was arrived at, so it answers on the podpack that derives it and on any older one that does not — which is the point of asking this way rather than reading the variable.</p>
+<p><strong>If it says <code>0</code></strong>, the site will build every <code>_external=True</code> URL as</p>
+<p><code>http://</code>, and the first thing to carry one is a password-reset mail with a</p>
+<p>token in the path. Two causes, fixed differently:</p>
+<ul><li><strong>This host runs a podpack predating ADR-0039</strong>, so nothing derives the count. <code>ops/rebuild.sh</code> repairs this itself: seeing a zero on a non-local host that declared nothing, it appends <code>PODPACK_PROXY_HOPS=1</code>, recreates <code>web</code> and asks again, printing a line when it does. Doing it by hand is the same two steps — no <code>export</code> prefix, compose&#x27;s <code>env_file</code> is not a shell and would read the name as <code>export PODPACK_PROXY_HOPS</code> — then <code>./scripts/up.sh</code>.</li><li><strong><code>PODPACK_ENVIRONMENT</code> says <code>local</code> on a host that is not a lab.</strong> Nothing repairs this, deliberately: the variable is wrong for <code>prepare-host-dirs.sh</code> too, and guessing which of the two is the mistake would be the wrong kind of help. Correct it in <code>.env</code>.</li></ul>
+<p>The repair leaves a declared count alone in every case. <code>PODPACK_PROXY_HOPS=0</code> on a non-local host is the documented way to say nothing is in front of you, and overwriting it would hand a directly reachable site a forgeable</p>
+<p><code>X-Forwarded-Proto</code>.</p>
+<p><em>Note:</em> the count is the number of values in <code>X-Forwarded-Proto</code>, not the number of proxies. One nginx that overwrites the header is <code>1</code> however many boxes sit behind it. A host behind two proxies, or a non-local host behind none, still says so with <code>PODPACK_PROXY_HOPS</code>, which always wins.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>And prove the mail credential</strong>, which came back with <code>secrets.env</code> on</p>
+<p><code>RESTORE</code> and was set by hand on <code>FRESH</code>:</p>
+<div class="block" data-block="27"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb mail check</code></pre></div>
+<p><em>Expect:</em> the server, the username, the <em>shape</em> of the password — never its value — then a real SMTP connection, exit 0.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<hr>
+<h2>Part 5 — verify</h2>
+<div class="block" data-block="28"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<h3>5.1 — <strong>BRANCHES</strong></h3>
+<p><strong><code>MODE=RESTORE</code> — nothing to do.</strong> Your accounts came back with <code>secrets.env</code>; sign in as yourself.</p>
+<p><strong><code>MODE=FRESH</code> — make an administrator</strong>, or <code>/_status</code> answers nobody:</p>
+<div class="block form-block" data-block="29"><div class="block-head"><span class="tag">fill in</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><div class="fields"><label class="field"><span class="var">ADMIN_EMAIL</span><input data-var="ADMIN_EMAIL" value="" spellcheck="false" autocomplete="off"></label></div></div>
+<div class="block" data-block="30"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb users create &quot;${ADMIN_EMAIL:?}&quot; --active</code></pre></div>
+<div class="block" data-block="31"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb roles create admin</code></pre></div>
+<div class="block" data-block="32"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb roles add &quot;$ADMIN_EMAIL&quot; admin</code></pre></div>
+<blockquote><p>The first <strong>stops and asks for a password</strong>. The address must be able to receive mail: flask-security checks deliverability, so <code>you@example.com</code> is refused — that domain publishes no MX record.</p></blockquote>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>5.2 — <code>/_status</code></strong>, signed in as an administrator. Unauthenticated it answers 404, correctly, so this is a browser step — but the health endpoint is not, and answers now:</p>
+<div class="block" data-block="33"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>curl -s &quot;http://127.0.0.1:$WEB_PORT/healthz&quot;</code></pre></div>
+<p><em>Expect:</em> <code>{&quot;database&quot;:&quot;ok&quot;,&quot;status&quot;:&quot;ok&quot;}</code> here, and in the browser</p>
+<p><code>proxy.hops_trusted: 1</code>, <code>proxy.scheme: &quot;https&quot;</code>, <code>build_commit</code> matching what</p>
+<p>you deployed, and the database and role you configured.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>5.3 — The integration suite</strong> · <strong>STOP IF THIS FAILS WHOLESALE</strong>, which is the real check (<a href="../operations.md"><code>operations.md</code> §3</a>). Never the front page: the QR code app answered 200 for weeks while contributing no navigation at all.</p>
+<div class="block" data-block="34"><div class="block-head"><span class="tag">run</span><span class="host local">laptop</span><button class="copy" type="button">copy</button></div><pre><code>uv run pytest tests/integration --base-url &quot;https://$SITE_HOST&quot;</code></pre></div>
+<p>This is <strong>the one block in this document that runs on the laptop</strong>, because the suite drives a real browser and needs playwright installed. <code>$SITE_HOST</code> is exported in the host&#x27;s shell by Configuration above, so export it on the laptop too, or pass the hostname literally.</p>
+<p><em>Expect:</em> 18 passed, and a header naming what it tested. <strong>Run it against the host you just built</strong> — a suite pointed at the old deployment passes and proves nothing, which is how rehearsal 1 left the restore path unverified.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p><strong>5.4 — The one that matters.</strong> Request a password reset, and read the mail.</p>
+<p><em>Expect:</em> a link beginning <strong><code>https://</code></strong>. An <code>http://</code> link means 5.1 did not take, and <code>/_status</code> says which half — header not sent, or hops not trusted.</p>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<p>**5.5 — Prove the backup regime on <em>this</em> host.**</p>
+<div class="block" data-block="35"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/backup.sh &amp;&amp; ./scripts/verify-backup.sh</code></pre></div>
+<blockquote><p><strong>Only meaningful if no STOP step failed.</strong> If one did, the site this just archived is not the restored site, and the archive is now the newest in a directory people reach into for &quot;the latest&quot;. <code>verify-backup.sh</code> will call it VERIFIED regardless, because it is a valid backup — of the wrong thing. Delete it before you walk away.</p></blockquote>
+<p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
+<div class="block" data-block="36"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<hr>
+<h2>Timing</h2>
+<div class="tablewrap"><table><thead><tr><th>Part</th><th>Started</th><th></th></tr></thead><tbody><tr><td>0 — before the wipe</td><td>________</td><td><em>rehearsal only</em></td></tr><tr><td>1 — control panel</td><td>________</td><td></td></tr><tr><td>2 — clone</td><td>________</td><td></td></tr><tr><td>3 — restore, or configure</td><td>________</td><td></td></tr><tr><td>4 — the proxy setting</td><td>________</td><td></td></tr><tr><td>5 — verify</td><td>________</td><td></td></tr><tr><td><strong>finished</strong></td><td>________</td><td></td></tr></tbody></table></div>
+<p><strong>Parts 1–5 elapsed: ________</strong> — the number to quote when somebody asks how long the site is down for.</p>
+<hr>
+<h2>What this does not cover</h2>
+<ul><li><strong>DNS.</strong> No TTL drop, no cutover. <a href="../operations.md"><code>operations.md</code> §7</a> phase 2 is a different procedure and is still unrun.</li><li><strong>Continuity.</strong> This is a rebuild, not a move; the site is down throughout.</li><li><strong>Noticing.</strong> Nothing polls <code>/healthz</code>, so every step above assumes somebody already knows. That is upstream of this whole document.</li></ul>
+<p>*Rehearsal 1&#x27;s marked-up run is kept at <a href="records/2026-08-23-rehearsal.md"><code>records/2026-08-23-rehearsal.md</code></a>. A browser version of this page, with a copy button on every command, comes from</p>
+<p><code>python3 ops/render-rebuild.py &gt; scratch/rebuild.html</code> — generated, so it cannot</p>
+<p>drift from this file.*</p>
+</div>
+<script>
+(function () {
+  // Copying is attempted three ways, most reliable first, and every outcome
+  // says so on the button. The first version of this used only
+  // navigator.clipboard.writeText() with no rejection handler: inside an
+  // iframe without clipboard-write in its permissions policy that rejects,
+  // and the failure was completely silent -- the button did not even flicker.
+  //
+  // execCommand goes first despite being deprecated, because it must run
+  // inside the click's own task to be allowed, and by the time a rejected
+  // promise brings us back the user gesture may no longer count.
+  function attempt(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0";
+    document.body.appendChild(area);
+    area.select();
+    area.setSelectionRange(0, text.length);
+    var copied = false;
+    try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+    document.body.removeChild(area);
+    return copied;
+  }
+
+  function settle(button, ok, label, hold) {
+    button.textContent = label;
+    button.classList.toggle("done", ok);
+    button.classList.toggle("failed", !ok);
+    setTimeout(function () {
+      button.textContent = "copy";
+      button.classList.remove("done", "failed");
+    }, hold);
+  }
+
+  // Last resort: put the text on the page and select it, so the reader can
+  // press the shortcut themselves. Better than a button that does nothing.
+  function offer(block, button, text) {
+    var pre = block.querySelector("pre");
+    if (!pre) {
+      pre = document.createElement("pre");
+      pre.className = "fallback";
+      pre.textContent = text;
+      block.appendChild(pre);
+    }
+    var range = document.createRange();
+    range.selectNodeContents(pre);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    settle(button, false, "selected \u2014 copy it", 4000);
+  }
+
+  function shared(name, value) {
+    document.querySelectorAll('input[data-var="' + name + '"]').forEach(function (other) {
+      if (other.value !== value) other.value = value;
+    });
+  }
+
+  document.querySelectorAll(".fields input").forEach(function (input) {
+    input.addEventListener("input", function () { shared(input.dataset.var, input.value); });
+  });
+
+  document.querySelectorAll("button.copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var block = button.closest(".block");
+      var pre = block.querySelector("pre:not(.fallback)");
+      var text = pre
+        ? pre.innerText
+        : Array.prototype.map.call(block.querySelectorAll(".field"), function (field) {
+            return "export " + field.querySelector(".var").textContent +
+                   "=" + field.querySelector("input").value;
+          }).join("\n");
+
+      if (attempt(text)) { settle(button, true, "copied", 1200); return; }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { settle(button, true, "copied", 1200); },
+          function () { offer(block, button, text); }
+        );
+      } else {
+        offer(block, button, text);
+      }
+    });
+  });
+})();
+</script>
