@@ -51,6 +51,8 @@ drift apart.
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
 | 38 | holdenweb-com | `refresh-content.sh`'s `--mirror` prompt was not tty-gated, so a non-interactive mirror aborted -- including the remote path `push-content.sh` drives over ssh — **fixed** | operational |
 | 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
+| 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
+| 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -1265,6 +1267,84 @@ time, so anything issued before that is still a cookie that would travel.
 which makes this an email rather than an engineering task. Preload is a
 separate decision and a one-way door: it applies to the whole domain including
 subdomains, and removal takes months.
+
+---
+
+## Raised 2026-10-27, after the staging rebuild
+
+### 40. No automated, mail-free admin bootstrap for a FRESH build
+
+**Repo:** holdenweb-com
+
+*Evidence.* On a FRESH deploy (`rebuild.md` Part 5.1, `MODE=FRESH`) the
+administrator is made by hand — flask-security's `users create` + `roles create`
+/ `roles add`, then confirmed by a `flask shell` here-doc, because
+`SECURITY_CONFIRMABLE` is on (`src/holdenweb/__init__.py:86`) and `users create`
+sets no `confirmed_at` (there is no `flask users confirm`). `users create` also
+prompts for a password on a TTY, so the sequence cannot run unattended.
+`rebuild.sh` is RESTORE-only and automates none of it; `ops/deploy.sh` touches no
+admin step. The confirm step was itself added only after a real "Email requires
+confirmation" lockout on `os.holdenweb.com` (2026-10-26).
+
+*Why it matters.* The one thing a fresh site needs to be usable — an admin who
+can sign in — is four manual, interactive steps a 3am operator has to get right,
+on the path (`rebuild.md`) that exists for exactly that moment.
+
+*Fix.* A site-owned Flask command in `src/holdenweb/commands.py` (mirroring the
+`mail` group, registered at `__init__.py:139`): idempotent find-or-create on
+`app.extensions["security"].datastore` (podpack's `user_datastore`), setting
+`active=True`, `confirmed_at` (or `flask_security.confirmable.confirm_user`) and
+the `admin` role, the password read from an env var (never argv) and **no** mail
+sent (`hash_password` + `confirm_user` send nothing). Then one
+`podman compose exec -T -e ADMIN_PASSWORD=… web flask --app holdenweb <cmd>`
+replaces the four `rebuild.md` 5.1 FRESH steps.
+
+*Decisions it carries.* (1) Where `ADMIN_PASSWORD` comes from — a site
+`secrets.env` slot set by hand, or a **podpack** change so `configure-host.py`
+generates it (podpack ships no admin bootstrap by design — ADR-0031/0033 — so
+that half would be a podpack item of its own). (2) Whether to keep the email
+MX/deliverability check `users create` does, which a direct `create_user`
+bypasses. (3) Whether to also wire the command into a FRESH driver script or
+leave it a documented step. Researched 2026-10-26 (three Explore agents); the
+full design is captured in the blogscraper session's plan file.
+
+### 41. Comment pages are served as stored — no chrome, no placeholder substitution
+
+**Repo:** podpack-pages — found 2026-10-27 on os.holdenweb.com.
+
+*Evidence.* The comment-page nav reached the browser with its placeholder
+unfilled, and resolved relative to the page:
+
+```
+https://os.holdenweb.com/blog/posts/2011/07/childish-behavior.comments/${{{ROOT}}}/posts/2011/07/childish-behavior.comments/2.html
+```
+
+`blog/views.py:49-62` decorates only paths in `manifest.by_path`, which
+`blog/manifest.py:117` builds from posts alone; the `Post` dataclass
+(`manifest.py:34`) has no `comment_pages` field, so the per-post `comment_pages`
+arrays blogscraper writes into `manifest.json` are read by nothing. Every comment
+page — 310 of them across 276 posts — falls through to the as-stored branch: no
+substitution, so its Older/Newer/Back links break, and no chrome, so it renders
+as a bare fragment.
+
+*Why it matters.* Every comment thread on the blog has broken navigation, and its
+pages look nothing like the rest of the site. The generator's placeholders are
+correct by contract (blogscraper ADR-0007); the consumer never learned that
+comment pages are content.
+
+*Fix.* Decided 2026-10-27: comment pages are decorated content, exactly like
+posts (blogscraper ADR-0014, being written alongside). When the manifest loads,
+map each `comment_pages` path to its parent `Post`, traversal-guarding each with
+`check_relative` as post paths are. In `page`, a path in that map is decorated:
+`render_fragment` with the mount, then chrome titled from the parent (e.g.
+"Comments on <title>", page N of M from the path and `len(comment_pages)`) with
+the parent's year current in the archive subnav. Comment pages stay out of the
+index. A path the manifest does not list keeps the existing rule — as stored if
+present, else 404.
+
+*Order.* Deploy this before the blog export is next republished: a placeholder
+comment page served as stored *is* this bug. What is live already carries
+placeholder nav, so this change on its own repairs the live links.
 
 ---
 

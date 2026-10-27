@@ -513,6 +513,30 @@ podman compose exec web flask --app holdenweb roles add "$ADMIN_EMAIL" admin
 > receive mail: flask-security checks deliverability, so `you@example.com` is
 > refused — that domain publishes no MX record.
 
+**Then confirm that address.** `users create` does not: confirmation is on
+(`SECURITY_CONFIRMABLE`), so an unconfirmed admin is turned away at the login
+form (*Email requires confirmation*), and on a fresh host no confirmation mail
+can reach them to clear it. There is no `flask users confirm` command; set
+`confirmed_at` directly. `confirm_user` does that and sends nothing — the
+confirmation mail is a registration-time action this path never takes:
+
+```target
+podman compose exec -T -e ADMIN_EMAIL="$ADMIN_EMAIL" web flask --app holdenweb shell <<'PY'
+import os
+from flask_security.confirmable import confirm_user
+datastore = app.extensions["security"].datastore
+user = datastore.find_user(email=os.environ["ADMIN_EMAIL"])
+print("confirmed" if confirm_user(user) else "already confirmed", user.email)
+datastore.commit()
+PY
+```
+
+*Expect:* `confirmed` and the address, among `flask shell`'s banner lines.
+`already confirmed` means it ran before — `confirm_user` is a no-op once the
+account has it, so re-running is safe. The `-T` disables the pseudo-TTY so the
+here-doc on stdin is read; the other `exec`s omit it because they want a TTY —
+`users create` prompts for a password on one.
+
 `☐` `✎` ______________________________________________
 
 **5.2 — `/_status`**, signed in as an administrator. Unauthenticated it answers

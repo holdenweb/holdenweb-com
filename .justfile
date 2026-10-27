@@ -132,6 +132,18 @@ _content target dir app tree *flags:
         exit 1 ;;
     esac
 
+# ---- run secure locally -----------------------------------------------------
+
+run-secure:
+    SECRET_KEY=dev-only SECURITY_PASSWORD_SALT=dev-only-salt \
+    SQLALCHEMY_DATABASE_URI=sqlite:////tmp/holdenweb-dev.db \
+    PODPACK_CONFIG=config/app.toml \
+    PODPACK_DATA_ROOT=./hostdata/apps PODPACK_LOG_ROOT=./hostlogs/apps \
+    MAIL_PASSWORD=abcdefghijklmnop \
+    uv run flask --app holdenweb run \
+        --cert ~/.ssh/certs/in-hw-cert.pem  \
+        --key ~/.ssh/certs/in-hw-key.pem
+    
 # ---- housekeeping -----------------------------------------------------------
 
 # backlog.md is the record and is append-only, which makes it the wrong thing to
