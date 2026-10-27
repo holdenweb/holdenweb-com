@@ -63,6 +63,29 @@ pybooks target="staging" *flags:
 blog target="staging" *flags:
     @just _content "{{ target }}" "{{ blogscraper }}" blog export {{ flags }}
 
+# Run after `just blog`, since a fresh export is the next thing that could undo
+# backlog 41: it checks that the comment pages still come out decorated like
+# their posts. staging and production name their public sites; any other is
+# given by URL. With --stored [DIR] it takes the pages from the export as stored
+# instead -- DIR defaults to the export above -- and passes only if every one
+# fails, which proves the check can see the bug. ops/check-comment-pages.py has
+# the detail.
+
+# The blog's comment pages, checked as a target serves them.
+check-comments target="staging" *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{ justfile_directory() }}"
+    case "{{ target }}" in
+      staging)    site=https://os.holdenweb.com ;;
+      production) site=https://holdenweb.com ;;
+      http://*|https://*) site="{{ target }}" ;;
+      *)
+        echo "target must be staging, production or a site URL, not '{{ target }}'" >&2
+        exit 1 ;;
+    esac
+    python3 ops/check-comment-pages.py "$site" {{ flags }}
+
 # The notebooks: podpack-notebooks build.py output -> the notebooks app's html-pages tree.
 notebooks target="staging" *flags:
     @just _content "{{ target }}" "{{ notebooks }}" notebooks html-pages {{ flags }}
