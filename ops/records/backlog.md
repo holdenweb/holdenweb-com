@@ -1319,15 +1319,16 @@ the same `blog-post.html` with the post in scope, titled "Comments on <title>",
 plus ", page N of M" when the thread has several. The *Order.* below is met for
 staging, so its export can be republished.
 
-*How it was checked.* A sweep of os.holdenweb.com the same day, driven by its
-own `/blog/manifest.json`. All 310 comment pages across 276 posts answer 200
-with no placeholder left and the site's chrome, each titled from its post with
-the post's archive year current, and each linking to exactly its neighbouring
-pages and back to the post. All 276 posts link to their first comment page, and
-the index lists none of them. Run against the stored fragment — the local
-export's manifest is byte-identical to staging's, so this is what 0.3.4 served —
-the same check fails six ways and rebuilds the URL below exactly, so it is a
-check that can fail. Matching against the manifest alone flagged three pages
+*How it was checked.* By `ops/check-comment-pages.py https://os.holdenweb.com`
+the same day, a sweep driven by the site's own `/blog/manifest.json`. All 310
+comment pages across 276 posts answer 200 with no placeholder left and the
+site's chrome, each titled from its post with the post's archive year current,
+and each linking to exactly its neighbouring pages and back to the post. All 276
+posts link to their first comment page, and the index lists none of them. With
+`--stored` it takes the pages from the export instead — byte-identical to
+staging's, so exactly what 0.3.4 served — and all 310 fail: the one it shows,
+six ways, its thread links resolving just as the URL below did. So it is a check
+that can fail. Matching against the manifest alone flagged three pages
 that were in fact right: two posts with a null title render as "Untitled post",
 and `posts/2008/04/whos-up-for-sprint-then` is dated 2009-05-19, so it and its
 comments sit under 2009 — the archive year is the post's date, not its path.
