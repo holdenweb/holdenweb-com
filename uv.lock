@@ -550,7 +550,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.9.3"
+version = "1.9.4"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
@@ -587,7 +587,7 @@ requires-dist = [
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.3" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },
-    { name = "podpack-pages", specifier = ">=0.3.4" },
+    { name = "podpack-pages", specifier = "==0.3.5" },
     { name = "podpack-pdf", specifier = ">=0.2.2" },
     { name = "podpack-qrcode", specifier = ">=0.2.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
@@ -895,7 +895,7 @@ wheels = [
 
 [[package]]
 name = "podpack-pages"
-version = "0.3.4"
+version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
@@ -904,9 +904,9 @@ dependencies = [
     { name = "pygments" },
     { name = "python-markdown-math" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/a1/2945f19d283f8a515abca882749dd471dbf8608bdb484d93d9c6d7ebd56b/podpack_pages-0.3.4.tar.gz", hash = "sha256:61ade3b56ba22e1d9ce1d83cc9b7be3bd57f96da1ae232b5842675c802c0c0ea", size = 1062507, upload-time = "2026-09-22T13:07:27.843Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/48/9f4a01d275e8431815b20f23390851c7c616c05f252f1b0b151de066975b/podpack_pages-0.3.5.tar.gz", hash = "sha256:d25da41bf8dbdf0300393ce1dd50fbcb9a82b5f2d358915d0fbc67e4d29e581c", size = 1063494, upload-time = "2026-10-27T14:18:23.049Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/4d/ac40d72a261771d817f1cffe46c7f0083ce6a83d140c8130d83597ece6f1/podpack_pages-0.3.4-py3-none-any.whl", hash = "sha256:445871e0c24026b564c15c0b00ae8512111791fe23a0d94870098572570e3a28", size = 1072047, upload-time = "2026-09-22T13:07:25.923Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/fd/3f2c9833853e7dd9b03f09577b398eb348b6a442ba0e81b005830e76c3e4/podpack_pages-0.3.5-py3-none-any.whl", hash = "sha256:8aad93a8b0d985b71792bc00afe89ad3220f3ab5730f5a52a8605242b6b1f708", size = 1073180, upload-time = "2026-10-27T14:18:21.543Z" },
 ]
 
 [[package]]

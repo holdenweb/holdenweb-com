@@ -1,6 +1,6 @@
 [project]
 name = "holdenweb"
-version = "1.9.3"
+version = "1.9.4"
 description = "The holdenweb.com publishable site"
 readme = "README.md"
 license = "MIT"
@@ -57,7 +57,7 @@ dependencies = [
  #                    app `pdf` -- which is what config/app.toml lists and what
  #                    templates/pdf/ overrides.
  #   notebooks 0.1.1  the app as installed here.
- "podpack-pages>=0.3.4",
+ "podpack-pages==0.3.5",
  "podpack-qrcode>=0.2.2",
  "podpack-pdf>=0.2.2",
  "podpack-notebooks>=0.1.1",
