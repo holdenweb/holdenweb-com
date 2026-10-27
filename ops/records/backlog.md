@@ -52,7 +52,7 @@ drift apart.
 | 38 | holdenweb-com | `refresh-content.sh`'s `--mirror` prompt was not tty-gated, so a non-interactive mirror aborted -- including the remote path `push-content.sh` drives over ssh — **fixed** | operational |
 | 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
-| 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break | correctness |
+| 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break — **fixed** | correctness |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -1311,6 +1311,30 @@ full design is captured in the blogscraper session's plan file.
 ### 41. Comment pages are served as stored — no chrome, no placeholder substitution
 
 **Repo:** podpack-pages — found 2026-10-27 on os.holdenweb.com.
+
+**Fixed** in podpack-pages 0.3.5 (`813e97c`), pinned here as `==0.3.5` in
+`5f1a969` and deployed to staging on 2026-10-27. `load_manifest` now maps each
+listed comment page to its post, and `page` decorates it as it does the post:
+the same `blog-post.html` with the post in scope, titled "Comments on <title>",
+plus ", page N of M" when the thread has several. The *Order.* below is met for
+staging, so its export can be republished.
+
+*How it was checked.* A sweep of os.holdenweb.com the same day, driven by its
+own `/blog/manifest.json`. All 310 comment pages across 276 posts answer 200
+with no placeholder left and the site's chrome, each titled from its post with
+the post's archive year current, and each linking to exactly its neighbouring
+pages and back to the post. All 276 posts link to their first comment page, and
+the index lists none of them. Run against the stored fragment — the local
+export's manifest is byte-identical to staging's, so this is what 0.3.4 served —
+the same check fails six ways and rebuilds the URL below exactly, so it is a
+check that can fail. Matching against the manifest alone flagged three pages
+that were in fact right: two posts with a null title render as "Untitled post",
+and `posts/2008/04/whos-up-for-sprint-then` is dated 2009-05-19, so it and its
+comments sit under 2009 — the archive year is the post's date, not its path.
+
+Production is unaffected for now: holdenweb.com serves an export generated
+2026-10-12, with no comment pages and no links to any. It must run 0.3.5 before
+it is given an export that has them.
 
 *Evidence.* The comment-page nav reached the browser with its placeholder
 unfilled, and resolved relative to the page:
