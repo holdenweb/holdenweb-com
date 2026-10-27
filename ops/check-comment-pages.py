@@ -70,8 +70,7 @@ def fetch(url: str) -> Page:
 
 def stored(root: Path, path: str) -> Page:
     """A comment page as the export holds it -- as served before 0.3.5."""
-    file = root / path
-    return (200, False, file.read_text()) if file.is_file() else (404, False, "")
+    return 200, False, (root / path).read_text()
 
 
 def h1_text(body: str) -> str | None:
@@ -155,6 +154,16 @@ def main() -> int:
     urls = {post["path"]: [urljoin(blog, path) for path in post["comment_pages"]]
             for post in threads}
     jobs = [(post, n) for post in threads for n in range(1, len(urls[post["path"]]) + 1)]
+    if args.stored:
+        # A page missing from the tree would fail too, and for the wrong reason:
+        # a wrong DIR once passed this way without reading a single stored page.
+        missing = [post["comment_pages"][n - 1] for post, n in jobs
+                   if not (args.stored / post["comment_pages"][n - 1]).is_file()]
+        if missing:
+            print(f"{args.stored} lacks {len(missing)} of the {len(jobs)} comment pages "
+                  f"the site lists, e.g. {missing[0]} -- is it the export the site "
+                  f"serves?", file=sys.stderr)
+            return 1
     with ThreadPoolExecutor(WORKERS) as pool:
         posted = list(pool.map(fetch, [urljoin(blog, post["path"]) for post in threads]))
         if args.stored:
