@@ -43,7 +43,7 @@ drift apart.
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on — **fixed** | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it — **fixed** | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
-| 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
+| 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand — **fixed** | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
@@ -53,6 +53,7 @@ drift apart.
 | 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
 | 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break — **fixed** | correctness |
+| 42 | podpack | holdenweb's substrate scripts carry the CDPATH-doubling bug — **fixed** | operational |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -990,6 +991,16 @@ without touching it, because it is PATH-independent.
 
 **Repo:** podpack
 
+**Fixed** in podpack `34f22b0` (ADR-0039), released as **0.9.2** and taken here
+the same day (`b573de9`, 2026-09-22). The trusted-hop count is now derived from
+`PODPACK_ENVIRONMENT` -- 0 when it is unset or `local`, 1 for anything else --
+and `PODPACK_PROXY_HOPS` survives only as an override. `ops/rebuild.sh` no
+longer writes it as a matter of course: it asks the running site what it
+concluded, and appends `PODPACK_PROXY_HOPS=1` only on a proxied host that
+declared nothing and still trusts no hop -- a podpack too old to derive it.
+`operations.md` §17 recorded the closure on the day; this table did not, until
+2026-10-28.
+
 *Evidence.* `PODPACK_PROXY_HOPS` is carried as a standalone value every
 deployment must set and keep correct, and it is the one variable podpack cannot
 deliver: its documentation lives in `env.example`, a seeded file
@@ -1149,7 +1160,17 @@ earns its keep.
 
 ---
 
-## holdenweb's substrate scripts still carry the CDPATH-doubling bug
+## Raised 2026-09-12, tracking a podpack fix into this site
+
+### 42. holdenweb's substrate scripts still carry the CDPATH-doubling bug
+
+**Repo:** podpack -- numbered 2026-10-28, when it was closed. It was raised
+without a number, which kept it in `still_to_do.md` long after the fix landed.
+
+**Fixed** in podpack `7e50f9d`, released in **0.9.1** and taken here on
+2026-09-21 by the substrate upgrade in `47142ae`: all six scripts carry
+`unset CDPATH`. Checked 2026-10-28: `substrate status --check` exits 0, each of
+the six `ok` against the installed 0.9.3.
 
 The six substrate scripts under `scripts/` — `up.sh`, `dev.sh`, `backup.sh`,
 `restore.sh`, `verify-backup.sh`, `prepare-host-dirs.sh` — derive their own root
@@ -1220,7 +1241,9 @@ place; and the pre-fix `read` was confirmed to return 1 on EOF. The ssh path
 itself is reasoned from the two scripts rather than run, since confirming it
 means mirroring against a real host.
 
-## HSTS is sent only where a browser must ignore it
+## Raised 2026-10-19
+
+### 39. HSTS is sent only where a browser must ignore it
 
 *Raised 2026-10-19, after the cookie policy was fixed (HW-0035) left the
 question of what protects the first request still open.*
@@ -1255,6 +1278,16 @@ rather than the site — `/` was a static file last modified in August 2025 and
 not describe the site's own. **Re-measure once routing is restored.** And an
 earlier reading of `max-age=315` during this work was a truncated output line,
 not a short max-age; the real value is a year.
+
+*Re-measured 2026-10-28*, with routing restored and the site itself answering --
+`/healthz` returns podpack's JSON, not an nginx 404:
+
+```
+http://os.holdenweb.com/   301, Strict-Transport-Security: max-age=31536000; includeSubDomains;
+https://os.holdenweb.com/  200, no Strict-Transport-Security (nor on /healthz)
+```
+
+The first caveat no longer applies, and the finding stands.
 
 **What has changed, and what has not.** HW-0035 made `SESSION_COOKIE_SECURE`
 follow the deployment, so the session cookie no longer rides that cleartext

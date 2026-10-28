@@ -14,8 +14,8 @@ fixed and says nothing about it. The rules instead:
     is removed from it, so anything absent is already accounted for;
   * a row is OPEN unless its Item cell says `**fixed**`;
   * a `##` heading is structural if it starts `Tier`, `Raised` or `Filing
-    these`, and an item otherwise -- which is how the unnumbered entries (the
-    CDPATH one) are carried without naming them here;
+    these`, and an item otherwise -- which is how an unnumbered entry is
+    carried without naming it here;
   * a group heading is emitted only when something under it survives, with its
     own intro prose, so an item keeps the context of when it was raised;
   * an open number with no `###` section of its own still gets a stub, because

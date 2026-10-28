@@ -747,9 +747,13 @@ Recorded rather than hidden. None is urgent; all are real.
   day-of-week filenames with truncation, so Postgres logs are bounded to a week
   (seven files). Reaches os on the next deploy plus a postgres restart; podpack's
   substrate carries the same change to other sites on their next upgrade.
-- **No monitoring**, until §18 is actually set up. The procedure exists now;
-  nothing is running it yet, and an unproved monitor is worth what an untested
-  backup is worth.
+- **App logs are not rotated.** The closure above is PostgreSQL's alone: podpack
+  attaches a plain `logging.FileHandler` (`paths.py:113`), so
+  `hostlogs/apps/*.log` still grows without limit (backlog item 9).
+- ~~**No monitoring**, until §18 is actually set up.~~ **Closed 2026-09-22**:
+  UptimeRobot checks `https://os.holdenweb.com/healthz` every five minutes and
+  mails on failure, proven against the real deployment — postgres stopped, mail
+  received (backlog item 8).
 - ~~**Password-reset links go out as `http://`.**~~ **Closed 2026-08-24**:
   `.env` sets `PODPACK_PROXY_HOPS=1`, the container reads it, and `/_status`
   reports `scheme: https`. **And closed again, differently, 2026-09-22**: the

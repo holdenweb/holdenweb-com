@@ -1,6 +1,6 @@
 # Still to do
 
-The open items from [`backlog.md`](backlog.md), extracted 2026-10-27 -- everything
+The open items from [`backlog.md`](backlog.md), extracted 2026-10-28 -- everything
 not marked **fixed** in its summary table and not on its struck list.
 
 This is a *copy*, not a replacement. `backlog.md` remains the record: it is
@@ -18,7 +18,6 @@ than edit in place.
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
-| 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand | operational |
 | 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
@@ -157,39 +156,6 @@ and opal17 carries the manual `containers.conf` pin, so this host is covered;
 item 31 is the durable, every-deployment form. The pin also closes deploy.sh
 without touching it, because it is PATH-independent.
 
-### 32. `PODPACK_PROXY_HOPS` should be derived from the environment, not set by hand
-
-**Repo:** podpack
-
-*Evidence.* `PODPACK_PROXY_HOPS` is carried as a standalone value every
-deployment must set and keep correct, and it is the one variable podpack cannot
-deliver: its documentation lives in `env.example`, a seeded file
-`podpack substrate upgrade` never rewrites (SUB-1). The result is manual handling
-wherever it matters -- `rebuild.sh` reconciles it by hand (step 3, default 1),
-`rebuild.md` Part 4 echoes `PODPACK_PROXY_HOPS=1` into `.env` by hand, and a
-fresh site that misses it serves every `_external` URL as `http://`, first
-visible in a password-reset mail. That `http://` reset link is the fault this
-whole framework exercise began with.
-
-*Why it matters.* The value is not really free -- it is a function of how the
-site is deployed. A site reached directly in development sits behind no proxy
-(0 hops); a site behind Opalstack's nginx sits behind exactly one (1 hop). And
-podpack already knows which it is: Phase-0 item 7 put `PODPACK_ENVIRONMENT` in
-`.env` per deployment (`local` vs not-local, unrecognised counting as
-not-local). So the hop count is derivable, and a derived value cannot be
-forgotten, cannot go undelivered, and cannot drift from the deployment it
-describes.
-
-*Fix.* Derive the trusted-hops count from `PODPACK_ENVIRONMENT`: **0 for
-`local`, 1 for `staging` or `production`.** Read it where the app configures its
-ProxyFix (or equivalent), so `PODPACK_PROXY_HOPS` becomes a computed default
-rather than a hand-set variable -- keep an explicit override for the unusual
-topology (two proxies, say), but make the common case automatic. Retire the
-manual `PODPACK_PROXY_HOPS` handling in `rebuild.sh` and `rebuild.md` once it is
-derived, which also removes most of SUB-1's motivation (the undeliverable
-commented var). Fits ADR-0037, which already has `configure-host.py` own the
-variable set and names the deployment type explicitly.
-
 ### 33. The `web` healthcheck pings every 10s -- too often for a quiet site
 
 **Repo:** podpack
@@ -251,43 +217,9 @@ earns its keep.
 
 ---
 
-## holdenweb's substrate scripts still carry the CDPATH-doubling bug
+## Raised 2026-10-19
 
-The six substrate scripts under `scripts/` — `up.sh`, `dev.sh`, `backup.sh`,
-`restore.sh`, `verify-backup.sh`, `prepare-host-dirs.sh` — derive their own root
-with `here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`, which doubles
-`$here` (and then fails on `cd "$here"`) when `CDPATH` is exported *and* the
-script is invoked relatively. `CDPATH` is exported in this laptop's `~/.zshrc`,
-so `up.sh` and `dev.sh` — run relatively from the repo root — fail here today;
-the host-run backup/restore/verify/prepare scripts are exposed only on a
-relative invocation with `CDPATH` set (cron uses an absolute path, so the
-scheduled backup is safe). holdenweb's own `ops/refresh-content.sh` is not a
-substrate file and was fixed directly (commit 9ad969e), which is what surfaced
-this — `just notebooks local` died on the doubled path.
-
-These six are managed podpack substrate files (five `verbatim`, `dev.sh`
-`rendered`), so the fix belongs upstream and is there: **podpack commit 7e50f9d**
-adds `unset CDPATH` to all six (both the `data/` template and its rendered root
-copy). holdenweb installs podpack from PyPI and carries synced copies, so it
-receives the fix only when it moves to a podpack release that includes 7e50f9d
-and re-syncs the substrate.
-
-*Why it's left.* Patching holdenweb's copies directly would create substrate
-drift — `substrate status --check` exists precisely to catch a managed file that
-no longer matches podpack — and the next sync would reconcile it away. The
-durable path is the upstream fix (done) plus a normal substrate upgrade, not a
-per-file patch here.
-
-*The trigger to watch for* is the next podpack bump in `pyproject.toml`: once
-holdenweb is on a podpack release carrying 7e50f9d
-(`uv lock --upgrade-package podpack` after it is published), run the substrate
-upgrade so the six copies refresh to the fixed versions — which also clears the
-pre-existing `substrate.json` staleness. Until then, don't run `up.sh`/`dev.sh`
-relatively on a shell with `CDPATH` set, or invoke them by absolute path.
-
----
-
-## HSTS is sent only where a browser must ignore it
+### 39. HSTS is sent only where a browser must ignore it
 
 *Raised 2026-10-19, after the cookie policy was fixed (HW-0035) left the
 question of what protects the first request still open.*
@@ -322,6 +254,16 @@ rather than the site — `/` was a static file last modified in August 2025 and
 not describe the site's own. **Re-measure once routing is restored.** And an
 earlier reading of `max-age=315` during this work was a truncated output line,
 not a short max-age; the real value is a year.
+
+*Re-measured 2026-10-28*, with routing restored and the site itself answering --
+`/healthz` returns podpack's JSON, not an nginx 404:
+
+```
+http://os.holdenweb.com/   301, Strict-Transport-Security: max-age=31536000; includeSubDomains;
+https://os.holdenweb.com/  200, no Strict-Transport-Security (nor on /healthz)
+```
+
+The first caveat no longer applies, and the finding stands.
 
 **What has changed, and what has not.** HW-0035 made `SESSION_COOKIE_SECURE`
 follow the deployment, so the session cookie no longer rides that cleartext
@@ -375,12 +317,3 @@ bypasses. (3) Whether to also wire the command into a FRESH driver script or
 leave it a documented step. Researched 2026-10-26 (three Explore agents); the
 full design is captured in the blogscraper session's plan file.
 
----
-
-## 39. HSTS is sent only on the cleartext 301, where a browser must ignore it -- table row only
-
-**Repo:** holdenweb-com
-
-`backlog.md` never carried a section for this one; the summary row at the
-top of this file is the whole of it. Kept here so the number is not
-silently dropped.
