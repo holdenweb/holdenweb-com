@@ -54,6 +54,7 @@ drift apart.
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
 | 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break — **fixed** | correctness |
 | 42 | podpack | holdenweb's substrate scripts carry the CDPATH-doubling bug — **fixed** | operational |
+| 43 | holdenweb-com | Production is not monitored: the one free UptimeRobot monitor watches staging until the site earns income | gap |
 
 *Numbers are stable identifiers, so a gap means an item was struck rather than
 renumbered.*
@@ -285,6 +286,9 @@ What is still owed, in the order it matters:
 
 `ALERT_CMD` is moot for this path: UptimeRobot carries its own alerting. It
 still matters for `poll-health.sh`, which remains the deploy-time gate.
+
+*2026-10-28.* A production deployment exists now, and its URL is still not
+monitored -- by choice, not oversight: see item 43.
 
 ### 9. No log rotation
 
@@ -1403,6 +1407,30 @@ present, else 404.
 *Order.* Deploy this before the blog export is next republished: a placeholder
 comment page served as stored *is* this bug. What is live already carries
 placeholder nav, so this change on its own repairs the live links.
+
+## Raised 2026-10-28, when production turned out to be running
+
+### 43. Production is not monitored
+
+**Repo:** holdenweb-com
+
+*Evidence.* Item 8 closed on a monitor that watches staging alone --
+UptimeRobot polls `https://os.holdenweb.com/healthz` -- and left the production
+URL for "once a production deployment exists". One does now: the checkout's
+`production` remote is `opal17:apps/hw-prod/site`, and on 2026-10-28
+`https://holdenweb.com` answered as the podpack site does -- `/healthz` with
+`{"status":"ok"}` and a blog app, `/login`, `/note/x` 301 to `/pages/x`.
+Nothing polls it, and `ops/deploy.sh`'s `health_url` for production is still
+empty, so a production deploy is not proven by the post-rebuild poll either.
+
+*Why it's left.* Deliberately (Steve, 2026-10-28): his free UptimeRobot account
+allows one site, and that stays on staging until the site becomes load-bearing
+for income.
+
+*The trigger to watch for* is production starting to carry anything that earns
+money. Then the monitor moves to `https://holdenweb.com/healthz`, keeping the
+status-code test item 8 settled on. Separately, `deploy.sh`'s production
+`health_url` is step 8 of DEPLOY.md's *Adding production*.
 
 ---
 

@@ -23,6 +23,7 @@ than edit in place.
 | 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
 | 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
+| 43 | holdenweb-com | Production is not monitored: the one free UptimeRobot monitor watches staging until the site earns income | gap |
 
 *Numbers are `backlog.md`'s, so they are stable and have gaps.*
 
@@ -316,4 +317,30 @@ MX/deliverability check `users create` does, which a direct `create_user`
 bypasses. (3) Whether to also wire the command into a FRESH driver script or
 leave it a documented step. Researched 2026-10-26 (three Explore agents); the
 full design is captured in the blogscraper session's plan file.
+
+## Raised 2026-10-28, when production turned out to be running
+
+### 43. Production is not monitored
+
+**Repo:** holdenweb-com
+
+*Evidence.* Item 8 closed on a monitor that watches staging alone --
+UptimeRobot polls `https://os.holdenweb.com/healthz` -- and left the production
+URL for "once a production deployment exists". One does now: the checkout's
+`production` remote is `opal17:apps/hw-prod/site`, and on 2026-10-28
+`https://holdenweb.com` answered as the podpack site does -- `/healthz` with
+`{"status":"ok"}` and a blog app, `/login`, `/note/x` 301 to `/pages/x`.
+Nothing polls it, and `ops/deploy.sh`'s `health_url` for production is still
+empty, so a production deploy is not proven by the post-rebuild poll either.
+
+*Why it's left.* Deliberately (Steve, 2026-10-28): his free UptimeRobot account
+allows one site, and that stays on staging until the site becomes load-bearing
+for income.
+
+*The trigger to watch for* is production starting to carry anything that earns
+money. Then the monitor moves to `https://holdenweb.com/healthz`, keeping the
+status-code test item 8 settled on. Separately, `deploy.sh`'s production
+`health_url` is step 8 of DEPLOY.md's *Adding production*.
+
+---
 

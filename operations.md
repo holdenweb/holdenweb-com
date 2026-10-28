@@ -754,6 +754,10 @@ Recorded rather than hidden. None is urgent; all are real.
   UptimeRobot checks `https://os.holdenweb.com/healthz` every five minutes and
   mails on failure, proven against the real deployment — postgres stopped, mail
   received (backlog item 8).
+- **Production is not monitored.** The one free UptimeRobot monitor watches
+  staging; nothing polls `https://holdenweb.com`, and `ops/deploy.sh` has no
+  production health URL. Deliberate for now: the monitor moves to production
+  before the site becomes load-bearing for income (backlog item 43).
 - ~~**Password-reset links go out as `http://`.**~~ **Closed 2026-08-24**:
   `.env` sets `PODPACK_PROXY_HOPS=1`, the container reads it, and `/_status`
   reports `scheme: https`. **And closed again, differently, 2026-09-22**: the
