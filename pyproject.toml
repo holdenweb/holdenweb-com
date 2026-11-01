@@ -35,7 +35,7 @@ dependencies = [
  #       this host fails on every file -- after replacing .env and secrets.env,
  #       so the checkout is left wearing the backup's identity and holding none
  #       of its data. Measured on Opalstack, 2026-08-24.
- "podpack>=0.9.3",
+ "podpack>=0.9.5",
  #
  # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
  # something this deployment depends on, not merely the newest available:
@@ -57,7 +57,7 @@ dependencies = [
  #                    app `pdf` -- which is what config/app.toml lists and what
  #                    templates/pdf/ overrides.
  #   notebooks 0.1.1  the app as installed here.
- "podpack-pages==0.3.5",
+ "podpack-pages>=0.3.0",
  "podpack-qrcode>=0.2.2",
  "podpack-pdf>=0.2.2",
  "podpack-notebooks>=0.1.1",
