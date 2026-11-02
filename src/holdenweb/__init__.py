@@ -13,7 +13,6 @@ from logging import basicConfig, getLogger
 from dotenv import load_dotenv
 from flask import Flask, render_template
 from flask_mailman import Mail
-from flask_paranoid import Paranoid
 
 import podpack
 from podpack.proxy import LOCAL, deployment_environment
@@ -36,7 +35,6 @@ logger = getLogger(__name__)
 # among them any more: podpack installs flask-security itself, including the
 # models, the datastore and the `admin` predicate this file used to supply.
 mail = Mail()
-paranoid = Paranoid()
 
 
 def create_app(config_overrides=None, **podpack_kwargs):
@@ -126,9 +124,6 @@ def _wire(app: Flask) -> None:
     # when a message cannot be sent is the site's business: podpack neither
     # knows nor cares which mail server this is.
     app.config.setdefault('PODPACK_MAIL_UTIL_CLS', ReportingMailUtil)
-
-    paranoid.init_app(app)
-    paranoid.redirect_view = '/'
 
     mail.init_app(app)
 
