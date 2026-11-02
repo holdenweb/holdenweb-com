@@ -405,18 +405,6 @@ wheels = [
 ]
 
 [[package]]
-name = "flask-paranoid"
-version = "0.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "flask" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/03/8e4eb2d4e3ffdd436a71f273dc6443c30766b55194a009264ee6eb2c5fde/Flask-Paranoid-0.3.0.tar.gz", hash = "sha256:46c049ba701b25f1ccf3988164e1bfb12320ab55f1de66384b012f7767bb8058", size = 4296, upload-time = "2022-04-02T16:27:09.672Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/d7/3c054c416a575bc1775ef506fddd0faef4af734a8047d815c7cbb600eb5a/Flask_Paranoid-0.3.0-py3-none-any.whl", hash = "sha256:8cb48aadfbee5aefe8a75e7436f3a31e426a170a893f022a50e7e4f569ad0850", size = 4536, upload-time = "2022-04-02T16:27:08.281Z" },
-]
-
-[[package]]
 name = "flask-principal"
 version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -557,7 +545,6 @@ dependencies = [
     { name = "argon2-cffi" },
     { name = "flask" },
     { name = "flask-mailman" },
-    { name = "flask-paranoid" },
     { name = "flask-security-too" },
     { name = "podpack" },
     { name = "podpack-notebooks" },
@@ -583,7 +570,6 @@ requires-dist = [
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "flask", specifier = ">=2.3.3" },
     { name = "flask-mailman", specifier = ">=1.1.1" },
-    { name = "flask-paranoid", specifier = ">=0.3.0" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.9.5" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },

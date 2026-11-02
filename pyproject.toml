@@ -35,7 +35,7 @@ dependencies = [
  #       this host fails on every file -- after replacing .env and secrets.env,
  #       so the checkout is left wearing the backup's identity and holding none
  #       of its data. Measured on Opalstack, 2026-08-24.
- "podpack>=0.9.3",
+ "podpack>=0.9.5",
  #
  # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
  # something this deployment depends on, not merely the newest available:
@@ -72,7 +72,6 @@ dependencies = [
  "flask-security-too>=5.6.2",
  "argon2-cffi>=25.1.0",
  "flask-mailman>=1.1.1",
- "flask-paranoid>=0.3.0",
  "alembic>=1.18.5",
 ]
 [[project.authors]]
