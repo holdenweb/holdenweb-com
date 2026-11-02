@@ -2,9 +2,9 @@
 
 > **Generated from [`messages.json`](messages.json) by [`build-messages.py`](build-messages.py). Edit the JSON, not this file.**
 
-Every message this system is likely to put in front of you — 124 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
+Every message this system is likely to put in front of you — 126 of them — with where it comes from, how serious it is, and what to do. At 3am: search this file for the fixed part of the message you're staring at (`<angle-brackets>` mark the variable bits). The browsable, filterable version is [`messages.html`](messages.html).
 
-**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (39) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
+**Severity** — 🔴 critical (44) an outage, or data/secrets at risk · 🟠 needs action (41) a step failed or a decision is needed · 🟡 warning (21) worth a look · 🔵 info (20) normal, listed so you can confirm it's benign.
 
 **Where** — *laptop* (your machine, dev & deploy) · *host* (the Opalstack deploy host) · *either*.
 
@@ -562,6 +562,20 @@ Every message this system is likely to put in front of you — 124 of them — w
 - **Needs action** · **where:** either · **from:** `holdenweb commands.py`
 - **Means:** `flask --app holdenweb mail check` -- the mail server rejected the connection/credential. Non-zero exit so a deploy step can gate on it. The definitive mail diagnosis, faster than a reset round-trip.
 - **Do:** Read <ExcType>/<exc>; fix credential or account (535 = auth). Password shape is checked too: a Google App Password is 16 lowercase letters, no spaces.
+
+### 🟠 login-account-disabled
+`Account is disabled.`
+
+- **Needs action** · **where:** either · **from:** `flask-security login form`
+- **Means:** The account's `active` flag is off: it was made with `users create` without `--active`, or switched off with `users deactivate`. Shown only after the password has been accepted, so the address and password are right. Checked before confirmation, so an account that is neither active nor confirmed shows this first.
+- **Do:** `podman compose exec web flask --app holdenweb users activate <email>`, in the deployment's checkout (operations.md §12). If the account was made by hand, it will want confirming next (login-confirmation-required).
+
+### 🟠 login-confirmation-required
+`Email requires confirmation.`
+
+- **Needs action** · **where:** either · **from:** `flask-security login form`
+- **Means:** The account has no `confirmed_at`, and confirmation is on (SECURITY_CONFIRMABLE, HW-0015), so login refuses it. Shown only after the password has been accepted. A visitor who registered was mailed a link; an account made with `users create` never is, and `--active` does not confirm it -- flask-security has no command that does.
+- **Do:** An account made by hand: the confirm step in operations.md §12, which confirms that one account from the shell. A visitor can ask for a fresh link at /confirm, if mail works. Never confirm in bulk: with sign-up public, that confirms everyone who registered and never followed their link.
 
 ### 🟠 mig-foreign-autogenerate
 `refusing to autogenerate against <dialect>: this site deploys on postgresql, and a revision written here can be one PostgreSQL rejects. Point SQLALCHEMY_DATABASE_URI at a PostgreSQL first -- dev.env names your local one. Applying migrations (alembic upgrade head) is not restricted.`

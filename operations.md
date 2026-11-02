@@ -613,7 +613,40 @@ podman compose exec web flask --app holdenweb roles add you@example.com admin
 ✅ `users`, `roles` and `mail` are all present in the container's CLI.
 
 `--active` is the one to remember: without it the account exists and cannot
-sign in. Membership of `admin` is what `/_status` requires.
+sign in -- the login form says *Account is disabled.* Membership of `admin` is
+what `/_status` requires.
+
+**Then confirm the account.** Confirmation is on here (`SECURITY_CONFIRMABLE`,
+HW-0015), so flask-security refuses login to any account whose `confirmed_at`
+is unset, with *Email requires confirmation.* -- and `users create` never sets
+it, `--active` or not. flask-security has no command that does: its `users`
+group is `create`, `activate`, `deactivate`, `reset_access` and
+`change_password`. So confirm that one account from the shell, with its address
+in place of `you@example.com`:
+
+```bash
+podman compose exec -T web flask --app holdenweb shell <<'PY'
+from flask_security.confirmable import confirm_user
+from podpack import db
+from podpack.auth import user_datastore
+user = user_datastore.find_user(email="you@example.com")
+assert user is not None, "no account with that email"
+print(user.email, "confirmed now" if confirm_user(user) else "was already confirmed")
+db.session.commit()
+PY
+```
+
+It prints `you@example.com confirmed now`, and `was already confirmed` if run
+again; a mistyped address stops at `AssertionError: no account with that
+email`. Both refusals come only after the password has been accepted, so seeing
+either means the address and password are right -- and an account that is
+neither active nor confirmed says *Account is disabled.* first.
+
+✅ The shell part was run while writing this (2026-11-02), against a throwaway
+copy of this site on the laptop: an account made by the commands above failed
+the very test the login form applies, passed it afterwards, and a second run
+said `was already confirmed`. ⚠️ Not yet run through `podman compose exec` on
+opal17.
 
 ### Confirming accounts, now that sign-up is public
 
@@ -638,10 +671,18 @@ for u in user_datastore.user_model.query.all():
 PY
 ```
 
-If any read UNCONFIRMED, set a timestamp -- grandfathering accounts made before
-there was a step to follow. Mind the blank line after the loop: `flask shell` is
-a REPL, so the loop needs one to close before the dedented `db.session.commit()`,
-or it stops with an IndentationError:
+**The bulk confirm below was a one-off**, for the deploy that first turned
+confirmation on, when an unconfirmed account could only be one made before
+there was a step to follow. ⚠️ Do not run it now. Sign-up is public, so the
+accounts without a `confirmed_at` include visitors who registered and never
+followed their link, and it would confirm every one of them -- handing out
+exactly what the confirmation gate exists to withhold. To confirm one account,
+use the confirm step above. This is kept as the record of what that deploy was
+ready to do.
+
+Mind the blank line after the loop, if it is ever needed again: `flask shell`
+is a REPL, so the loop needs one to close before the dedented
+`db.session.commit()`, or it stops with an IndentationError:
 
 ```bash
 podman compose exec -T web flask --app holdenweb shell <<'PY'
@@ -659,7 +700,7 @@ PY
 ```
 
 It is idempotent -- an account that already has a `confirmed_at` is not in the
-loop -- so re-running it is safe.
+loop -- which is the only sense in which re-running it is safe.
 
 ## 13. Logs, disk, and reaching the database
 
