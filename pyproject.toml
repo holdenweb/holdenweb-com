@@ -21,10 +21,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
 dependencies = [
- # The pre-release is spelled out on purpose. uv allows a pre-release only
- # where the specifier names one, so this opts podpack in and nothing else:
- # a blanket --prerelease=allow would quietly pull beta SQLAlchemy and
- # WTForms in underneath a live site. Measured, not feared.
+ # The floor named podpack's 0.9.0 pre-releases from 0.9.0b1 (2026-08-20)
+ # until 0.9.2 (2026-09-22) -- b2 and b3 below are two of them -- and spelled
+ # each one out on purpose. uv allows a pre-release only where the specifier
+ # names one, so that opted podpack in and nothing else: a blanket
+ # --prerelease=allow would quietly have pulled beta SQLAlchemy and WTForms in
+ # underneath a live site. Measured, not feared. It names final releases now;
+ # should it need a pre-release again, spell that one out the same way.
  #
  # The floor moves with each behaviour this deployment depends on, because none
  # of them changes an API and so nothing else can record the dependency:
