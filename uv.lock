@@ -538,7 +538,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.10.0"
+version = "1.10.0+dev"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
@@ -571,7 +571,7 @@ requires-dist = [
     { name = "flask", specifier = ">=2.3.3" },
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
-    { name = "podpack", specifier = ">=0.9.5" },
+    { name = "podpack", specifier = ">=0.10.0" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },
     { name = "podpack-pages", specifier = ">=0.3.0" },
     { name = "podpack-pdf", specifier = ">=0.2.2" },
@@ -909,7 +909,7 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.9.5"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -920,9 +920,9 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/33/fbd2828fcee21a4f7612e18867ee53f71a649aab6d8e0f8ef70bfb116964/podpack-0.9.5.tar.gz", hash = "sha256:1dd9eff7e82ccf84405382074da5633051de58bf7d815768e80e9c559ff8c88a", size = 162809, upload-time = "2026-09-24T13:07:53.269Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/d5/7d36881451b5192fdff32dce738f7a27290d0c34bac6dd30e5bb6984f140/podpack-0.10.0.tar.gz", hash = "sha256:cb05ec67c062af5336b22d4e21cf0486c3261dd93e91dbb3111827a985a8b85d", size = 165578, upload-time = "2026-11-02T22:01:52.198Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/49/a827e7420b2dc71b3bd49ae5f70c7062ebc8188384ccbf55158bb1f5b535/podpack-0.9.5-py3-none-any.whl", hash = "sha256:83c16bc8c830f6b4b7712a074255c02320bfbb4dcacdf22263d5b267213cf881", size = 165742, upload-time = "2026-09-24T13:07:52.171Z" },
+    { url = "https://files.pythonhosted.org/packages/87/59/ef00a8a8bf5df6a7264e62fd5958dfbdd9027ea0e97ee714c28b267b8e0d/podpack-0.10.0-py3-none-any.whl", hash = "sha256:81fc5ef6bc5ff1f8a413a36c3c780b4657317ef238c9fda49f298d5fc532f577", size = 168176, upload-time = "2026-11-02T22:01:50.862Z" },
 ]
 
 [[package]]
