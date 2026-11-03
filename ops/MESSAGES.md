@@ -574,8 +574,8 @@ Every message this system is likely to put in front of you — 126 of them — w
 `Email requires confirmation.`
 
 - **Needs action** · **where:** either · **from:** `flask-security login form`
-- **Means:** The account has no `confirmed_at`, and confirmation is on (SECURITY_CONFIRMABLE, HW-0015), so login refuses it. Shown only after the password has been accepted. A visitor who registered was mailed a link; an account made with `users create` never is, and `--active` does not confirm it -- flask-security has no command that does.
-- **Do:** An account made by hand: the confirm step in operations.md §12, which confirms that one account from the shell. A visitor can ask for a fresh link at /confirm, if mail works. Never confirm in bulk: with sign-up public, that confirms everyone who registered and never followed their link.
+- **Means:** The account has no `confirmed_at`, and confirmation is on (SECURITY_CONFIRMABLE, HW-0015), so login refuses it. Shown only after the password has been accepted. A visitor who registered was mailed a link; an account made with `users create` never is, and `--active` does not confirm it -- flask-security has no command that does, which is why podpack 0.10.0 adds `users confirm`.
+- **Do:** An account made by hand: `podman compose exec web flask --app holdenweb users confirm <email>`, in the deployment's checkout (operations.md §12; needs podpack 0.10.0, so a deployment newer than r1.10.0). A visitor can ask for a fresh link at /confirm, if mail works. Never confirm in bulk: with sign-up public, that confirms everyone who registered and never followed their link.
 
 ### 🟠 mig-foreign-autogenerate
 `refusing to autogenerate against <dialect>: this site deploys on postgresql, and a revision written here can be one PostgreSQL rejects. Point SQLALCHEMY_DATABASE_URI at a PostgreSQL first -- dev.env names your local one. Applying migrations (alembic upgrade head) is not restricted.`

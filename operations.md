@@ -619,34 +619,29 @@ what `/_status` requires.
 **Then confirm the account.** Confirmation is on here (`SECURITY_CONFIRMABLE`,
 HW-0015), so flask-security refuses login to any account whose `confirmed_at`
 is unset, with *Email requires confirmation.* -- and `users create` never sets
-it, `--active` or not. flask-security has no command that does: its `users`
-group is `create`, `activate`, `deactivate`, `reset_access` and
-`change_password`. So confirm that one account from the shell, with its address
-in place of `you@example.com`:
+it, `--active` or not. flask-security has no command that does; podpack 0.10.0
+adds one to its `users` group:
 
 ```bash
-podman compose exec -T web flask --app holdenweb shell <<'PY'
-from flask_security.confirmable import confirm_user
-from podpack import db
-from podpack.auth import user_datastore
-user = user_datastore.find_user(email="you@example.com")
-assert user is not None, "no account with that email"
-print(user.email, "confirmed now" if confirm_user(user) else "was already confirmed")
-db.session.commit()
-PY
+podman compose exec web flask --app holdenweb users confirm you@example.com
 ```
 
-It prints `you@example.com confirmed now`, and `was already confirmed` if run
-again; a mistyped address stops at `AssertionError: no account with that
-email`. Both refusals come only after the password has been accepted, so seeing
-either means the address and password are right -- and an account that is
-neither active nor confirmed says *Account is disabled.* first.
+It prints `User "you@example.com" has been confirmed.`, and `was already
+confirmed.` if run again; an address with no account stops at `Error: User not
+found.`, exit 2. Both refusals come only after the password has been accepted,
+so seeing either means the address and password are right -- and an account
+that is neither active nor confirmed says *Account is disabled.* first.
 
-✅ The shell part was run while writing this (2026-11-02), against a throwaway
-copy of this site on the laptop: an account made by the commands above failed
-the very test the login form applies, passed it afterwards, and a second run
-said `was already confirmed`. ⚠️ Not yet run through `podman compose exec` on
-opal17.
+It needs podpack 0.10.0, which this site takes from 1.10.0+dev (`6466a31`). A
+deployment of `r1.10.0` or earlier answers `Error: No such command
+'confirm'.`, so deploy first.
+
+✅ Run while writing this (2026-11-03), with podpack 0.10.0 against a throwaway
+copy of this site on the laptop: an account made by the commands above was
+confirmed, passed the very test the login form applies in a fresh process, said
+`was already confirmed.` the second time, and an unknown address exited 2;
+podpack 0.9.5 answered `No such command`. ⚠️ Not yet run through `podman
+compose exec` on opal17, where it waits on a deploy from `6466a31` or later.
 
 ### Confirming accounts, now that sign-up is public
 
