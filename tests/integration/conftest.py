@@ -117,13 +117,23 @@ def pytest_report_header(config: pytest.Config) -> str:
     return f"integration target: {target}"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def base_url(request: pytest.FixtureRequest) -> str:
     """--base-url, else $SITE_URL, else the site's own .env.
 
-    Overrides pytest-base-url's fixture so that the common case -- "check the
+    Overrides pytest-playwright's fixture so that the common case -- "check the
     site on this host" -- needs no argument at all. Skipping with a reason
     nobody sees is not a helpful default, and that is what this replaced.
+
+    Autouse, so that the skips below come before a browser is launched and not
+    after. Every test here names `page` ahead of `base_url`, and pytest sets up
+    what `page` needs, the session's browser among it, before it gets to
+    `base_url`; with no browser installed, as in CI, each test then errors on
+    the launch where HW-0029 says it should skip. pytest promises nothing about
+    that order, only that autouse fixtures come first in their scope. The suite
+    was leaning on that promise without knowing it: pytest-base-url's autouse
+    `_verify_url` asks for `base_url` up front, and when pytest-playwright 0.10
+    made that plugin optional and the lock dropped it, CI went red.
     """
     resolved = resolve(request.config)
     if not resolved:
