@@ -176,7 +176,7 @@ integration target: http://127.0.0.1:8461
 
 Which means a plain `uv run pytest` runs them too when a site is reachable,
 and reports connection failures when it is not. If you want only the fast
-suite, name it: `uv run pytest tests/test_routes.py tests/test_commands.py`.
+suite, leave the integration directory out: `uv run pytest --ignore=tests/integration`.
 
 The suite asks each app to do its job rather than merely answer: the QR code
 app generates a code, the PDF tools offer both forms, the pages app renders

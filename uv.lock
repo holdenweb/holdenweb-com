@@ -544,9 +544,9 @@ dependencies = [
     { name = "alembic" },
     { name = "argon2-cffi" },
     { name = "flask" },
-    { name = "flask-mailman" },
     { name = "flask-security-too" },
     { name = "podpack" },
+    { name = "podpack-mail" },
     { name = "podpack-notebooks" },
     { name = "podpack-pages" },
     { name = "podpack-pdf" },
@@ -569,9 +569,9 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.18.5" },
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "flask", specifier = ">=2.3.3" },
-    { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.10.0" },
+    { name = "podpack-mail", specifier = ">=0.1.0" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },
     { name = "podpack-pages", specifier = ">=0.3.0" },
     { name = "podpack-pdf", specifier = ">=0.2.2" },
@@ -923,6 +923,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b9/d5/7d36881451b5192fdff32dce738f7a27290d0c34bac6dd30e5bb6984f140/podpack-0.10.0.tar.gz", hash = "sha256:cb05ec67c062af5336b22d4e21cf0486c3261dd93e91dbb3111827a985a8b85d", size = 165578, upload-time = "2026-11-02T22:01:52.198Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/59/ef00a8a8bf5df6a7264e62fd5958dfbdd9027ea0e97ee714c28b267b8e0d/podpack-0.10.0-py3-none-any.whl", hash = "sha256:81fc5ef6bc5ff1f8a413a36c3c780b4657317ef238c9fda49f298d5fc532f577", size = 168176, upload-time = "2026-11-02T22:01:50.862Z" },
+]
+
+[[package]]
+name = "podpack-mail"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-mailman" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/13/6aa9d979249b1f3783f308a636e1aaf2e87f43e4c9bf51e2a5400a906c60/podpack_mail-0.1.0.tar.gz", hash = "sha256:c8d6a8734ce9ca7105fd85430e2abacd53d6bd036724ee461cc2b0fd24bcb487", size = 7285, upload-time = "2026-11-16T09:37:02.754Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/c7/15d35f20679cf881311e8eeeab2580dda1344e1185fba1a42923c8a8dc9e/podpack_mail-0.1.0-py3-none-any.whl", hash = "sha256:a356e06513712ae29c11a1b7728d5d670536f731d844723c6e9979dd44fb99e3", size = 8702, upload-time = "2026-11-16T09:37:01.826Z" },
 ]
 
 [[package]]

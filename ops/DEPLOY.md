@@ -209,7 +209,7 @@ staging `os-holdenweb-com`. `SITE_DIR=site` because that is the path the
 laptop's `production` remote names.
 
 Then, still in `~/apps/${OS_APP}/site`, [`rebuild.md`](rebuild.md)
-Part 4 — the hop count must say `1`, and `mail check` must reach Gmail — then
+Part 4 — the hop count must say `1`, and `mail check` must say `SMTP auth OK` — then
 5.1, the administrator, and 5.2's `curl`. **Stop before 5.3**: it tests
 `https://$SITE_HOST`, which is still the old site.
 

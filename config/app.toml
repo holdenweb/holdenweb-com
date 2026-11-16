@@ -8,13 +8,11 @@ name = "holdenweb.com"
 # order: `holdenweb` is the site's own routes and must come first so its front
 # page claims `/`. pybooks and blog contribute the Python and Blog nav entries;
 # plain `podpack_pages` (at /pages) contributes none.
-apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_notebooks", "podpack_pages", "podpack_qrcode", "podpack_pdf"]
+apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_notebooks", "podpack_pages", "podpack_qrcode", "podpack_pdf", "podpack_mail"]
 
-# Environment variables this site needs beyond podpack's own three, checked at
-# boot with them. Names here, values in the environment -- the same split as
-# everywhere else. Without this, a missing mail password surfaces when a
-# visitor asks for a password reset rather than when the site starts.
-secrets = ["MAIL_PASSWORD"]
+# No `secrets` list any more. The one secret it named, MAIL_PASSWORD, is
+# declared by podpack-mail itself (`needs_secrets`), so podpack still refuses
+# to start without it -- and would stop asking if the app were ever removed.
 
 [database]
 pool_pre_ping = true
@@ -50,3 +48,12 @@ default_title = "Holden Web Python"
 [apps.blog]
 # image_root is optional -- where a post's images resolve; unset, they resolve
 # under this app's own mount, which is right when the export ships its images.
+
+# Opalstack's submission server, over implicit TLS -- the only kind podpack-mail
+# allows. The login and the address are the deployment's, so they live in its
+# .env: MAIL_USERNAME=hw-admin, and MAIL_ADDRESS hw-stag@ or hw-prod@
+# mail.holdenweb.com (HW-0037).
+[apps.mail]
+server = "smtp.de.opalstack.com"
+port = 465
+sender_name = "Holden Web"

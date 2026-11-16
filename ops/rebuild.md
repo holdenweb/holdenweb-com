@@ -396,8 +396,12 @@ host can be *labelled but permissive*, which is what Opalstack is today — if i
 is ever switched to enforcing, this decision changes and the mounts break.
 
 It also names any value still at the example's, which on this path will include
-`MAIL_PASSWORD`. Set it now, in `secrets.env`: sixteen letters, spaces removed,
-and **no `$`**, which compose expands there as well as in `.env`.
+`MAIL_PASSWORD`. Set it now, in `secrets.env`: the password of the site's
+mailbox, `hw-admin` (HW-0037), with **no `$`**, which compose expands there as
+well as in `.env`. Then give the deployment its own address as `MAIL_ADDRESS` in
+`.env`: `hw-stag@mail.holdenweb.com` for staging, `hw-prod@mail.holdenweb.com`
+for production. The example leaves it empty so that no host starts out sending
+as another, and until it is set the site refuses to start, naming it.
 
 ```target
 ./scripts/prepare-host-dirs.sh
@@ -473,8 +477,8 @@ none, still says so with `PODPACK_PROXY_HOPS`, which always wins.
 podman compose exec web flask --app holdenweb mail check
 ```
 
-*Expect:* the server, the username, the *shape* of the password — never its
-value — then a real SMTP connection, exit 0.
+*Expect:* the server, the username, the sender and the password's *length* —
+never its value — then a real SMTP connection: `SMTP auth OK`, exit 0.
 
 `☐` `✎` ______________________________________________
 

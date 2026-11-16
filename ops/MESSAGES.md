@@ -559,9 +559,9 @@ Every message this system is likely to put in front of you — 126 of them — w
 ### 🟠 hw-mailcheck-fail
 `SMTP auth FAILED: <ExcType>  (then <exc>; exit 1)`
 
-- **Needs action** · **where:** either · **from:** `holdenweb commands.py`
+- **Needs action** · **where:** either · **from:** `podpack-mail commands.py`
 - **Means:** `flask --app holdenweb mail check` -- the mail server rejected the connection/credential. Non-zero exit so a deploy step can gate on it. The definitive mail diagnosis, faster than a reset round-trip.
-- **Do:** Read <ExcType>/<exc>; fix credential or account (535 = auth). Password shape is checked too: a Google App Password is 16 lowercase letters, no spaces.
+- **Do:** Read <ExcType>/<exc>; fix credential or account (535 = auth). The report above it shows the username and the password's length, never its value: a right password presented as the wrong user fails the same way.
 
 ### 🟠 login-account-disabled
 `Account is disabled.`

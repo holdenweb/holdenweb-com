@@ -3,8 +3,9 @@
 podpack supplies the factory, the app registry, the migration wiring and --
 since ADR-0033 -- login. This package supplies the site's chrome
 (`templates/`, `static/`), its own routes (`views.py`, installed as the app
-named `main`), and the wiring for the extensions that are still the site's:
-mail and session policy. The installed-app list lives in `config/app.toml`.
+named `main`), and the wiring that is still the site's: session policy, and
+what a mail failure says. Mail itself is the podpack-mail app (HW-0037). The
+installed-app list lives in `config/app.toml`.
 """
 
 import os
@@ -12,12 +13,10 @@ from logging import basicConfig, getLogger
 
 from dotenv import load_dotenv
 from flask import Flask, render_template
-from flask_mailman import Mail
 
 import podpack
 from podpack.proxy import LOCAL, deployment_environment
 
-from .commands import mail_commands
 from .mail_util import ReportingMailUtil
 
 # The registry looks for `site_app` at module level: this package is itself an
@@ -30,11 +29,9 @@ load_dotenv()
 basicConfig(format='%(filename)s: %(levelname)s: %(message)s')
 logger = getLogger(__name__)
 
-# Extensions are created unbound and attached to an app in _wire(), so
-# multiple app instances (e.g. one per test) can coexist safely. Login is not
-# among them any more: podpack installs flask-security itself, including the
-# models, the datastore and the `admin` predicate this file used to supply.
-mail = Mail()
+# No extension is created here any more. podpack installs flask-security
+# itself, including the models, the datastore and the `admin` predicate this
+# file used to supply, and mail is the podpack-mail app's (HW-0037).
 
 
 def create_app(config_overrides=None, **podpack_kwargs):
@@ -54,7 +51,7 @@ def create_app(config_overrides=None, **podpack_kwargs):
 
 
 def _wire(app: Flask) -> None:
-    """The site's own extensions: mail and session policy.
+    """The site's own wiring: session policy, and what a mail failure says.
 
     podpack has already loaded the host config and applied `config_overrides`
     by the time this runs, so a setting here is a `setdefault` -- an override
@@ -66,10 +63,10 @@ def _wire(app: Flask) -> None:
     """
     app.logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
-    # SECURITY_PASSWORD_SALT used to be here too. podpack requires it now and
-    # reads it itself, failing at boot if it is missing rather than letting the
-    # site start and die inside `flask users create`.
-    app.config.setdefault('MAIL_PASSWORD', os.environ.get('MAIL_PASSWORD'))
+    # Neither SECURITY_PASSWORD_SALT nor MAIL_PASSWORD is read here any more.
+    # podpack requires the salt and reads it itself; the mail password belongs
+    # to podpack-mail, which declares it. Both now fail at boot rather than
+    # inside the first command or request that needs them.
 
     # Public sign-up, gated by email confirmation. SECURITY_CONFIRMABLE means a
     # registrant gets no session until they follow a link mailed to the address
@@ -111,13 +108,11 @@ def _wire(app: Flask) -> None:
         REMEMBER_COOKIE_SAMESITE='strict',
     )
 
-    for key in ('MAIL_USERNAME', 'MAIL_DEFAULT_SENDER', 'SECURITY_EMAIL_SENDER'):
-        app.config.setdefault(key, 'steve@holdenweb.com')
-    app.config.setdefault('MAIL_SERVER', 'smtp.gmail.com')
-    app.config.setdefault('MAIL_PORT', 465)
-    app.config.setdefault('MAIL_USE_TLS', False)
-    app.config.setdefault('MAIL_USE_SSL', True)
-    app.config.setdefault('MAIL_BACKEND', 'smtp')
+    # Mail is podpack-mail's: server and sender name from [apps.mail], the login
+    # and the address from the deployment's .env (HW-0037). Nothing here may set
+    # MAIL_DEFAULT_SENDER or SECURITY_EMAIL_SENDER -- this runs before any app
+    # installs, so a default set here would beat the deployment's own address,
+    # and flask-security's sender already follows MAIL_DEFAULT_SENDER by itself.
 
     # podpack installs flask-security after this function returns, and passes
     # this class through to it. Set here rather than there because what happens
@@ -125,13 +120,9 @@ def _wire(app: Flask) -> None:
     # knows nor cares which mail server this is.
     app.config.setdefault('PODPACK_MAIL_UTIL_CLS', ReportingMailUtil)
 
-    mail.init_app(app)
-
     app.register_error_handler(404, _handle_404)
-    # `flask --app holdenweb mail check`, alongside flask-security's own
-    # `users` and `roles` groups. See commands.py for why it is a command
-    # rather than a file under scripts/.
-    app.cli.add_command(mail_commands)
+    # `flask --app holdenweb mail check` still works: podpack-mail's blueprint
+    # carries the `mail` group, which Flask registers under the app's name.
 
 
 def _handle_404(e):

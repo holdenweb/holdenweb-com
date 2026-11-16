@@ -214,8 +214,10 @@ pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 <p>Left at <code>local</code>, the site trusts no proxy and every password-reset link goes out <code>http://</code> (Part 4), and <code>prepare-host-dirs.sh</code> would accept data inside the checkout without a word.</p>
 <p><em>Watch for:</em> the SELinux line. <code>not enforcing</code> leaves <code>VOLUME_RW</code>/<code>VOLUME_RO</code> empty and is right on a permissive host; <code>detected</code> sets them to <code>:Z</code>/<code>,z</code>. A host can be <em>labelled but permissive</em>, which is what Opalstack is today — if it is ever switched to enforcing, this decision changes and the mounts break.</p>
 <p>It also names any value still at the example&#x27;s, which on this path will include</p>
-<p><code>MAIL_PASSWORD</code>. Set it now, in <code>secrets.env</code>: sixteen letters, spaces removed,</p>
-<p>and <strong>no <code>$</code></strong>, which compose expands there as well as in <code>.env</code>.</p>
+<p><code>MAIL_PASSWORD</code>. Set it now, in <code>secrets.env</code>: the password of the site&#x27;s</p>
+<p>mailbox, <code>hw-admin</code> (HW-0037), with <strong>no <code>$</code></strong>, which compose expands there as well as in <code>.env</code>. Then give the deployment its own address as <code>MAIL_ADDRESS</code> in</p>
+<p><code>.env</code>: <code>hw-stag@mail.holdenweb.com</code> for staging, <code>hw-prod@mail.holdenweb.com</code></p>
+<p>for production. The example leaves it empty so that no host starts out sending as another, and until it is set the site refuses to start, naming it.</p>
 <div class="block" data-block="23"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/prepare-host-dirs.sh</code></pre></div>
 <p><em>Expect:</em> <code>ready:</code> lines under <code>../data</code> and <code>../logs</code>, none under the checkout.</p>
 <div class="block" data-block="24"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/up.sh</code></pre></div>
@@ -239,7 +241,7 @@ pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 <p><strong>And prove the mail credential</strong>, which came back with <code>secrets.env</code> on</p>
 <p><code>RESTORE</code> and was set by hand on <code>FRESH</code>:</p>
 <div class="block" data-block="27"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb mail check</code></pre></div>
-<p><em>Expect:</em> the server, the username, the <em>shape</em> of the password — never its value — then a real SMTP connection, exit 0.</p>
+<p><em>Expect:</em> the server, the username, the sender and the password&#x27;s <em>length</em> — never its value — then a real SMTP connection: <code>SMTP auth OK</code>, exit 0.</p>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
 <hr>
 <h2>Part 5 — verify</h2>
@@ -252,15 +254,30 @@ pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 <div class="block" data-block="31"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb roles create admin</code></pre></div>
 <div class="block" data-block="32"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec web flask --app holdenweb roles add &quot;$ADMIN_EMAIL&quot; admin</code></pre></div>
 <blockquote><p>The first <strong>stops and asks for a password</strong>. The address must be able to receive mail: flask-security checks deliverability, so <code>you@example.com</code> is refused — that domain publishes no MX record.</p></blockquote>
+<p><strong>Then confirm that address.</strong> <code>users create</code> does not: confirmation is on (<code>SECURITY_CONFIRMABLE</code>), so an unconfirmed admin is turned away at the login form (<em>Email requires confirmation</em>), and on a fresh host no confirmation mail can reach them to clear it. There is no <code>flask users confirm</code> command; set</p>
+<p><code>confirmed_at</code> directly. <code>confirm_user</code> does that and sends nothing — the</p>
+<p>confirmation mail is a registration-time action this path never takes:</p>
+<div class="block" data-block="33"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>podman compose exec -T -e ADMIN_EMAIL=&quot;$ADMIN_EMAIL&quot; web flask --app holdenweb shell &lt;&lt;&#x27;PY&#x27;
+import os
+from flask_security.confirmable import confirm_user
+datastore = app.extensions[&quot;security&quot;].datastore
+user = datastore.find_user(email=os.environ[&quot;ADMIN_EMAIL&quot;])
+print(&quot;confirmed&quot; if confirm_user(user) else &quot;already confirmed&quot;, user.email)
+datastore.commit()
+PY</code></pre></div>
+<p><em>Expect:</em> <code>confirmed</code> and the address, among <code>flask shell</code>&#x27;s banner lines.</p>
+<p><code>already confirmed</code> means it ran before — <code>confirm_user</code> is a no-op once the</p>
+<p>account has it, so re-running is safe. The <code>-T</code> disables the pseudo-TTY so the here-doc on stdin is read; the other <code>exec</code>s omit it because they want a TTY —</p>
+<p><code>users create</code> prompts for a password on one.</p>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
 <p><strong>5.2 — <code>/_status</code></strong>, signed in as an administrator. Unauthenticated it answers 404, correctly, so this is a browser step — but the health endpoint is not, and answers now:</p>
-<div class="block" data-block="33"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>curl -s &quot;http://127.0.0.1:$WEB_PORT/healthz&quot;</code></pre></div>
+<div class="block" data-block="34"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>curl -s &quot;http://127.0.0.1:$WEB_PORT/healthz&quot;</code></pre></div>
 <p><em>Expect:</em> <code>{&quot;database&quot;:&quot;ok&quot;,&quot;status&quot;:&quot;ok&quot;}</code> here, and in the browser</p>
 <p><code>proxy.hops_trusted: 1</code>, <code>proxy.scheme: &quot;https&quot;</code>, <code>build_commit</code> matching what</p>
 <p>you deployed, and the database and role you configured.</p>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
 <p><strong>5.3 — The integration suite</strong> · <strong>STOP IF THIS FAILS WHOLESALE</strong>, which is the real check (<a href="../operations.md"><code>operations.md</code> §3</a>). Never the front page: the QR code app answered 200 for weeks while contributing no navigation at all.</p>
-<div class="block" data-block="34"><div class="block-head"><span class="tag">run</span><span class="host local">laptop</span><button class="copy" type="button">copy</button></div><pre><code>uv run pytest tests/integration --base-url &quot;https://$SITE_HOST&quot;</code></pre></div>
+<div class="block" data-block="35"><div class="block-head"><span class="tag">run</span><span class="host local">laptop</span><button class="copy" type="button">copy</button></div><pre><code>uv run pytest tests/integration --base-url &quot;https://$SITE_HOST&quot;</code></pre></div>
 <p>This is <strong>the one block in this document that runs on the laptop</strong>, because the suite drives a real browser and needs playwright installed. <code>$SITE_HOST</code> is exported in the host&#x27;s shell by Configuration above, so export it on the laptop too, or pass the hostname literally.</p>
 <p><em>Expect:</em> 18 passed, and a header naming what it tested. <strong>Run it against the host you just built</strong> — a suite pointed at the old deployment passes and proves nothing, which is how rehearsal 1 left the restore path unverified.</p>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
@@ -268,10 +285,10 @@ pre.fallback { border-top:1px solid var(--rule-soft); user-select:all; }
 <p><em>Expect:</em> a link beginning <strong><code>https://</code></strong>. An <code>http://</code> link means 5.1 did not take, and <code>/_status</code> says which half — header not sent, or hops not trusted.</p>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
 <p>**5.5 — Prove the backup regime on <em>this</em> host.**</p>
-<div class="block" data-block="35"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/backup.sh &amp;&amp; ./scripts/verify-backup.sh</code></pre></div>
+<div class="block" data-block="36"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>./scripts/backup.sh &amp;&amp; ./scripts/verify-backup.sh</code></pre></div>
 <blockquote><p><strong>Only meaningful if no STOP step failed.</strong> If one did, the site this just archived is not the restored site, and the archive is now the newest in a directory people reach into for &quot;the latest&quot;. <code>verify-backup.sh</code> will call it VERIFIED regardless, because it is a valid backup — of the wrong thing. Delete it before you walk away.</p></blockquote>
 <p class="record"><code>☐</code> <code>✎</code> ______________________________________________</p>
-<div class="block" data-block="36"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
+<div class="block" data-block="37"><div class="block-head"><span class="tag">run</span><span class="host remote">target host</span><button class="copy" type="button">copy</button></div><pre><code>date -u +%H:%M:%S</code></pre></div>
 <hr>
 <h2>Timing</h2>
 <div class="tablewrap"><table><thead><tr><th>Part</th><th>Started</th><th></th></tr></thead><tbody><tr><td>0 — before the wipe</td><td>________</td><td><em>rehearsal only</em></td></tr><tr><td>1 — control panel</td><td>________</td><td></td></tr><tr><td>2 — clone</td><td>________</td><td></td></tr><tr><td>3 — restore, or configure</td><td>________</td><td></td></tr><tr><td>4 — the proxy setting</td><td>________</td><td></td></tr><tr><td>5 — verify</td><td>________</td><td></td></tr><tr><td><strong>finished</strong></td><td>________</td><td></td></tr></tbody></table></div>

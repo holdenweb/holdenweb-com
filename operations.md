@@ -377,9 +377,67 @@ that looks like a different site.
 
 ## 8. Changing the mail password
 
-Gmail App Passwords are the usual case: revoked, rotated, or never right in the
-first place. Rotate — not merely re-enter — whenever the value may have leaked,
-and remember a rotation is only safe once the *old* password is revoked.
+The site sends through its own mailbox, `hw-admin` in `mail.holdenweb.com`, as
+each deployment's own address: `hw-stag@` from staging, `hw-prod@` from
+production (HW-0037). The login and the address are `MAIL_USERNAME` and
+`MAIL_ADDRESS` in the deployment's `.env`, and the password is `MAIL_PASSWORD`
+in `secrets.env`. Rotate — not merely re-enter — whenever the value may have
+leaked.
+
+**Every deployment that has cut over logs in to the one mailbox**, and a
+mailbox has one password, so changing it in the panel ends the old one. Mail
+then fails on each of those deployments until it has the new one: have their
+`secrets.env` files open before you start, and go straight through.
+
+1. **Change it in the Opalstack panel**, on the `hw-admin` mailbox. Keep it to
+   `[A-Za-z0-9_-]`: **`$` is expanded by compose in `secrets.env` as well as
+   `.env`**, so a password containing `$HOME` arrives as something else and
+   fails to authenticate with nothing said. (`provision-mail.py --rotate` is to
+   do this step one day; until it exists, the panel is the way.)
+2. **Edit `MAIL_PASSWORD` in `secrets.env`** on each of those deployments —
+   `hw-stag` and `hw-prod` on opal17, once both have cut over.
+3. **Recreate the container** on each, because `env_file` is read when a
+   container starts:
+   ```bash
+   podman compose up -d web
+   ```
+4. **Verify on each** before a visitor does:
+   ```bash
+   podman compose exec web flask --app holdenweb mail check
+   ```
+   ✅ It reports the backend, the server, the username, the sender and the
+   password's *length* — never its value — then opens a real SMTP connection
+   and says `SMTP auth OK`, or `SMTP auth FAILED` with a non-zero exit. The
+   username is shown because a right password presented as the wrong user fails
+   identically to a wrong one.
+
+The podpack-mail app declares `MAIL_PASSWORD`, so the site refuses to boot
+without it rather than discovering its absence when a visitor asks for a
+password reset. Anywhere but a lab it refuses as well without `MAIL_USERNAME`
+or `MAIL_ADDRESS`, and names whichever is missing.
+
+> **Outstanding:** this belongs to whichever host is built next.
+> `configure-host.py` fills `secrets.env` from the example, and the example
+> carries `MAIL_PASSWORD=lab-only-not-a-real-password` — so a new host
+> **boots**, because the check asks only that the name is set, and then cannot
+> send a password-reset mail. `configure-host.py` reports a credential still at
+> its example value as a finding; step 4's `mail check` is what proves the
+> replacement works. Run it on any new host before trusting login.
+> `MAIL_ADDRESS` is the opposite case: empty in the example on purpose, so a
+> new host refuses to start until it has an address of its own.
+
+If you are rotating because the value may have leaked — an editor state file
+cached it, a backup went astray — deleting or tightening that copy is part of
+the job too, or the replacement leaks by the same route. Rotating limits the
+damage; the stray copy is what caused it.
+
+### Until production cuts over: the Gmail App Password
+
+A deployment still running a release from before podpack-mail sends as
+`steve@holdenweb.com` through `smtp.gmail.com` (HW-0030), with a Gmail App
+Password. Each deployment is one until it cuts over, staging first. Once
+production has, the App Password is revoked, not merely deleted (HW-0017), and
+this subsection goes.
 
 **In the Google account, first.** App Passwords exist only where 2-Step
 Verification is on, for the account the site sends as — the username `mail
@@ -389,11 +447,8 @@ the old one yet: a typo in the new value would otherwise lock the site out of
 mail with nothing to fall back to. Revoking is step 4, once the new password is
 proven live.
 
-1. Edit `MAIL_PASSWORD` in `secrets.env` on the host. Keep it to
-   `[A-Za-z0-9_-]`: **`$` is expanded by compose in `secrets.env` as well as
-   `.env`**, so a password containing `$HOME` arrives as something else and
-   fails to authenticate with nothing said. Gmail wants its 16 letters with the
-   spaces removed.
+1. Edit `MAIL_PASSWORD` in `secrets.env` on the host, under the same `$` rule
+   as above. Gmail wants its 16 letters with the spaces removed.
 2. Restart, because `env_file` is read when a container starts:
    ```bash
    podman compose up -d web
@@ -402,33 +457,15 @@ proven live.
    ```bash
    podman compose exec web flask --app holdenweb mail check
    ```
-   ✅ The command exists in the running container. It reports the server, the
-   username and the *shape* of the password — never its value — then opens a
-   real SMTP connection and exits non-zero on failure. The shape check exists
-   because a perfectly good password taken from `passwords.google.com` instead
-   of the App Passwords page fails identically to a wrong one.
+   ✅ That release's own command reports the server, the username and the
+   *shape* of the password — never its value — then opens a real SMTP
+   connection and exits non-zero on failure. The shape check exists because a
+   perfectly good password taken from `passwords.google.com` instead of the App
+   Passwords page fails identically to a wrong one.
 4. **Now revoke the old App Password** at `myaccount.google.com/apppasswords` —
    delete the previous entry. Until you do, the superseded (or leaked) password
    still authenticates; revoking is what turns a second working key into a
    rotation.
-
-`MAIL_PASSWORD` is declared in `config/app.toml` under `[site] secrets`, so the
-site refuses to boot without it rather than discovering its absence when a
-visitor asks for a password reset.
-
-> **Outstanding:** this belongs to whichever host is built next, production
-> among them. `configure-host.py` fills `secrets.env` from the example, and the
-> example carries `MAIL_PASSWORD=lab-only-not-a-real-password` — so a new host
-> **boots**, because the `[site] secrets` check asks only that the name is set,
-> and then cannot send a password-reset mail. `configure-host.py` reports a
-> credential still at its example value as a finding; step 3's `mail check` is
-> what proves the replacement works. Run it on any new host before trusting
-> login.
-
-If you are rotating because the value may have leaked — an editor state file
-cached it, a backup went astray — deleting or tightening that copy is part of
-the job too, or the replacement leaks by the same route. Rotating and revoking
-(step 4) limits the damage; the stray copy is what caused it.
 
 ## 9. Rotating the other secrets
 

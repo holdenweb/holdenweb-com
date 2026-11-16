@@ -64,10 +64,13 @@ dependencies = [
  #                    app `pdf` -- which is what config/app.toml lists and what
  #                    templates/pdf/ overrides.
  #   notebooks 0.1.1  the app as installed here.
+ #   mail 0.1.0       the first release: this site's mail moved into it from
+ #                    _wire, off Gmail and onto hw-admin (HW-0037).
  "podpack-pages>=0.3.0",
  "podpack-qrcode>=0.2.2",
  "podpack-pdf>=0.2.2",
  "podpack-notebooks>=0.1.1",
+ "podpack-mail>=0.1.0",
  "werkzeug (>=2.3.8)",
  "flask (>=2.3.3)",
  "python-dotenv (>=1.0.1,<2.0.0)",
@@ -78,7 +81,6 @@ dependencies = [
  # collide and login dies with AttributeError: 'User' object has no 'is_locked'.
  "flask-security-too>=5.6.2",
  "argon2-cffi>=25.1.0",
- "flask-mailman>=1.1.1",
  "alembic>=1.18.5",
 ]
 [[project.authors]]
