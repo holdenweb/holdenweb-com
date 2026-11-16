@@ -74,7 +74,7 @@
     },
     "Containerfile": {
       "class": "rendered",
-      "sha256": "9d238735965dacd8f48f8c240904571bf3507dcf4c0287d78cfa596af4181b57"
+      "sha256": "12eee686d27a58c3cc1049dd58abfefb6ad9d043dadaf0e7bc6c541f0f86b2eb"
     },
     "README.md": {
       "class": "seeded",
@@ -185,6 +185,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.9.1",
+  "podpack_version": "0.10.0",
   "substrate_schema": 1
 }
