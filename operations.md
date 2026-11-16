@@ -85,7 +85,7 @@ Settled twice. It used to push into a live worktree via
 instead, because the push silently did nothing whenever the host's HEAD was
 detached ([HW-0034](adrs/0034-the-host-fetches-the-commit-it-is-told-to-run.md)).
 Still no bare repo and no `post-receive` hook: the publish delivers, and a human
-runs the rebuild knowing they are about to. Staging is `~/apps/os/site`;
+runs the rebuild knowing they are about to. Staging is `~/apps/hw-stag/site`;
 production is its own `~/apps/<app>/site`.
 
 ### Refreshing a content tree
@@ -190,7 +190,7 @@ crontab ops/backup.cron
 ```
 
 That schedules `backup.sh` (03:17) and `verify-backup.sh` (04:23), both logged
-under `~/backups/`. The fragment runs in `$HOME/apps/os/site`; for production,
+under `~/backups/`. The fragment runs in `$HOME/apps/hw-stag/site`; for production,
 point it at that app's directory.
 
 Installed on `opal17` on 2026-09-02. The first scheduled run is worth knowing
@@ -907,7 +907,7 @@ is richer, it requires an operator, and it is not what to poll.
    quiet unless it fails:
 
    ```cron
-   */5 * * * * cd ~/apps/os/site && . ./.env && \
+   */5 * * * * cd ~/apps/hw-stag/site && . ./.env && \
      curl -fsS --max-time 10 "http://${WEB_BIND_ADDR:-127.0.0.1}:${WEB_HOST_PORT}/healthz" \
      | grep -q '"status":"ok"' \
      || echo "holdenweb /healthz failed at $(date -Is)" \

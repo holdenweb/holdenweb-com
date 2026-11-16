@@ -36,7 +36,7 @@
 # restored is not yet a backup.
 
 # 03:17 -- take the backup.
-17 3 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/os/site && { date -u +'---- \%FT\%TZ backup ----'; ./scripts/backup.sh; } >> $HOME/backups/backup.log 2>&1
+17 3 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/hw-stag/site && { date -u +'---- \%FT\%TZ backup ----'; ./scripts/backup.sh; } >> $HOME/backups/backup.log 2>&1
 # 04:23 -- read every archive back through the tool that would restore it; a
 # non-zero exit (logged) is the thing to notice.
-23 4 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/os/site && { date -u +'---- \%FT\%TZ verify ----'; ./scripts/verify-backup.sh; } >> $HOME/backups/verify.log 2>&1
+23 4 * * * export PATH="$HOME/bin:$PATH" XDG_RUNTIME_DIR="/run/user/$(id -u)"; cd $HOME/apps/hw-stag/site && { date -u +'---- \%FT\%TZ verify ----'; ./scripts/verify-backup.sh; } >> $HOME/backups/verify.log 2>&1

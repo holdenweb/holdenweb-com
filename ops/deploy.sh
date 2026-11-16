@@ -21,7 +21,7 @@
 # `git rev-parse HEAD` does not care whether HEAD is attached, so a detached
 # deploy checkout stamps exactly as honestly as a pushed branch did.
 #
-# A target is still a git remote whose scp-style URL (opal17:apps/os/site) says
+# A target is still a git remote whose scp-style URL (opal17:apps/hw-stag/site) says
 # where it lives, so there is no second copy of the host or path to drift
 # (HW-0001) -- nothing is pushed to it any more, but ops/push-content.sh reads
 # it the same way. The GitHub URL is deliberately NOT written down here: the

@@ -9,7 +9,7 @@
 # as one command, run from wherever the content is built.
 #
 # The content sibling of ops/deploy.sh, and it borrows deploy.sh's idea of a
-# target: the same git remote, whose scp-style URL (opal17:apps/os/site) names
+# target: the same git remote, whose scp-style URL (opal17:apps/hw-stag/site) names
 # both the host and the site path, so neither is written down twice.
 #
 #     ops/push-content.sh staging ~/Projects/Python/orpy/python-classes \
