@@ -44,13 +44,13 @@ drift apart.
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it — **fixed** | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand — **fixed** | operational |
-| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
+| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters (fixed in podpack 0.10.1; not yet taken here) | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 | 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use — **fixed** | operational |
-| 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
+| 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now — **fixed** | gap |
 | 38 | holdenweb-com | `refresh-content.sh`'s `--mirror` prompt was not tty-gated, so a non-interactive mirror aborted -- including the remote path `push-content.sh` drives over ssh — **fixed** | operational |
-| 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
+| 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it — **fixed** | security |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
 | 41 | podpack-pages | Comment pages are served as stored, so they get no chrome and their placeholder links break — **fixed** | correctness |
 | 42 | podpack | holdenweb's substrate scripts carry the CDPATH-doubling bug — **fixed** | operational |
@@ -1055,6 +1055,16 @@ too, since 6 x 150s is a 15-minute window to "unhealthy". Fuller form, and it
 fits item 32: make the interval a function of `PODPACK_ENVIRONMENT` -- loose for
 a quiet or dev site, tight for production -- rather than one hardcoded default.
 
+*Progress 2026-11-17.* Fixed upstream: podpack `7846d6d` and `d714355`
+(2026-11-13) set `web`'s healthcheck to `interval: 300s` -- not the 150s
+proposed here -- and `retries: 2`, in the repo root and the packaged substrate
+alike, and both are in **0.10.1**, published 2026-11-17. Not yet taken here:
+this site still locks 0.10.0, and its `compose.yaml:160-162` still reads `10s`
+and `6`. It closes when the lock moves to 0.10.1 and `podpack substrate
+upgrade` renders the new `compose.yaml` -- the two events HW-0024 tells apart.
+The fuller form was not taken up: 300s is one value for every deployment, not
+a function of `PODPACK_ENVIRONMENT`.
+
 ### 34. `/config` dumps every secret in the Flask config, even to an admin
 
 **Repo:** holdenweb-com
@@ -1161,6 +1171,19 @@ sources `notebooks.yaml` points at.
 *The trigger to watch for* is a published notebook going stale or vanishing
 because its source moved — at which point vendoring (and its collision rules)
 earns its keep.
+
+**Fixed 2026-11-17**, by adopting the vendoring this item deferred. The
+podpack-notebooks README (`b35eb6d`) now says an accepted notebook is *copied*
+into `notebooks/<contributor>/`, and that every path in `notebooks.yaml` must
+resolve inside the repository; out-of-repo paths belong only in `review.yaml`,
+the scratch list of candidates. The collision question is answered by giving
+every contributed entry an explicit `slug`. When a copy is refreshed from its
+source is not addressed, so a copy stands until somebody re-copies it. The rule
+is enforced rather than only written down: `tests/test_notebooks.py` builds
+`notebooks.yaml`, and CI runs that on a machine holding only the repository, so
+a path outside it fails there. `build.py` still expands `~` and absolute paths,
+for `review.yaml`'s sake. On 2026-11-17 `notebooks.yaml` published one
+notebook, the in-repo sample.
 
 ---
 
@@ -1304,6 +1327,26 @@ time, so anything issued before that is still a cookie that would travel.
 which makes this an email rather than an engineering task. Preload is a
 separate decision and a one-way door: it applies to the whole domain including
 subdomains, and removal takes months.
+
+**Fixed 2026-11-17, by Opalstack.** Re-measured on both sites:
+
+```
+http://os.holdenweb.com/          301, no Strict-Transport-Security
+https://os.holdenweb.com/         200, Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+https://os.holdenweb.com/healthz  200, the same
+http://holdenweb.com/             301, no Strict-Transport-Security
+https://holdenweb.com/            200, Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+https://holdenweb.com/healthz     200, the same
+```
+
+The header has moved from the one response that cannot set the policy to the
+ones that can. Neither this site nor podpack sets it, so the change is in
+Opalstack's nginx. It brings two consequences. `includeSubDomains` is now in
+force: a browser that has visited `holdenweb.com` refuses plain HTTP to every
+subdomain for a year, so a subdomain served over HTTP alone becomes unreachable
+from it. And `preload` is consent to the preload list, not membership: first
+contact stays unprotected until the domain is submitted at hstspreload.org,
+which remains the separate, one-way decision described above.
 
 ---
 

@@ -1,6 +1,6 @@
 # Still to do
 
-The open items from [`backlog.md`](backlog.md), extracted 2026-10-28 -- everything
+The open items from [`backlog.md`](backlog.md), extracted 2026-11-17 -- everything
 not marked **fixed** in its summary table and not on its struck list.
 
 This is a *copy*, not a replacement. `backlog.md` remains the record: it is
@@ -18,10 +18,8 @@ than edit in place.
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
 | 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
-| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters | operational |
+| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters (fixed in podpack 0.10.1; not yet taken here) | operational |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
-| 37 | podpack-notebooks | `notebooks.yaml` points at notebook source files wherever they live (now `~`/absolute paths too), so a published notebook depends on that source staying put through ordinary development. Optionally vendor a local copy into the repo so publication survives churn -- deferred, because it brings name-collision handling and its own curation questions; keep it simple for now | gap |
-| 39 | holdenweb-com | HSTS is sent only on the cleartext 301, where a browser must ignore it | security |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
 | 43 | holdenweb-com | Production is not monitored: the one free UptimeRobot monitor watches staging until the site earns income | gap |
 
@@ -178,6 +176,16 @@ too, since 6 x 150s is a 15-minute window to "unhealthy". Fuller form, and it
 fits item 32: make the interval a function of `PODPACK_ENVIRONMENT` -- loose for
 a quiet or dev site, tight for production -- rather than one hardcoded default.
 
+*Progress 2026-11-17.* Fixed upstream: podpack `7846d6d` and `d714355`
+(2026-11-13) set `web`'s healthcheck to `interval: 300s` -- not the 150s
+proposed here -- and `retries: 2`, in the repo root and the packaged substrate
+alike, and both are in **0.10.1**, published 2026-11-17. Not yet taken here:
+this site still locks 0.10.0, and its `compose.yaml:160-162` still reads `10s`
+and `6`. It closes when the lock moves to 0.10.1 and `podpack substrate
+upgrade` renders the new `compose.yaml` -- the two events HW-0024 tells apart.
+The fuller form was not taken up: 300s is one value for every deployment, not
+a function of `PODPACK_ENVIRONMENT`.
+
 ### 35. Does the `os` stack auto-start after an Opalstack host reboot?
 
 **Repo:** holdenweb-com. Opalstack reboots the shared host for their own
@@ -191,94 +199,6 @@ exists to break. So this pairs with MON-1: confirm the stack returns unattended
 after the next host reboot (`podman ps` clean with no manual `up.sh`), keep
 linger enabled, and have MON-1 live so a failure to return is caught rather than
 stumbled on.
-
-## Raised 2026-09-10
-
-### 37. Published notebooks depend on their source staying put
-
-**Repo:** podpack-notebooks. `notebooks.yaml` names each notebook by a path to
-its `.ipynb` source, and since `build.py` now expands `~` and absolute paths,
-that source commonly lives in a working directory elsewhere on the laptop, not
-in the repo. So a published notebook is only as durable as that source file:
-rename, move or delete it during ordinary development and the next `build.py`
-run drops or changes the published page, quietly.
-
-*Why it's left.* The obvious fix is to *vendor* a copy of each published
-notebook into the podpack-notebooks repo, so publication is pinned to a
-committed artefact rather than a live working file. That is deliberately
-deferred: it brings name-collision handling (two sources with the same stem),
-a decision about when a vendored copy is refreshed from its source, and the
-curation questions that follow — more machinery than the current need warrants.
-Steve's call (2026-09-10): keep it simple for now, convert straight from the
-sources `notebooks.yaml` points at.
-
-*The trigger to watch for* is a published notebook going stale or vanishing
-because its source moved — at which point vendoring (and its collision rules)
-earns its keep.
-
----
-
-## Raised 2026-10-19
-
-### 39. HSTS is sent only where a browser must ignore it
-
-*Raised 2026-10-19, after the cookie policy was fixed (HW-0035) left the
-question of what protects the first request still open.*
-
-podpack ADR-0036:28-29 records the belief that the cleartext problem is covered:
-"nginx answers that with a 301 to https and sends HSTS, so the link *works*".
-It works in the sense that the visitor arrives; it does not protect the request
-that got them there.
-
-**A 301 is a response.** By the time it reaches the browser, the request has
-already crossed the network in clear: the method, the full path, and any cookie
-not marked `Secure`. HSTS protects *later* requests from a browser that has
-already seen the policy. It cannot protect first contact, and the preload list
-is the only thing that can.
-
-**And the policy is never set.** Measured 2026-10-19:
-
-```
-http://os.holdenweb.com/   301, Strict-Transport-Security: max-age=31536000; includeSubDomains;
-https://os.holdenweb.com/  200, no Strict-Transport-Security at all (0 on / and on /healthz)
-```
-
-That is backwards. RFC 6797 §8.1 requires a browser to **ignore** an STS header
-received over non-secure transport, so the one response carrying it is the one
-response where it has no effect, and the responses that could set the policy
-carry nothing. On this evidence HSTS is not in force for this host at all.
-
-**Two caveats on that measurement, both load-bearing.** It was taken while
-`os.holdenweb.com` was serving Opalstack's "no site here.... yet!" placeholder
-rather than the site — `/` was a static file last modified in August 2025 and
-`/healthz` was an nginx 404 — so the HTTPS result describes *that* vhost and may
-not describe the site's own. **Re-measure once routing is restored.** And an
-earlier reading of `max-age=315` during this work was a truncated output line,
-not a short max-age; the real value is a year.
-
-*Re-measured 2026-10-28*, with routing restored and the site itself answering --
-`/healthz` returns podpack's JSON, not an nginx 404:
-
-```
-http://os.holdenweb.com/   301, Strict-Transport-Security: max-age=31536000; includeSubDomains;
-https://os.holdenweb.com/  200, no Strict-Transport-Security (nor on /healthz)
-```
-
-The first caveat no longer applies, and the finding stands.
-
-**What has changed, and what has not.** HW-0035 made `SESSION_COOKIE_SECURE`
-follow the deployment, so the session cookie no longer rides that cleartext
-first request — which removes the sharpest consequence. The request line and
-path still do, and `REMEMBER_COOKIE_SECURE` only started being set at the same
-time, so anything issued before that is still a cookie that would travel.
-
-*Why it's left.* The edge is rented and this site owns no nginx configuration
-(HW-0031), so moving the header onto HTTPS responses is Opalstack's to do —
-which makes this an email rather than an engineering task. Preload is a
-separate decision and a one-way door: it applies to the whole domain including
-subdomains, and removal takes months.
-
----
 
 ## Raised 2026-10-27, after the staging rebuild
 
