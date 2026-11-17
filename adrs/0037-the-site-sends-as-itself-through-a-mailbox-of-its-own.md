@@ -1,7 +1,6 @@
 # HW-0037: The site sends as itself, through a mailbox of its own
 
-**Status:** Proposed — supersedes [HW-0030](0030-the-site-sends-as-a-person.md)
-once production has cut over; until then HW-0030 describes what runs.
+**Status:** Accepted — supersedes [HW-0030](0030-the-site-sends-as-a-person.md)
 
 **Date:** 2026-11-01
 

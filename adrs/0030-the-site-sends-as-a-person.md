@@ -1,8 +1,8 @@
 # HW-0030: The site sends as a person, through a consumer account
 
-**Status:** Accepted, and to be superseded by
-[HW-0037](0037-the-site-sends-as-itself-through-a-mailbox-of-its-own.md) —
-proposed 2026-11-01, and correcting two of the premises below
+**Status:** Superseded by
+[HW-0037](0037-the-site-sends-as-itself-through-a-mailbox-of-its-own.md), which
+also corrects two of the premises below
 
 **Date:** 2026-09-22
 

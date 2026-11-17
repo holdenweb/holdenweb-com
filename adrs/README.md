@@ -100,6 +100,6 @@ written, not when the choice was made.
 
 | | |
 | --- | --- |
-| [HW-0030](0030-the-site-sends-as-a-person.md) | **The site sends as a person, through a consumer account.** Identity depends on one Gmail App Password; everything else is a code-level default a host can override. *To be superseded by HW-0037* — the account is Workspace, and only the password was ever read from the environment. |
-| [HW-0037](0037-the-site-sends-as-itself-through-a-mailbox-of-its-own.md) | **The site sends as itself, through a mailbox of its own.** *Proposed.* `hw-admin` at Opalstack, with `hw-stag@` and `hw-prod@mail.holdenweb.com` delivering into it (podpack ADR-0040). Transactional mail included, so the Gmail App Password retires and is revoked; `info@` stays with people, and the site never reads it. |
+| [HW-0030](0030-the-site-sends-as-a-person.md) | ~~**The site sends as a person, through a consumer account.**~~ *Superseded by HW-0037* — the account is Workspace, and only the password was ever read from the environment. |
+| [HW-0037](0037-the-site-sends-as-itself-through-a-mailbox-of-its-own.md) | **The site sends as itself, through a mailbox of its own.** `hw-admin` at Opalstack, with `hw-stag@` and `hw-prod@mail.holdenweb.com` delivering into it (podpack ADR-0040). Transactional mail included, so the Gmail App Password retires and is revoked; `info@` stays with people, and the site never reads it. |
 | [HW-0031](0031-the-public-edge-is-rented.md) | **The public edge is rented.** Loopback in, Opalstack's proxy and TLS out. Believing `X-Forwarded-Proto` is a promise about the topology. |
