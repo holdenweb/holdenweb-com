@@ -42,9 +42,9 @@ drift apart.
 | 28 | podpack-pages | A link between pages is rewritten to the asset route, losing the site — **fixed** | **correctness** |
 | 29 | podpack-pages | A directory has no index, so it cannot be landed on — **fixed** | gap |
 | 30 | podpack | No shared decorator for operator-only routes: `/config` hand-rolls the `/_status` guard (`extensions["podpack"].admin` + `abort(404)`), because flask-security's `roles_required` 403s and bypasses the replaceable admin predicate. A `@operator_required` in podpack would remove the copy -- low priority until a third such route wants it — **fixed** | gap |
-| 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
+| 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` — **fixed** | operational |
 | 32 | podpack | `PODPACK_PROXY_HOPS` should be *derived* from `PODPACK_ENVIRONMENT` (0 for local, 1 for staging/production) rather than set and delivered by hand — **fixed** | operational |
-| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters (fixed in podpack 0.10.1; not yet taken here) | operational |
+| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters (fixed in podpack 0.10.1; not yet taken here) — **fixed** | operational |
 | 34 | holdenweb-com | `/config` serialises the whole Flask config -- `SECRET_KEY`, `MAIL_PASSWORD`, the DB URI -- unredacted even to an admin; redact by key name — **fixed** | security |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 | 36 | holdenweb-com | `refresh-content.sh --mirror` deletes live content with no confirmation of its own; `push-content.sh` guards the remote path it drives, but a direct host run of `refresh-content.sh` does not -- give it the same tty-gated typed-`mirror` prompt `restore.sh` and `push-content.sh` use — **fixed** | operational |
@@ -991,6 +991,19 @@ and opal17 carries the manual `containers.conf` pin, so this host is covered;
 item 31 is the durable, every-deployment form. The pin also closes deploy.sh
 without touching it, because it is PATH-independent.
 
+**Fixed 2026-11-18, by hand on each machine rather than by
+`configure-host.py`.** Steve closed it by pinning the provider in his own
+configuration: the laptop's `~/.config/containers/containers.conf` now sets
+`[engine] compose_providers` to the v2 binary's absolute path alone,
+`/usr/local/bin/docker-compose`, with no `podman-compose` fallback, plus
+`compose_warning_logs = false` -- the content the Fix asked `configure-host.py`
+to write. There, `podman compose version` now answers `Docker Compose version
+v2.39.2` with no banner. With opal17's pin from 2026-09-03, both machines that
+run a podpack stack are pinned. The durable form was not built:
+`configure-host.py` still only warns, and its warning (line 95, in all three
+copies) still names `PODMAN_COMPOSE_PROVIDER`, so a new host stays unpinned
+until somebody pins it by hand.
+
 ### 32. `PODPACK_PROXY_HOPS` should be derived from the environment, not set by hand
 
 **Repo:** podpack
@@ -1064,6 +1077,14 @@ and `6`. It closes when the lock moves to 0.10.1 and `podpack substrate
 upgrade` renders the new `compose.yaml` -- the two events HW-0024 tells apart.
 The fuller form was not taken up: 300s is one value for every deployment, not
 a function of `PODPACK_ENVIRONMENT`.
+
+**Fixed 2026-11-18**, taken here in those two steps: `4dc5773` moved the lock
+to podpack 0.10.1, and `95addc6` ran `podpack substrate upgrade`, which changed
+two lines of `compose.yaml` -- `interval: 300s` and `retries: 2`, lines 160 and
+162 -- and no other file it manages. With two retries at 300s, a wedged `web`
+reads unhealthy within about ten minutes. Each deployment takes it at its next
+deploy, when `up.sh` rebuilds the image and recreates `web`; until then it
+still runs 10s and 6.
 
 ### 34. `/config` dumps every secret in the Flask config, even to an admin
 

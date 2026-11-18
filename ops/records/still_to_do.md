@@ -1,6 +1,6 @@
 # Still to do
 
-The open items from [`backlog.md`](backlog.md), extracted 2026-11-17 -- everything
+The open items from [`backlog.md`](backlog.md), extracted 2026-11-18 -- everything
 not marked **fixed** in its summary table and not on its struck list.
 
 This is a *copy*, not a replacement. `backlog.md` remains the record: it is
@@ -17,8 +17,6 @@ than edit in place.
 | 10 | holdenweb-com | No maintenance page | gap |
 | 11 | holdenweb-com | Migrations have no tested downgrade | gap |
 | 27 | podpack | Navigation is one level deep, so an app's pages hang off the root | gap |
-| 31 | podpack | `configure-host.py` detects a non-v2 `podman compose` provider but only warns; it should pin it in `containers.conf` so cron and ssh-deploy cannot silently fall back to the gate-ignoring `podman-compose` | operational |
-| 33 | podpack | The `web` healthcheck pings every 10s (`compose.yaml:160`); widen to 150s for a quiet site and tighten when it matters (fixed in podpack 0.10.1; not yet taken here) | operational |
 | 35 | holdenweb-com | Unverified: does the `os` stack auto-start after an Opalstack host reboot? Rides `loginctl` linger + `restart: unless-stopped`, never seen through a real reboot; a silent no-return is what MON-1 must catch | gap |
 | 40 | holdenweb-com | No automated, mail-free admin bootstrap for a FRESH build | gap |
 | 43 | holdenweb-com | Production is not monitored: the one free UptimeRobot monitor watches staging until the site earns income | gap |
@@ -103,88 +101,6 @@ nothing here disturbs that; this is the same idea one level further down. Worth
 checking whether it wants an ADR of its own or an amendment to that one.
 
 ## Raised 2026-09-03, chasing the backup-cron failure
-
-### 31. `configure-host.py` should pin the compose provider, not just warn
-
-**Repo:** podpack
-
-*Evidence.* `podman compose` is a shim that picks an external provider from
-`containers.conf`'s `[engine] compose_providers`; with no such file on the host
-(none is shipped or written), podman's built-in default list applies --
-docker-compose first, `podman-compose` last -- and **PATH is the only tiebreak**.
-An interactive login shell has `~/bin` first and gets `~/bin/docker-compose`
-(Compose v2); any stripped or non-login environment cannot resolve
-`docker-compose` and falls through to `/usr/bin/podman-compose` -- the Python
-tool that rejects `ps --status running --services` and, per gotcha 4 and
-ADR-0016, silently ignores `depends_on` ordering gates. None of the substrate
-scripts set PATH or a provider (`up.sh:32`, `restore.sh`, `backup.sh`,
-`verify-backup.sh` all call a bare `podman compose`), so the provider is decided
-entirely by each caller's environment. `configure-host.py:86-96` already runs
-`podman compose version` and detects a non-"Docker Compose" provider -- but only
-appends a warning string, and only ever sees the interactive environment, so a
-green `configure-host.py` says nothing about cron or an ssh deploy.
-
-*Why it matters.* Two unattended paths hit the fallback. The nightly backup cron
-did -- now fixed in `holdenweb.com/ops/backup.cron` by prepending `$HOME/bin`,
-and by a manual `~/.config/containers/containers.conf` pin on opal17
-(2026-09-03). The one still unhardened in-repo is the routine deploy:
-`holdenweb.com/ops/deploy.sh:82` runs `ssh host "cd ~/… && ./scripts/up.sh"`, a
-non-login shell whose PATH need not include `~/bin` -- and `up.sh:32` runs
-`podman compose up -d --build`, which is exactly where the ordering gates live.
-If it resolves `podman-compose`, every deploy silently skips init-storage →
-postgres-healthy → migrate → web. That is the "failure mode is silence" ADR-0016
-flags as unaddressed, on the routine path.
-
-*Fix.* Turn `configure-host.py`'s detection into prevention: write (or merge)
-`[engine] compose_providers = ["<abs path to docker-compose>"]` -- a single
-absolute path found via `shutil.which("docker-compose")` (default
-`~/bin/docker-compose`), with **no** `podman-compose` entry so a missing provider
-fails loudly rather than degrading -- into the rootless user's
-`~/.config/containers/containers.conf` (merging, or a `.d` drop-in; verify
-user-level drop-in support on the host). Not the rendered site tree -- podman
-never reads it. Add `compose_warning_logs = false` there too, to silence the
-`>>>> Executing external compose provider …` banner. And correct
-`configure-host.py:95`'s advice, which names a `PODMAN_COMPOSE_PROVIDER`
-environment variable that does not appear to exist -- the real override is
-`containers.conf`; confirm on the host before rewriting. Being substrate-shipped,
-this makes every deployment safe by construction; keep the byte-identical
-repo-root and packaged copies in step.
-
-*Interim, in place now.* `ops/backup.cron` prepends `$HOME/bin` (belt-and-braces)
-and opal17 carries the manual `containers.conf` pin, so this host is covered;
-item 31 is the durable, every-deployment form. The pin also closes deploy.sh
-without touching it, because it is PATH-independent.
-
-### 33. The `web` healthcheck pings every 10s -- too often for a quiet site
-
-**Repo:** podpack
-
-*Evidence.* `compose.yaml:160` sets the `web` service healthcheck to
-`interval: 10s` (`test: python /app/healthcheck.py`, timeout 5s, retries 6,
-start_period 10s), so a site with no users yet health-pings `/healthz` six times
-a minute around the clock -- overhead and access-log noise (see LOG-1) out of
-all proportion to the traffic. The postgres healthcheck at 5s
-(`compose.postgres.yaml:78`) is the startup gate and a separate matter; leave it.
-
-*Fix.* Widen the `web` healthcheck `interval` to **150s** for now, and tighten it
-again when the site is busy enough to want fast liveness detection. `compose.yaml`
-is byte-identical substrate (podpack canonical + the rendered `holdenweb.com`
-copy + the root), so change them together. Nothing currently acts on `web` being
-unhealthy -- podman does not auto-restart on it -- so the only cost is how
-quickly `podman ps` reflects a wedged container; consider trimming `retries`
-too, since 6 x 150s is a 15-minute window to "unhealthy". Fuller form, and it
-fits item 32: make the interval a function of `PODPACK_ENVIRONMENT` -- loose for
-a quiet or dev site, tight for production -- rather than one hardcoded default.
-
-*Progress 2026-11-17.* Fixed upstream: podpack `7846d6d` and `d714355`
-(2026-11-13) set `web`'s healthcheck to `interval: 300s` -- not the 150s
-proposed here -- and `retries: 2`, in the repo root and the packaged substrate
-alike, and both are in **0.10.1**, published 2026-11-17. Not yet taken here:
-this site still locks 0.10.0, and its `compose.yaml:160-162` still reads `10s`
-and `6`. It closes when the lock moves to 0.10.1 and `podpack substrate
-upgrade` renders the new `compose.yaml` -- the two events HW-0024 tells apart.
-The fuller form was not taken up: 300s is one value for every deployment, not
-a function of `PODPACK_ENVIRONMENT`.
 
 ### 35. Does the `os` stack auto-start after an Opalstack host reboot?
 
