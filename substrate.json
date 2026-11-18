@@ -108,7 +108,7 @@
     },
     "compose.yaml": {
       "class": "verbatim",
-      "sha256": "712c4295ca33f58fef777c570fda9b80f8ba24b9b304b46d82d4c194c4bb1350"
+      "sha256": "856eea220625a043a7652b3b3ee0f8eb19c798f64a1c40755df8f40f989c6fef"
     },
     "config/mongod.conf": {
       "class": "verbatim",
@@ -185,6 +185,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.10.0",
+  "podpack_version": "0.10.1",
   "substrate_schema": 1
 }
