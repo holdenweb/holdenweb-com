@@ -33,7 +33,7 @@ set -euo pipefail
 # blank until its Opalstack app and domain exist; fill it in then.
 health_url() {
   case "$1" in
-    staging)    echo "https://os.holdenweb.com/healthz" ;;
+    staging)    echo "https://staging.holdenweb.com/healthz" ;;
     production) echo "" ;;
     *)          echo "" ;;
   esac

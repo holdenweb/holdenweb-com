@@ -29,8 +29,8 @@ and the run exits 0 only if every one does: a page that passes is one on which
 the check cannot see the bug. The default tree is the one `just blog` publishes
 ($SITESCRAPER_BUILD, else ~/Projects/Python/blogscraper/build).
 
-    python3 ops/check-comment-pages.py https://os.holdenweb.com
-    python3 ops/check-comment-pages.py https://os.holdenweb.com --stored [DIR]
+    python3 ops/check-comment-pages.py https://staging.holdenweb.com
+    python3 ops/check-comment-pages.py https://staging.holdenweb.com --stored [DIR]
 """
 
 from __future__ import annotations
@@ -133,7 +133,7 @@ def comment_problems(page: Page, thread: list[str], n: int, post: str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("site", help="the site's root URL, e.g. https://os.holdenweb.com")
+    parser.add_argument("site", help="the site's root URL, e.g. https://staging.holdenweb.com")
     parser.add_argument("--stored", nargs="?", const=EXPORT, type=Path, metavar="DIR",
                         help="take the comment pages from this export tree instead, "
                              "and expect every one to fail (default: the tree "

@@ -22,7 +22,7 @@
 #   HEALTH_URL=https://holdenweb.com/healthz ./ops/poll-health.sh
 set -euo pipefail
 
-URL="${HEALTH_URL:-https://os.holdenweb.com/healthz}"
+URL="${HEALTH_URL:-https://staging.holdenweb.com/healthz}"
 TIMEOUT="${HEALTH_TIMEOUT:-15}"
 EXPECT='"status":"ok"'
 [ -n "${HEALTH_EXPECT:-}" ] && EXPECT="$HEALTH_EXPECT"

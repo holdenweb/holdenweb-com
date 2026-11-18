@@ -77,7 +77,7 @@ check-comments target="staging" *flags:
     set -euo pipefail
     cd "{{ justfile_directory() }}"
     case "{{ target }}" in
-      staging)    site=https://os.holdenweb.com ;;
+      staging)    site=https://staging.holdenweb.com ;;
       production) site=https://holdenweb.com ;;
       http://*|https://*) site="{{ target }}" ;;
       *)

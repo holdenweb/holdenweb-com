@@ -186,7 +186,7 @@ contributing no navigation entry at all.
 
 ## Monitoring
 
-[UptimeRobot](https://uptimerobot.com) checks `https://os.holdenweb.com/healthz`
+[UptimeRobot](https://uptimerobot.com) checks `https://staging.holdenweb.com/healthz`
 every five minutes over HTTPS and mails when it fails. It is the only thing
 watching the site *between* deploys — everything above is a point-in-time check
 that a person runs.

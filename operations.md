@@ -117,7 +117,7 @@ Never by looking at the front page. The QR code app answered 200 for weeks
 while contributing no navigation at all.
 
 ```bash
-uv run pytest tests/integration --base-url https://os.holdenweb.com
+uv run pytest tests/integration --base-url https://staging.holdenweb.com
 ```
 
 Twenty-six tests, driving a real browser, asking each app to do its job —
@@ -126,7 +126,7 @@ stylesheet. The header names what it tested, so a suite that quietly checked
 the laptop instead is visible:
 
 ```
-integration target: https://os.holdenweb.com
+integration target: https://staging.holdenweb.com
 ```
 
 The browsers it drives are not in the lockfile, so a machine that has never run
@@ -857,7 +857,7 @@ is richer, it requires an operator, and it is not what to poll.
 
 ### Two checks, because they fail differently
 
-1. **From outside**, against `https://os.holdenweb.com/healthz`, expecting 200
+1. **From outside**, against `https://staging.holdenweb.com/healthz`, expecting 200
    *and* `"status":"ok"` in the body. Matching the body is not fussiness: nginx
    will happily return 200 from its own error page with the container gone.
    This is the one that catches DNS, the proxy and a broken certificate, none of
