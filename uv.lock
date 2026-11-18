@@ -570,7 +570,7 @@ requires-dist = [
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "flask", specifier = ">=2.3.3" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
-    { name = "podpack", specifier = ">=0.10.0" },
+    { name = "podpack", specifier = ">=0.10.1" },
     { name = "podpack-mail", specifier = ">=0.1.0" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },
     { name = "podpack-pages", specifier = ">=0.3.0" },
@@ -909,7 +909,7 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.10.0"
+version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -920,9 +920,9 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/d5/7d36881451b5192fdff32dce738f7a27290d0c34bac6dd30e5bb6984f140/podpack-0.10.0.tar.gz", hash = "sha256:cb05ec67c062af5336b22d4e21cf0486c3261dd93e91dbb3111827a985a8b85d", size = 165578, upload-time = "2026-11-02T22:01:52.198Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/ae/567ca06776a5ca46ea25d56dc0e3c6b25501826b8f17b4a9ab33172408c6/podpack-0.10.1.tar.gz", hash = "sha256:a88e028f32325bef6c5c32c4416599145990e95d3dbd4bb7245f0c8a0713d583", size = 166251, upload-time = "2026-11-17T12:31:45.568Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/59/ef00a8a8bf5df6a7264e62fd5958dfbdd9027ea0e97ee714c28b267b8e0d/podpack-0.10.0-py3-none-any.whl", hash = "sha256:81fc5ef6bc5ff1f8a413a36c3c780b4657317ef238c9fda49f298d5fc532f577", size = 168176, upload-time = "2026-11-02T22:01:50.862Z" },
+    { url = "https://files.pythonhosted.org/packages/be/ac/91df91981c283ca5ad063f8552d1ccac6d14a30f9b018516c402bf3fea1a/podpack-0.10.1-py3-none-any.whl", hash = "sha256:4c38b00cf8f00d2de3a3c30286f8de2075ebbd8d87ec54617911705b7d5199ab", size = 168903, upload-time = "2026-11-17T12:31:44.342Z" },
 ]
 
 [[package]]

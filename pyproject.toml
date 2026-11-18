@@ -42,7 +42,13 @@ dependencies = [
  #           confirm an account made by hand. Below it the command does not
  #           exist, and the first administrator cannot sign in until a shell
  #           snippet sets confirmed_at.
- "podpack>=0.10.0",
+ #   0.10.1  `podpack backup plan` gives verify-backup.sh a command that reads
+ #           each PostgreSQL dump right through. Below it the check was
+ #           `pg_restore --list`, which reads only the archive's table of
+ #           contents, so a dump cut off after it could stand VERIFIED.
+ #           backup.sh asks the podpack inside the web image for the command,
+ #           so backups get it at the first rebuild from this lock.
+ "podpack>=0.10.1",
  #
  # The apps, from PyPI since 2026-09-14. Each floor is the version carrying
  # something this deployment depends on, not merely the newest available:
