@@ -79,7 +79,7 @@
     <text x="678" y="274" font-weight="600" fill="#0d2a8f">web</text>
     <text x="678" y="292" font-size="9.5" fill="#3a3c42">gunicorn, uid 10001, port 8000</text>
     <text x="678" y="312" font-size="9.5" fill="#3a3c42">healthcheck from inside: /healthz</text>
-    <text x="678" y="326" font-size="9.5" fill="#3a3c42">every 10s, or it is unhealthy</text>
+    <text x="678" y="326" font-size="9.5" fill="#3a3c42">every 300s, or it is unhealthy</text>
 
     <line x1="764" y1="348" x2="764" y2="382" stroke="#4646e9" stroke-width="1.4" marker-end="url(#a)"/>
     <rect x="664" y="386" width="200" height="52" rx="7" fill="#f6f6ef" stroke="#e7e4d4"/>

@@ -797,7 +797,7 @@ Every message this system is likely to put in front of you — 126 of them — w
 `container STATUS shows health: unhealthy (probe: python /app/healthcheck.py -> /healthz, exit 0 only on HTTP 200)`
 
 - **Warning** · **where:** either · **from:** `container/healthcheck.py`
-- **Means:** /healthz didn't return 200 within the window (interval 10s, retries 6, start_period 10s). Sticks unhealthy -> the stack won't serve.
+- **Means:** /healthz didn't return 200 within the window (interval 300s, retries 2, start_period 10s). Sticks unhealthy -> the stack won't serve.
 - **Do:** `podman compose logs web`; hit /healthz for the JSON reason (healthz-503 = DB down, the usual cause).
 
 ### 🔵 migrate-running
