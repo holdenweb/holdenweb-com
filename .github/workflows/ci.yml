@@ -34,3 +34,13 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
+      - name: The substrate record is current
+        # compose.yaml, the container scripts and alembic's env.py are podpack's,
+        # rendered here by `podpack substrate upgrade` from the podpack in
+        # uv.lock. Moving the lock does not move them, so taking a podpack
+        # release is two steps, and the second is the one that gets forgotten:
+        # backlog 33 waited on it. Red here means the locked podpack ships
+        # substrate this site has not taken -- run `uv run podpack substrate
+        # upgrade`, review what it changes, and commit it.
+        run: uv run podpack substrate status --check
