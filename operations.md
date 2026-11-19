@@ -120,9 +120,9 @@ while contributing no navigation at all.
 uv run pytest tests/integration --base-url https://staging.holdenweb.com
 ```
 
-Twenty-six tests, driving a real browser, asking each app to do its job —
+Twenty-seven tests, driving a real browser, asking each app to do its job —
 generate a code, offer both PDF forms, render a page in the site's own
-stylesheet. The header names what it tested, so a suite that quietly checked
+stylesheet, send a visitor to lablog's login rather than into it. The header names what it tested, so a suite that quietly checked
 the laptop instead is visible:
 
 ```

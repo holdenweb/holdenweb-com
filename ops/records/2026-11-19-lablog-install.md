@@ -26,6 +26,7 @@ passing. Any later failure would then be lablog's.
 | role | `roles create lablog`, then `roles add steve@holdenweb.com lablog` |
 | HTTP checks | 30 of 30, as on the demo: anonymous → 302 to `/login?next=`; a confirmed holder runs a full experiment, each record rule refusing 409 with its reason; a confirmed stranger gets 404 everywhere, POST included. Granted the role, the stranger's checks go red (200s); with it removed, green. `/_status` reports `"reported": {"holders": 2, "role": "lablog", "role_exists": true}`. |
 | integration suite | 26 passed, with lablog installed |
+| tests added afterwards | `tests/test_lablog.py` (15) asserts SEC-1 for lablog with users it makes itself: a holder gets 200 on every page, a confirmed stranger 404 on the same pages and on a missing project, and a stranger's POST is refused with nothing recorded. Given the role in the fixture, the stranger's 7 go red. The browser suite gains `test_the_lablog_app_is_installed_and_closed_to_visitors`, which carries no credential (HW-0029) and checks the gate from outside: login redirects that keep `next`, for a deep link and a POST too, and no nav entry. Locally: 50 unit, 27 integration, all passing. Against staging before the deploy, the new browser test fails, because `/lablog/` serves staging's own 404. |
 
 The checks used two local-only accounts, `test-lablog-holder@` and
 `test-lablog-stranger@holdenweb.com`, confirmed with `users confirm` because
@@ -90,7 +91,11 @@ the administrator included. That is expected, not a fault.
    uv run pytest tests/integration --base-url https://staging.holdenweb.com
    ```
 
-   Expect 26 passed. It has no lablog tests; it shows the other apps survived.
+   Expect 27 passed. Before this deploy,
+   `test_the_lablog_app_is_installed_and_closed_to_visitors` fails there, so
+   its passing is the evidence the app arrived. It only sees the gate, so it
+   passes whether or not the role exists yet. The other 26 show the rest of
+   the site survived.
 
 6. **In a browser**, signed in to staging: `/lablog/` shows the project
    list, and `/_status` reports

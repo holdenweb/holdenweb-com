@@ -7,6 +7,7 @@ thing it exists for.
 """
 
 import re
+from urllib.parse import parse_qs, urlsplit
 
 from playwright.sync_api import Page, expect
 
@@ -58,6 +59,41 @@ def test_the_pdf_app_offers_both_tools(page: Page, base_url: str) -> None:
         # A file input and a submit: the form is complete enough to use.
         expect(page.locator("input[type=file]")).to_be_visible()
         expect(page.get_by_role("button", name=re.compile(button, re.I))).to_be_visible()
+
+
+def test_the_lablog_app_is_installed_and_closed_to_visitors(page: Page, base_url: str) -> None:
+    """lablog serves only holders of its `lablog` role, and this suite carries
+    no credential (HW-0029), so what it can see is the gate. That is enough to
+    tell installed from missing: a site without the app answers 404 at
+    /lablog/, a site with it sends the visitor to log in and back again.
+
+    What a *signed-in* stranger gets, the 404 that SEC-1 rests on, needs a
+    session, so tests/test_lablog.py asserts it with users of its own.
+    """
+    def lands_on_login(path: str) -> None:
+        page.goto(f"{base_url}{path}")
+        landed = urlsplit(page.url)
+        assert landed.path == "/login", f"{path} served {page.url}, not the login form"
+        assert parse_qs(landed.query).get("next") == [path], f"{path} lost its way back: {page.url}"
+
+    lands_on_login("/lablog/")
+    expect(page.get_by_role("button", name="Login")).to_be_visible()
+    # A deep link gets the same answer whether or not the project exists, so
+    # a visitor cannot use the redirect to learn which ones do.
+    lands_on_login("/lablog/no-such-project/experiments/1")
+
+    # Writing is gated before the form is read: a redirect, not a 400 for the
+    # missing CSRF token and never a 500.
+    posted = page.request.post(f"{base_url}/lablog/new", form={"name": "x"}, max_redirects=0)
+    assert posted.status == 302, f"anonymous POST /lablog/new returned {posted.status}"
+    assert urlsplit(posted.headers["location"]).path == "/login"
+
+    # No nav entry, on purpose: a Section renders for every visitor, and would
+    # advertise a page that 404s to nearly all of them. Asserted on a page
+    # whose nav is known to be populated, so that "none" is not just "no nav".
+    page.goto(f"{base_url}/")
+    expect(page.locator("nav.pagenav a").first).to_be_visible()
+    expect(page.locator('nav.pagenav a[href*="/lablog"]')).to_have_count(0)
 
 
 def test_an_unknown_page_is_the_sites_own_404(page: Page, base_url: str) -> None:
