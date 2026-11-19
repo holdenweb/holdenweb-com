@@ -17,6 +17,7 @@ podpack supplies the factory, the app registry and the migration wiring.
 | Jupyter notebooks at `/notebooks/` (the "Notebooks" nav entry) | `podpack-notebooks` |
 | QR code generator at `/qrcode/` | `podpack-qrcode` |
 | PDF booklet maker and page splitter at `/pdf/` | `podpack-pdf` |
+| lab log at `/lablog/`, for holders of the `lablog` role only (404 to everyone else signed in; no nav entry) | `podpack-lablog` |
 | login | `podpack` core (ADR-0033) |
 | mail, session policy | wired by this package's `init` (`_wire`) |
 

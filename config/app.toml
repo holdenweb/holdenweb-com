@@ -7,8 +7,10 @@ name = "holdenweb.com"
 # Installed apps, by *import* name, in installation order -- which is also nav
 # order: `holdenweb` is the site's own routes and must come first so its front
 # page claims `/`. pybooks and blog contribute the Python and Blog nav entries;
-# plain `podpack_pages` (at /pages) contributes none.
-apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_notebooks", "podpack_pages", "podpack_qrcode", "podpack_pdf", "podpack_mail"]
+# plain `podpack_pages` (at /pages) contributes none. Nor does lablog, on
+# purpose: every page it has 404s to anyone without the `lablog` role, so a nav
+# entry would advertise to the public a page they can only get a 404 from.
+apps = ["holdenweb", "podpack_pages.pybooks", "podpack_pages.blog", "podpack_notebooks", "podpack_pages", "podpack_qrcode", "podpack_pdf", "podpack_mail", "podpack_lablog"]
 
 # No `secrets` list any more. The one secret it named, MAIL_PASSWORD, is
 # declared by podpack-mail itself (`needs_secrets`), so podpack still refuses
@@ -57,3 +59,10 @@ default_title = "Holden Web Python"
 server = "smtp.de.opalstack.com"
 port = 465
 sender_name = "Holden Web"
+
+# Times are stored as UTC and shown in this zone. An unknown zone stops the
+# site booting rather than breaking the first page that shows a time. The zone
+# data comes from the image's system tzdata (Debian's, in python:3.12-slim):
+# lablog 0.1.0 does not depend on the tzdata package.
+[apps.lablog]
+timezone = "Europe/London"

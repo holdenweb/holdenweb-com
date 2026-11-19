@@ -72,11 +72,15 @@ dependencies = [
  #   notebooks 0.1.1  the app as installed here.
  #   mail 0.1.0       the first release: this site's mail moved into it from
  #                    _wire, off Gmail and onto hw-admin (HW-0037).
+ #   lablog 0.1.0     the first release, behind its own `lablog` role. It
+ #                    declares wtforms>=3.3.2, so taking it moved WTForms up
+ #                    from 3.3.1.
  "podpack-pages>=0.3.0",
  "podpack-qrcode>=0.2.2",
  "podpack-pdf>=0.2.2",
  "podpack-notebooks>=0.1.1",
  "podpack-mail>=0.1.0",
+ "podpack-lablog>=0.1.0",
  "werkzeug (>=2.3.8)",
  "flask (>=2.3.3)",
  "python-dotenv (>=1.0.1,<2.0.0)",
