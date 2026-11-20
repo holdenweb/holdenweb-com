@@ -5,13 +5,38 @@ exercise the configuration that ships rather than a parallel copy of it.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
+from flask.testing import FlaskClient
+from werkzeug.test import TestResponse
 
 from holdenweb import create_app
 from podpack import db
 
 CONFIG = Path(__file__).parents[1] / "config" / "app.toml"
+
+
+class OwnContextClient(FlaskClient):
+    """Each request in an app context of its own, as on a real server.
+
+    `_build` below yields from inside `app.app_context()`, so that fixtures and
+    tests can reach the database directly. But Flask reuses an app context
+    already pushed for the same app instead of pushing one per request, so
+    without this `g` would outlive every request, and with it what
+    flask-login and flask-principal keep there (`_login_user`, `identity`).
+    Measured: after a successful login through the form, the next request was
+    refused "You must sign in" with `_user_id` still in the session. The same
+    client and session in a fresh context got 200.
+
+    Installed as every test app's client class, not offered as a fixture to
+    ask for, because the trap is silent: a signed-in test written without
+    knowing about it passes or fails for reasons the site never sees.
+    """
+
+    def open(self, *args: Any, **kwargs: Any) -> TestResponse:
+        with self.application.app_context():
+            return super().open(*args, **kwargs)
 
 
 @pytest.fixture
@@ -51,6 +76,7 @@ def _build(monkeypatch, tmp_path, **overrides):
         log_root=tmp_path / "logs",
         **overrides,
     )
+    app.test_client_class = OwnContextClient
     with app.app_context():
         db.create_all()
         yield app

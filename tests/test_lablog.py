@@ -15,13 +15,11 @@ test_the_lablog_app_is_installed_and_closed_to_visitors.
 """
 
 from datetime import datetime, timezone
-from typing import Any
 
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 from flask_security import hash_password
-from werkzeug.test import TestResponse
 
 from podpack import db
 from podpack.auth import user_datastore
@@ -58,31 +56,14 @@ def people(app: Flask) -> None:
     db.session.commit()
 
 
-class OwnContextClient(FlaskClient):
-    """Each request in an app context of its own, as on a real server.
-
-    conftest's `app` yields from inside `app.app_context()`, and Flask reuses
-    an app context already pushed for the same app rather than pushing one per
-    request. So `g` outlives the request, and with it what flask-login and
-    flask-principal keep there (`_login_user`, `identity`). Measured: after a
-    successful login through the form, the next request was refused "You must
-    sign in" while the session still held `_user_id`; the same client and
-    session, in a fresh context, got 200. Any signed-in test against that
-    fixture needs this, or it passes and fails for reasons the site never sees.
-    """
-
-    def open(self, *args: Any, **kwargs: Any) -> TestResponse:
-        with self.application.app_context():
-            return super().open(*args, **kwargs)
-
-
 def signed_in(app: Flask, email: str) -> FlaskClient:
     """A client holding a real session, obtained through the login form.
 
     The session is inspected rather than the status code, because a refused
-    login also answers 200.
+    login also answers 200. The session lasting into the next request relies
+    on conftest's OwnContextClient, which every test app uses.
     """
-    client = OwnContextClient(app, app.response_class, use_cookies=True)
+    client = app.test_client()
     client.post("/login", data={"email": email, "password": PASSWORD}, follow_redirects=True)
     with client.session_transaction() as session:
         assert "_user_id" in session, f"signing in as {email} did not take"
