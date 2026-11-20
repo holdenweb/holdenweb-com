@@ -87,7 +87,7 @@
     },
     "alembic/env.py": {
       "class": "verbatim",
-      "sha256": "87d9ad1abd0a13c7a88eee4bfa21dd7fd3fbfac03aa7cadd2e6286d0c4917829"
+      "sha256": "aba75c9d681ec6fa25b3660a4ac81a891c5282fa533a5ff186e8a98b22af4f08"
     },
     "alembic/script.py.mako": {
       "class": "verbatim",
@@ -108,7 +108,7 @@
     },
     "compose.yaml": {
       "class": "verbatim",
-      "sha256": "856eea220625a043a7652b3b3ee0f8eb19c798f64a1c40755df8f40f989c6fef"
+      "sha256": "9820926beff80ccb1ced24abdfbe29dfae9d071d1cc69003de33d3a92145996a"
     },
     "config/mongod.conf": {
       "class": "verbatim",
@@ -128,7 +128,7 @@
     },
     "container/healthcheck.py": {
       "class": "verbatim",
-      "sha256": "4a82ddfe742d61d7d48ed322fa85573ece69e6672fe0d519a978703d22215052"
+      "sha256": "abeb30a903e646320222ffa585f2838127ad6528a090665187252e715bac182b"
     },
     "db-init/01-create-app-user.sh": {
       "class": "verbatim",
@@ -149,7 +149,7 @@
     },
     "scripts/configure-host.py": {
       "class": "verbatim",
-      "sha256": "65204754991225ee9b164a78db347e3764a58ebd0aa62d180da21709e382d211"
+      "sha256": "910c59b89eb51324185881c8b83d1f9a946e585f438b35450427ee7388e6096d"
     },
     "scripts/dev.sh": {
       "class": "rendered",
@@ -185,6 +185,6 @@
     "site_package": "holdenweb",
     "web_port": "8458"
   },
-  "podpack_version": "0.10.1",
+  "podpack_version": "0.11.0",
   "substrate_schema": 1
 }

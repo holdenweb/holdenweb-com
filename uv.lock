@@ -932,7 +932,7 @@ wheels = [
 
 [[package]]
 name = "podpack"
-version = "0.10.1"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -943,9 +943,9 @@ dependencies = [
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/47/ae/567ca06776a5ca46ea25d56dc0e3c6b25501826b8f17b4a9ab33172408c6/podpack-0.10.1.tar.gz", hash = "sha256:a88e028f32325bef6c5c32c4416599145990e95d3dbd4bb7245f0c8a0713d583", size = 166251, upload-time = "2026-11-17T12:31:45.568Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/9d/ba5cac0f39b213120c9c98102322d52e7a298a538da3cb5196a74a5ef73a/podpack-0.11.0.tar.gz", hash = "sha256:5d2dedc4b4889400b1e5af83805f2f77a61a7294281eb925e80310c3e456d6f0", size = 167045, upload-time = "2026-11-19T12:49:35.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/ac/91df91981c283ca5ad063f8552d1ccac6d14a30f9b018516c402bf3fea1a/podpack-0.10.1-py3-none-any.whl", hash = "sha256:4c38b00cf8f00d2de3a3c30286f8de2075ebbd8d87ec54617911705b7d5199ab", size = 168903, upload-time = "2026-11-17T12:31:44.342Z" },
+    { url = "https://files.pythonhosted.org/packages/20/41/4532c67d7a1f3d3a51b6e59cba826a02639d811dfe2b9852d5c2c422ecdd/podpack-0.11.0-py3-none-any.whl", hash = "sha256:7a1f121bd44c88711533776d01c960c588b06f9cafbc7bc60005982e83191002", size = 169760, upload-time = "2026-11-19T12:49:34.31Z" },
 ]
 
 [[package]]
