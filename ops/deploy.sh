@@ -89,6 +89,18 @@ fi
 # overwrite a ref somebody else had moved.
 deploy_ref="refs/heads/deploy/$target"
 
+# The lease's expectation is explicit: the commit this clone last pushed to the
+# deploy ref, recorded under refs/deployed/<target> once the push succeeds. The
+# bare --force-with-lease this replaced took its expectation from
+# refs/remotes/origin/deploy/<target>, and every `git fetch` rewrites that to
+# whatever GitHub holds -- a fetch by hand, `local/status.py --fetch`, an
+# editor's in the background. After any of them the lease agreed with GitHub
+# whoever had moved the ref, which is --force by a longer name. Nothing fetches
+# into refs/deployed/. Empty when this clone has never deployed to the target,
+# which tells git the branch must not exist on GitHub at all.
+lease_ref="refs/deployed/$target"
+expect="$(git rev-parse -q --verify "$lease_ref" || true)"
+
 # $path and $full_sha expand here (local vars); ~ stays literal in double quotes
 # and expands on the host, so the login home is resolved there rather than on
 # the laptop.
@@ -117,7 +129,8 @@ stamp_cmd="cd ~/$path && podman compose exec -T web printenv PODPACK_BUILD_COMMI
 hu="$(health_url "$target")"
 
 if [ "$dry" -eq 1 ]; then
-  echo "+ git push --force-with-lease origin HEAD:$deploy_ref"
+  echo "+ git push --force-with-lease=$deploy_ref:$expect origin HEAD:$deploy_ref"
+  echo "+ git update-ref $lease_ref $full_sha"
   echo "+ ssh $sshhost \"$remote_cmd\""
   [ -n "$hu" ] && echo "+ HEALTH_URL=$hu ${0%/*}/poll-health.sh"
   echo "+ ssh $sshhost \"$stamp_cmd\"   # must report $sha"
@@ -125,38 +138,54 @@ if [ "$dry" -eq 1 ]; then
 fi
 
 echo "==> deploying $sha to $target ($sshhost:$path)"
-# The lease is this clone's refs/remotes/origin/deploy/<target>, and with no such
-# ref git expects the branch to be ABSENT on GitHub. So a refusal means the ref
-# was moved -- or created -- somewhere this clone never heard about: another
-# machine, another clone, the GitHub UI. git says only "(stale info)", naming
-# neither the commit nor the cause, so say the rest here -- but only when
-# ls-remote shows that is what happened: a push that failed for any other reason
-# (network, auth) keeps git's own message and nothing invented on top.
+# A refusal means the deploy ref on GitHub is not the commit this clone last put
+# there: it was moved, created or deleted somewhere this clone never heard about
+# -- another machine, another clone, the GitHub UI. git says only "(stale
+# info)", naming neither the commit nor the cause, so say the rest here -- but
+# only when ls-remote shows that is what happened: a push that failed for any
+# other reason (network, auth) keeps git's own message and nothing invented on
+# top.
 #
-# Deliberately no fetch before the push. Fetching first would make the lease
-# agree with whatever is on GitHub, which is --force by a longer name.
+# The way past a refusal is to record the commit found there as seen, so going
+# ahead is a decision about that one commit. It used to be `git fetch origin`,
+# which accepts whatever the fetch happens to bring: the same hole as above.
 #
 # `|| { rc=$?; ... exit "$rc"; }` rather than `if !`, so the script still exits
 # with git's own status, exactly as it did when set -e stopped it here.
-git push --force-with-lease origin "HEAD:$deploy_ref" || {
+git push --force-with-lease="$deploy_ref:$expect" origin "HEAD:$deploy_ref" || {
   rc=$?
-  seen="$(git rev-parse -q --verify "refs/remotes/origin/deploy/$target" || true)"
-  there="$(git ls-remote origin "$deploy_ref" 2>/dev/null | cut -f1 || true)"
-  if [ -n "$there" ] && [ "$there" != "$seen" ]; then
-    if git cat-file -e "$there^{commit}" 2>/dev/null; then
-      what="$(git log -1 --format='%h "%s"' "$there")"
-    else
-      what="${there:0:7} (a commit this clone does not have)"
+  if listing="$(git ls-remote origin "$deploy_ref" 2>/dev/null)"; then
+    there="$(printf '%s' "$listing" | cut -f1)"
+    if [ "$there" != "$expect" ]; then
+      if [ -z "$there" ]; then
+        echo "deploy/$target is missing from GitHub, but this clone last deployed ${expect:0:7} there:" >&2
+        echo "the branch was deleted from elsewhere." >&2
+        adopt="git update-ref -d $lease_ref"
+      else
+        if git cat-file -e "$there^{commit}" 2>/dev/null; then
+          what="$(git log -1 --format='%h "%s"' "$there")"
+        else
+          what="${there:0:7} (a commit this clone does not have)"
+        fi
+        echo "deploy/$target on GitHub is at $what," >&2
+        if [ -n "$expect" ]; then
+          echo "but this clone last deployed ${expect:0:7} there: the branch was moved from elsewhere." >&2
+        else
+          echo "but this clone has never deployed to $target, so it cannot tell whose that is." >&2
+        fi
+        adopt="git update-ref $lease_ref $there"
+      fi
+      echo "Find out what happened there before deploying over it, then:" >&2
+      echo "  $adopt" >&2
+      echo "  $0 $target" >&2
     fi
-    last="${seen:0:7}"; [ -n "$last" ] || last="missing"
-    echo "deploy/$target on GitHub is at $what," >&2
-    echo "but this clone's origin/deploy/$target is $last: the branch was moved from elsewhere." >&2
-    echo "Find out whose deploy that was before overwriting it, then:" >&2
-    echo "  git fetch origin" >&2
-    echo "  $0 $target" >&2
   fi
   exit "$rc"
 }
+# Recorded the moment GitHub has the commit, before the host has done anything
+# with it: the lease is about the ref, which has moved even if the rebuild below
+# then fails.
+git update-ref "$lease_ref" "$full_sha"
 ssh "$sshhost" "$remote_cmd"
 
 if [ -n "$hu" ]; then

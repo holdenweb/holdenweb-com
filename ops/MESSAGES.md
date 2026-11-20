@@ -61,11 +61,11 @@ Every message this system is likely to put in front of you — 126 of them — w
 - **Do:** Add it per ops/DEPLOY.md: `git remote add <target> opal17:apps/<app>/site`.
 
 ### 🟠 deploy-ref-moved
-`deploy/<target> on GitHub is at <sha> "<subject>", but this clone's origin/deploy/<target> is <sha | missing>: the branch was moved from elsewhere. Find out whose deploy that was before overwriting it, then: git fetch origin / ops/deploy.sh <target>`
+`deploy/<target> on GitHub is at <sha> "<subject>", but this clone last deployed <sha> there: the branch was moved from elsewhere. (Or: but this clone has never deployed to <target>, so it cannot tell whose that is. Or: deploy/<target> is missing from GitHub, but this clone last deployed <sha> there: the branch was deleted from elsewhere.) Find out what happened there before deploying over it, then: git update-ref [-d] refs/deployed/<target> [<sha>] / ops/deploy.sh <target>`
 
 - **Needs action** · **where:** laptop · **from:** `ops/deploy.sh`
-- **Means:** Printed under git's own `! [rejected] HEAD -> deploy/<target> (stale info)` (git-non-fast-forward), once ls-remote has confirmed the cause: the deploy ref on GitHub is not where this clone last saw it. --force-with-lease takes its expectation from refs/remotes/origin/deploy/<target>, and when this clone has no such ref it expects the branch not to exist at all -- so a branch created from another machine, another clone or the GitHub UI, and never fetched here, is refused exactly as one moved since the last fetch is. `(a commit this clone does not have)` in place of a subject means it was made elsewhere too. Nothing was pushed and nothing ran on the host. First seen 2026-10-17 as a bare `(stale info)`, on the first production deploy.
-- **Do:** Find out whose commit is there, and whether a deploy of it reached the host -- `git fetch origin`, then `git log -1 origin/deploy/<target>` -- and re-run the deploy once you are content to replace it. Do not add a fetch to deploy.sh to make this go away: fetching just before the push makes the lease agree with whatever is on GitHub, which is --force by a longer name.
+- **Means:** Printed under git's own `! [rejected] HEAD -> deploy/<target> (stale info)` (git-non-fast-forward), once ls-remote has confirmed the cause: the deploy ref on GitHub is not the commit this clone last pushed there. deploy.sh records that commit under refs/deployed/<target> after every push and hands it to --force-with-lease as the expectation; a clone with no record expects the branch not to exist, so a fresh clone is refused until it accepts what is there. `(a commit this clone does not have)` in place of a subject means it was made elsewhere too. Nothing was pushed and nothing ran on the host. First seen 2026-10-17 as a bare `(stale info)`, on the first production deploy. Until 2026-11-20 the expectation was refs/remotes/origin/deploy/<target>, which any fetch rewrites to match GitHub, so after a fetch nothing was refused.
+- **Do:** Find out whose commit is there, and whether a deploy of it reached the host -- `git fetch origin`, then `git log -1 origin/deploy/<target>`; the fetch no longer weakens the lease -- and once you are content to replace it, run the `git update-ref` the message printed and re-run the deploy.
 
 ### 🟠 deploy-usage
 `usage: deploy.sh [--dry-run] [--allow-dirty] <staging|production>`
@@ -877,8 +877,8 @@ Every message this system is likely to put in front of you — 126 of them — w
 `! [rejected] <branch> -> <branch> (fetch first / non-fast-forward / stale info) ... the remote contains work that you do not have locally.`
 
 - **Needs action** · **where:** laptop · **from:** `git`
-- **Means:** origin has commits you don't. On main, somebody (or another clone) pushed first. On refs/heads/deploy/<target> it means the deploy ref moved since your last fetch -- deploy.sh pushes it with --force-with-lease, which refuses on stale info rather than overwriting blind.
-- **Do:** `git fetch origin` and look at what moved. For main, `git pull --rebase` then push. For a deploy ref, re-run the deploy once you know whose commit is there.
+- **Means:** origin has commits you don't. On main, somebody (or another clone) pushed first. On refs/heads/deploy/<target> it means the deploy ref is not the commit this clone last deployed there -- deploy.sh pushes it with --force-with-lease against refs/deployed/<target>, which refuses on stale info rather than overwriting blind.
+- **Do:** `git fetch origin` and look at what moved. For main, `git pull --rebase` then push. For a deploy ref, deploy.sh prints the `git update-ref` that accepts the commit it found there; run it once you know whose commit that is, then re-run the deploy.
 
 ### 🟠 podman-no-such-service
 `no such service: <name>   (notably no such service: . from a command pasted with a trailing period)`
