@@ -538,7 +538,7 @@ wheels = [
 
 [[package]]
 name = "holdenweb"
-version = "1.11.0a1"
+version = "1.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
@@ -572,7 +572,7 @@ requires-dist = [
     { name = "flask", specifier = ">=2.3.3" },
     { name = "flask-security-too", specifier = ">=5.6.2" },
     { name = "podpack", specifier = ">=0.10.1" },
-    { name = "podpack-lablog", specifier = ">=0.1.0" },
+    { name = "podpack-lablog", specifier = ">=0.2.0" },
     { name = "podpack-mail", specifier = ">=0.1.0" },
     { name = "podpack-notebooks", specifier = ">=0.1.1" },
     { name = "podpack-pages", specifier = ">=0.3.0" },
@@ -950,7 +950,7 @@ wheels = [
 
 [[package]]
 name = "podpack-lablog"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
@@ -959,9 +959,9 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "wtforms" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/34/a0/723eacc5b34c4f91c889b4370baad6d04a6f40740e22fd94fb0f0387662c/podpack_lablog-0.1.0.tar.gz", hash = "sha256:899f561db02077f89a18092363a8c55d69153cb660d0747d5a03762d3c998c63", size = 20177, upload-time = "2026-11-19T18:20:22.765Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/aa/f1b8f8bed8d27cf1dd512a4e4bff7f2d0b3822281ffd07491f83038e8215/podpack_lablog-0.2.0.tar.gz", hash = "sha256:ae7d0dd8c2ffab98cb1fce01da78a2a0cd080641c7cbc9cc8ecf7947511cc0f9", size = 22753, upload-time = "2026-11-23T17:46:45.776Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/d5/ee1e6d99a77e8885110c20ad840ec4d12d2f030dc7de1fc72213b2c7fd73/podpack_lablog-0.1.0-py3-none-any.whl", hash = "sha256:e7c03b4182117b90db9ad921516c68ca924a778f3f751438ed491070fa40fe91", size = 24292, upload-time = "2026-11-19T18:20:21.85Z" },
+    { url = "https://files.pythonhosted.org/packages/10/83/ba690e4b9c2d23b108c33768c739c410eef0a3ff8dcb93a890458b32a17c/podpack_lablog-0.2.0-py3-none-any.whl", hash = "sha256:7711bbdc159c9a20f4535dbebeb3f8d06a7360aaae286b383695c006d541cbc9", size = 26878, upload-time = "2026-11-23T17:46:45.059Z" },
 ]
 
 [[package]]
